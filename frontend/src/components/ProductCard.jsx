@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
+import { memo, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { toAssetUrl } from '../utils/media'
 import { useTaxonomy } from './TaxonomyProvider'
+import { BUSINESS } from '../config/business'
 
 const getMinPack = (packs = []) => {
   const normalized = packs
@@ -57,12 +58,14 @@ function ProductCard({ product, onView, onAdd, isAdmin, showActions = true }) {
 
   return (
     <article
-      className="group flex h-full flex-col overflow-hidden rounded-[22px] border border-slate-200/80 bg-white shadow-[0_12px_32px_rgba(17,27,58,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(17,27,58,0.14)] sm:rounded-[28px] sm:shadow-[0_18px_50px_rgba(17,27,58,0.10)] sm:hover:shadow-[0_30px_70px_rgba(17,27,58,0.16)]"
+      className="ka-hover-lift ka-shine-card group flex h-full flex-col overflow-hidden rounded-[1.9rem] border border-white/70 bg-[rgba(255,255,255,0.94)] shadow-[0_16px_48px_rgba(11,20,48,0.08)] transition duration-300 hover:border-gold/35 hover:shadow-[0_24px_70px_rgba(11,20,48,0.12)] sm:rounded-[2.1rem]"
     >
       <Link to={`/products/${product._id}`} className="block p-2.5 sm:p-3 md:p-4">
         <div
-          className="relative aspect-[4/4.15] overflow-hidden rounded-[18px] bg-[radial-gradient(circle_at_top,rgba(201,162,74,0.18),rgba(255,255,255,1)_55%,rgba(17,27,58,0.06))] sm:aspect-square sm:rounded-[24px]"
+          className="relative aspect-[4/4.15] overflow-hidden rounded-[1.45rem] bg-[radial-gradient(circle_at_top,rgba(200,163,104,0.18),rgba(255,255,255,0.98)_55%,rgba(111,81,55,0.06))] sm:aspect-square sm:rounded-[1.7rem]"
         >
+          <div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(135deg,rgba(255,255,255,0.28),rgba(255,255,255,0)_45%,rgba(111,81,55,0.08))]" />
+          <div className="pointer-events-none absolute inset-y-0 left-[-85%] z-[2] w-1/2 -skew-x-12 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.52),transparent)] opacity-0 transition-all duration-1000 group-hover:left-[140%] group-hover:opacity-100" />
           <div className="absolute left-2 top-2 z-10 flex flex-wrap gap-1.5 sm:left-3 sm:top-3">
             {product?.isBestSeller ? (
               <span className="rounded-full bg-gold px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-midnight sm:px-3 sm:py-1 sm:text-[10px] sm:tracking-[0.24em]">
@@ -82,17 +85,19 @@ function ProductCard({ product, onView, onAdd, isAdmin, showActions = true }) {
           </div>
 
           {product.images?.[0] ? (
-            <img
-              src={toAssetUrl(product.images[0], import.meta.env.VITE_API_ASSET)}
-              alt={product.name}
-              className="h-full w-full object-cover object-center transition-transform duration-500"
-              style={{ transform: `scale(${imageZoom})` }}
-              loading="lazy"
-            />
+            <div className="h-full w-full transition-transform duration-700 group-hover:scale-[1.06]">
+              <img
+                src={toAssetUrl(product.images[0], import.meta.env.VITE_API_ASSET)}
+                alt={product.name}
+                className="h-full w-full object-cover object-center"
+                style={{ transform: `scale(${imageZoom})` }}
+                loading="lazy"
+              />
+            </div>
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(201,162,74,0.22),rgba(255,255,255,0.96),rgba(17,27,58,0.10))]">
               <span className="rounded-full border border-gold/25 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emberDark sm:px-4 sm:py-2 sm:text-[11px] sm:tracking-[0.24em]">
-                Kannauj Attars
+                {BUSINESS.brandName}
               </span>
             </div>
           )}
@@ -149,7 +154,7 @@ function ProductCard({ product, onView, onAdd, isAdmin, showActions = true }) {
         </div>
 
         {showActions ? (
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-5">
+          <div className="mt-auto pt-3 grid grid-cols-2 gap-2 sm:pt-5">
             {!isAdmin ? (
               <button
                 type="button"
@@ -199,4 +204,4 @@ function ProductCard({ product, onView, onAdd, isAdmin, showActions = true }) {
   )
 }
 
-export default ProductCard
+export default memo(ProductCard)

@@ -41,7 +41,7 @@ const canCustomerCancel = (status) => String(status || '').toLowerCase() === 'pe
 const findTrackableOrder = async (publicOrderId, { lean = true } = {}) => {
   const findBy = async (finder) => {
     const query = finder.select(TRACK_ORDER_SELECT)
-    return lean ? query.lean() : query
+    return lean ? query.lean() : query.exec()
   }
 
   let order = await findBy(Order.findOne({ publicOrderId }))
@@ -115,17 +115,24 @@ const reserveOrderStock = async (order, session = null) => {
     }
   }
 
-  inventoryProducts.forEach((product) => {
-    const qtyNeeded = adjustments.get(String(product._id)) || 0
-    if (!qtyNeeded) return
-    product.stock = Math.max(0, Number(product.stock || 0) - qtyNeeded)
-  })
+  const ops = inventoryProducts
+    .map((product) => {
+      const qtyNeeded = adjustments.get(String(product._id)) || 0
+      if (!qtyNeeded) return null
+      return {
+        updateOne: {
+          filter: { _id: product._id },
+          update: { $inc: { stock: -qtyNeeded } },
+        },
+      }
+    })
+    .filter(Boolean)
 
-  await Promise.all(
-    inventoryProducts.map((product) =>
-      product.save({ session, validateBeforeSave: false })
-    )
-  )
+  if (!ops.length) return
+
+  const options = {}
+  if (session) options.session = session
+  await Product.bulkWrite(ops, options)
 }
 
 // Create order

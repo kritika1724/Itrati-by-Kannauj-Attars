@@ -11,9 +11,23 @@ const SiteAssetsContext = createContext({
   uploadAndSetAsset: async () => {},
 })
 
+const ASSETS_CACHE_KEY = 'ka:site-assets:v1'
+
+const readCachedAssets = () => {
+  if (typeof window === 'undefined') return {}
+  try {
+    const raw = window.sessionStorage.getItem(ASSETS_CACHE_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
 export function SiteAssetsProvider({ children }) {
-  const [assets, setAssets] = useState({})
-  const [loading, setLoading] = useState(false)
+  const [assets, setAssets] = useState(() => readCachedAssets())
+  const [loading, setLoading] = useState(() => Object.keys(readCachedAssets()).length === 0)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -24,6 +38,9 @@ export function SiteAssetsProvider({ children }) {
         return acc
       }, {})
       setAssets(map)
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem(ASSETS_CACHE_KEY, JSON.stringify(map))
+      }
     } finally {
       setLoading(false)
     }
@@ -55,7 +72,13 @@ export function SiteAssetsProvider({ children }) {
 
   const setAssetUrl = useCallback(async (key, url) => {
     await api.setAsset(key, url)
-    setAssets((prev) => ({ ...prev, [key]: url }))
+    setAssets((prev) => {
+      const next = { ...prev, [key]: url }
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem(ASSETS_CACHE_KEY, JSON.stringify(next))
+      }
+      return next
+    })
     if (typeof window !== 'undefined') window.dispatchEvent(new Event('assetschange'))
   }, [])
 
@@ -64,6 +87,9 @@ export function SiteAssetsProvider({ children }) {
     setAssets((prev) => {
       const next = { ...prev }
       delete next[key]
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem(ASSETS_CACHE_KEY, JSON.stringify(next))
+      }
       return next
     })
     if (typeof window !== 'undefined') window.dispatchEvent(new Event('assetschange'))

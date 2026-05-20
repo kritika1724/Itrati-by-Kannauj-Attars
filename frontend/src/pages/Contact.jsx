@@ -362,7 +362,7 @@ function Contact() {
 
       <footer className="px-6 text-white bg-midnight py-14">
         <div className="w-full max-w-6xl mx-auto">
-          <h2 className="text-2xl font-display">Kannauj Attars</h2>
+          <h2 className="text-2xl font-display">{BUSINESS.fullDisplayName}</h2>
           <p className="mt-2 text-sm text-white/75">
             Mohalla Holi, Kannauj - 209725 (U.P.), India • {BUSINESS.phones?.join(' • ')}
           </p>

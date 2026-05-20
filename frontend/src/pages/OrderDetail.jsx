@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { api, auth } from '../services/api'
 import { toAssetUrl } from '../utils/media'
 import { openRazorpayCheckout } from '../utils/razorpay'
+import { BUSINESS } from '../config/business'
 
 const statusLabel = (status) => {
   const map = {
@@ -198,7 +199,7 @@ function OrderDetail() {
                           razorpayOrderId: rzp.razorpayOrderId,
                           amount: rzp.amount,
                           currency: rzp.currency,
-                          name: 'Kannauj Attars',
+                          name: BUSINESS.fullDisplayName,
                           description: `Order ${order.publicOrderId || order._id}`,
                           prefill: {
                             name: order?.shippingAddress?.fullName || user?.name || '',

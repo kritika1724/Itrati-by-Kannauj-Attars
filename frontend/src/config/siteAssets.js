@@ -12,6 +12,7 @@ export const SITE_ASSET_KEYS = [
   { key: 'home.explore.signature', label: 'Home: Explore (Signature) Image' },
   { key: 'home.explore.heritage', label: 'Home: Explore (Heritage) Image' },
   { key: 'home.explore.custom', label: 'Home: Explore (Custom Blends) Image' },
+  { key: 'home.credibility.photo', label: 'Home: Founder / Credibility Side Photo' },
   { key: 'about.ceo.photo', label: 'About: Founder/CEO Photo' },
 
   { key: 'explore.card.signature', label: 'Explore: Signature Card Image' },

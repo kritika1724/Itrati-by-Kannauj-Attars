@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { api, auth } from '../../services/api'
 import { openRazorpayCheckout } from '../../utils/razorpay'
 import { getLastOrderById, saveLastOrder } from '../../utils/orderStorage'
+import { BUSINESS } from '../../config/business'
 
 function PaymentFailure() {
   const { id } = useParams()
@@ -42,7 +43,7 @@ function PaymentFailure() {
         razorpayOrderId: rzp.razorpayOrderId,
         amount: rzp.amount,
         currency: rzp.currency,
-        name: 'Kannauj Attars',
+        name: BUSINESS.fullDisplayName,
         description: `Order ${order.publicOrderId || order._id}`,
         prefill: {
           name: order?.shippingAddress?.fullName || user?.name || '',

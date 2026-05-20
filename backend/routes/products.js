@@ -5,9 +5,16 @@ const Order = require('../models/Order')
 const { protect, optionalProtect, adminOnly } = require('../middleware/auth')
 const asyncHandler = require('../utils/asyncHandler')
 const escapeRegex = require('../utils/escapeRegex')
+const { getCache, setCache, clearCacheByPrefix } = require('../utils/appCache')
 
 const router = express.Router()
 const ALLOWED_COLLECTIONS = new Set(['signature', 'heritage'])
+const PRODUCTS_LIST_CACHE_PREFIX = 'products:list:'
+const PRODUCT_DETAIL_CACHE_PREFIX = 'products:detail:'
+const PRODUCTS_CACHE_TTL_MS = Number(process.env.PRODUCTS_CACHE_TTL_MS || 30 * 1000)
+const PUBLIC_PRODUCT_LIST_SELECT =
+  'name description category purposeTags familyTags featuredCollections isBestSeller isNewArrival sample price packs images imageZoom rating numReviews createdAt'
+const ADMIN_PRODUCT_LIST_SELECT = `${PUBLIC_PRODUCT_LIST_SELECT} stock`
 
 const normalizeCollections = (value) => {
   if (!Array.isArray(value)) return []
@@ -63,6 +70,16 @@ router.get(
   '/',
   optionalProtect,
   asyncHandler(async (req, res) => {
+    const canUsePublicCache = req.user?.isAdmin !== true
+    const cacheKey = canUsePublicCache ? `${PRODUCTS_LIST_CACHE_PREFIX}${req.originalUrl}` : ''
+    if (cacheKey) {
+      const cached = getCache(cacheKey)
+      if (cached) {
+        res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=120')
+        return res.json(cached)
+      }
+    }
+
     const page = Math.max(1, Number(req.query.page) || 1)
     const limit = Math.min(Math.max(Number(req.query.limit) || 12, 1), 100)
     const skip = (page - 1) * limit
@@ -139,19 +156,26 @@ router.get(
     const [total, products] = await Promise.all([
       Product.countDocuments(filter),
       Product.find(filter)
-        .select(req.user?.isAdmin === true ? '-reviews' : '-reviews -stock -packs.stock')
+        .select(req.user?.isAdmin === true ? ADMIN_PRODUCT_LIST_SELECT : PUBLIC_PRODUCT_LIST_SELECT)
         .sort(sortObj)
         .skip(skip)
         .limit(limit)
         .lean(),
     ])
 
-    res.json({
+    const payload = {
       products,
       page,
       pages: Math.max(1, Math.ceil(total / limit)),
       total,
-    })
+    }
+
+    if (cacheKey) {
+      setCache(cacheKey, payload, PRODUCTS_CACHE_TTL_MS)
+      res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=120')
+    }
+
+    res.json(payload)
   })
 )
 
@@ -159,6 +183,16 @@ router.get(
   '/:id',
   optionalProtect,
   asyncHandler(async (req, res) => {
+    const canUsePublicCache = req.user?.isAdmin !== true
+    const cacheKey = canUsePublicCache ? `${PRODUCT_DETAIL_CACHE_PREFIX}${req.params.id}` : ''
+    if (cacheKey) {
+      const cached = getCache(cacheKey)
+      if (cached) {
+        res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=120')
+        return res.json(cached)
+      }
+    }
+
     const query = Product.findById(req.params.id)
     if (req.user?.isAdmin !== true) {
       query.select('-stock -packs.stock')
@@ -167,6 +201,12 @@ router.get(
     if (!product) {
       return res.status(404).json({ message: 'Product not found' })
     }
+
+    if (cacheKey) {
+      setCache(cacheKey, product, PRODUCTS_CACHE_TTL_MS)
+      res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=120')
+    }
+
     res.json(product)
   })
 )
@@ -214,6 +254,8 @@ router.post('/', protect, adminOnly, asyncHandler(async (req, res) => {
     highlights,
   })
 
+  clearCacheByPrefix(PRODUCTS_LIST_CACHE_PREFIX)
+  clearCacheByPrefix(PRODUCT_DETAIL_CACHE_PREFIX)
   res.status(201).json(product)
 }))
 
@@ -260,6 +302,8 @@ router.put('/:id', protect, adminOnly, asyncHandler(async (req, res) => {
   })
 
   const updated = await product.save()
+  clearCacheByPrefix(PRODUCTS_LIST_CACHE_PREFIX)
+  clearCacheByPrefix(PRODUCT_DETAIL_CACHE_PREFIX)
   res.json(updated)
 }))
 
@@ -269,6 +313,8 @@ router.delete('/:id', protect, adminOnly, asyncHandler(async (req, res) => {
     return res.status(404).json({ message: 'Product not found' })
   }
   await product.deleteOne()
+  clearCacheByPrefix(PRODUCTS_LIST_CACHE_PREFIX)
+  clearCacheByPrefix(PRODUCT_DETAIL_CACHE_PREFIX)
   res.json({ message: 'Product deleted' })
 }))
 
@@ -336,6 +382,8 @@ router.post('/:id/reviews', optionalProtect, asyncHandler(async (req, res) => {
     product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.numReviews
 
   await product.save()
+  clearCacheByPrefix(PRODUCTS_LIST_CACHE_PREFIX)
+  clearCacheByPrefix(PRODUCT_DETAIL_CACHE_PREFIX)
   res.status(201).json({ message: 'Review added' })
 }))
 
@@ -360,6 +408,8 @@ router.delete('/:id/reviews/:reviewId', protect, adminOnly, asyncHandler(async (
     : 0
 
   await product.save()
+  clearCacheByPrefix(PRODUCTS_LIST_CACHE_PREFIX)
+  clearCacheByPrefix(PRODUCT_DETAIL_CACHE_PREFIX)
   res.json({ message: 'Review removed' })
 }))
 

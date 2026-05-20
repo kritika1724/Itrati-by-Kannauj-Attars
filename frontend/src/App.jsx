@@ -1,56 +1,56 @@
 import { BrowserRouter, Routes, Route, NavLink, Navigate, Link, useLocation } from 'react-router-dom'
 import { useSelector } from 'react-redux'
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { auth } from './services/api'
 import { FiMenu, FiX } from 'react-icons/fi'
-
-import Home from './pages/Home'
-import Collections from './pages/Collections'
-import Contact from './pages/Contact'
-import Products from './pages/Products'
-import ProductDetail from './pages/ProductDetail'
-import TrackOrder from './pages/TrackOrder'
-import Account from './pages/Account'
-import OAuthCallback from './pages/OAuthCallback'
-import NotFound from './pages/NotFound'
-import CustomBlends from './pages/CustomBlends'
-import Signature from './pages/collections/Signature'
-import Heritage from './pages/collections/Heritage'
-import PurposeCollection from './pages/collections/PurposeCollection'
-import Gallery from './pages/Gallery'
-import CreateBlend from './pages/CreateBlend'
-import DiscoveryQuiz from './pages/DiscoveryQuiz'
-import Knowledge from './pages/Knowledge'
-import KnowledgeArticle from './pages/KnowledgeArticle'
-import Ceo from './pages/Ceo'
-
-import Cart from './pages/Cart'
-import Shipping from './pages/checkout/Shipping'
-import Payment from './pages/checkout/Payment'
-import PlaceOrder from './pages/checkout/PlaceOrder'
-import PaymentSuccess from './pages/checkout/PaymentSuccess'
-import PaymentFailure from './pages/checkout/PaymentFailure'
-import OrderDetail from './pages/OrderDetail'
-import MyOrders from './pages/MyOrders'
-
-import AdminDashboard from './pages/AdminDashboard'
-import AdminOrders from './pages/AdminOrders'
-import AdminProducts from './pages/AdminProducts'
-import AdminProductForm from './pages/AdminProductForm'
-import AdminMedia from './pages/AdminMedia'
-import AdminContacts from './pages/AdminContacts'
-import AdminFilters from './pages/AdminFilters'
+import { AnimatePresence, motion, useScroll, useSpring } from 'framer-motion'
 
 import ProtectedRoute from './components/ProtectedRoute'
 import LogoMark from './components/LogoMark'
 import CursorGlow from './components/CursorGlow'
 import { BUSINESS } from './config/business'
+import { pageShell } from './lib/motion'
+
+const Home = lazy(() => import('./pages/Home'))
+const Collections = lazy(() => import('./pages/Collections'))
+const Contact = lazy(() => import('./pages/Contact'))
+const Products = lazy(() => import('./pages/Products'))
+const ProductDetail = lazy(() => import('./pages/ProductDetail'))
+const TrackOrder = lazy(() => import('./pages/TrackOrder'))
+const Account = lazy(() => import('./pages/Account'))
+const OAuthCallback = lazy(() => import('./pages/OAuthCallback'))
+const NotFound = lazy(() => import('./pages/NotFound'))
+const CustomBlends = lazy(() => import('./pages/CustomBlends'))
+const Signature = lazy(() => import('./pages/collections/Signature'))
+const Heritage = lazy(() => import('./pages/collections/Heritage'))
+const PurposeCollection = lazy(() => import('./pages/collections/PurposeCollection'))
+const Gallery = lazy(() => import('./pages/Gallery'))
+const CreateBlend = lazy(() => import('./pages/CreateBlend'))
+const DiscoveryQuiz = lazy(() => import('./pages/DiscoveryQuiz'))
+const Knowledge = lazy(() => import('./pages/Knowledge'))
+const KnowledgeArticle = lazy(() => import('./pages/KnowledgeArticle'))
+const Ceo = lazy(() => import('./pages/Ceo'))
+const Cart = lazy(() => import('./pages/Cart'))
+const Shipping = lazy(() => import('./pages/checkout/Shipping'))
+const Payment = lazy(() => import('./pages/checkout/Payment'))
+const PlaceOrder = lazy(() => import('./pages/checkout/PlaceOrder'))
+const PaymentSuccess = lazy(() => import('./pages/checkout/PaymentSuccess'))
+const PaymentFailure = lazy(() => import('./pages/checkout/PaymentFailure'))
+const OrderDetail = lazy(() => import('./pages/OrderDetail'))
+const MyOrders = lazy(() => import('./pages/MyOrders'))
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
+const AdminOrders = lazy(() => import('./pages/AdminOrders'))
+const AdminProducts = lazy(() => import('./pages/AdminProducts'))
+const AdminProductForm = lazy(() => import('./pages/AdminProductForm'))
+const AdminMedia = lazy(() => import('./pages/AdminMedia'))
+const AdminContacts = lazy(() => import('./pages/AdminContacts'))
+const AdminFilters = lazy(() => import('./pages/AdminFilters'))
 
 const navLinkClass = ({ isActive }) =>
   `relative text-sm font-semibold tracking-wide transition ${
     isActive
-      ? 'text-ink after:absolute after:-bottom-1 after:left-0 after:h-px after:w-full after:bg-[linear-gradient(90deg,rgba(201,162,74,1),rgba(201,162,74,0.25))] after:content-[""]'
-      : 'text-emberDark hover:text-ink hover:-translate-y-0.5'
+      ? 'text-ink after:absolute after:-bottom-2 after:left-0 after:h-px after:w-full after:bg-[linear-gradient(90deg,rgba(200,163,104,1),rgba(200,163,104,0.12))] after:content-[""]'
+      : 'text-emberDark/80 hover:text-ink hover:-translate-y-0.5'
   }`
 
 const mobileNavLinkClass = ({ isActive }) =>
@@ -67,6 +67,22 @@ const adminNavLinkClass = ({ isActive }) =>
       : 'border-white/10 bg-white/5 text-white hover:border-gold/35 hover:bg-white/10'
   }`
 
+function RouteLoader() {
+  return (
+    <div className="ka-page-aura min-h-[50vh] bg-sand px-4 py-14 sm:px-6">
+      <div className="mx-auto grid w-full max-w-6xl gap-6">
+        <div className="h-8 w-48 animate-pulse rounded-full bg-clay/80" />
+        <div className="h-20 w-full animate-pulse rounded-[2rem] bg-white/80 shadow-sm" />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="h-52 animate-pulse rounded-[2rem] bg-white/80 shadow-sm" />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function AppShell() {
   const location = useLocation()
   const cartCount = useSelector((state) => state.cart.items.reduce((sum, i) => sum + i.qty, 0))
@@ -75,6 +91,13 @@ function AppShell() {
   const isLoggedIn = !!user
   const [mobileOpen, setMobileOpen] = useState(false)
   const inAdminArea = isAdmin && location.pathname.startsWith('/admin')
+  const { scrollYProgress } = useScroll()
+  const routeKey = `${location.pathname}${location.search}`
+  const progressScaleX = useSpring(scrollYProgress, {
+    stiffness: 120,
+    damping: 24,
+    mass: 0.55,
+  })
 
   useEffect(() => {
     const onAuth = () => setUser(auth.getUser())
@@ -134,6 +157,11 @@ function AppShell() {
 
   return (
     <div className="relative min-h-screen overflow-x-clip">
+      <motion.div
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-x-0 top-0 z-[70] h-[3px] origin-left bg-[linear-gradient(90deg,#c9a24a_0%,#fff3cf_45%,#111b3a_100%)] shadow-[0_0_16px_rgba(201,162,74,0.45)]"
+        style={{ scaleX: progressScaleX }}
+      />
       <CursorGlow />
       {inAdminArea ? (
         <header className="sticky top-0 z-20 border-b border-gold/20 bg-[linear-gradient(135deg,#070B18,#111B3A)] shadow-[0_18px_40px_rgba(7,11,24,0.35)]">
@@ -145,7 +173,7 @@ function AppShell() {
                   {BUSINESS.displayName} <span className="text-gold">Admin</span>
                 </span>
                 <span className="truncate text-xs uppercase tracking-[0.3em] text-white/65">
-                  Dashboard access
+                  {BUSINESS.endorsement} • Dashboard access
                 </span>
               </div>
             </Link>
@@ -179,7 +207,7 @@ function AppShell() {
           </div>
         </header>
       ) : (
-        <header className="sticky top-0 z-20 relative bg-[linear-gradient(180deg,rgba(200,169,106,0.20),rgba(255,250,244,0.42))] shadow-[0_16px_34px_rgba(17,27,58,0.14),0_10px_26px_rgba(200,169,106,0.10)] backdrop-blur-xl">
+        <header className="ka-nav-shell sticky top-0 z-20 relative border-b border-white/45 bg-[linear-gradient(180deg,rgba(255,250,244,0.76),rgba(255,250,244,0.58))] shadow-[0_18px_50px_rgba(37,25,16,0.10)] backdrop-blur-2xl">
           <div className="ka-container flex items-center justify-between gap-4 py-5">
             <Link
               to="/"
@@ -200,7 +228,9 @@ function AppShell() {
                 <span className="truncate font-display text-xl tracking-wide text-ink sm:text-2xl">
                   {BUSINESS.displayName}
                 </span>
-                <span className="truncate text-xs uppercase tracking-[0.3em] text-muted">Since 1998</span>
+                <span className="truncate text-xs uppercase tracking-[0.3em] text-muted">
+                  {BUSINESS.endorsement} • Since {BUSINESS.since}
+                </span>
               </div>
             </Link>
 
@@ -256,68 +286,88 @@ function AppShell() {
             </button>
           </div>
 
-          {mobileOpen ? (
-            <>
-              <button
-                type="button"
-                className="fixed inset-0 z-10 bg-black/40 backdrop-blur-[2px]"
-                aria-label="Close menu"
-                onClick={() => setMobileOpen(false)}
-              />
-              <div
-                id="mobile-nav"
-                className="md:hidden absolute inset-x-0 top-full z-20 border-b border-gold/30 bg-[linear-gradient(180deg,rgba(200,169,106,0.22),rgba(255,250,244,0.94))] shadow-soft backdrop-blur-xl"
-              >
-                <div className="ka-container py-4">
-                  <div className="grid gap-2">
-                    <NavLink to="/" end className={mobileNavLinkClass} onClick={() => setMobileOpen(false)}>
-                      Home
-                    </NavLink>
-                    <NavLink to="/products" className={mobileNavLinkClass} onClick={() => setMobileOpen(false)}>
-                      Products
-                    </NavLink>
-
-                    {!isAdmin ? (
-                      <NavLink to="/cart" className={mobileNavLinkClass} onClick={() => setMobileOpen(false)}>
-                        <span className="inline-flex items-center gap-2">
-                          Cart
-                          {cartCount > 0 ? (
-                            <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-ember px-2 py-0.5 text-[10px] font-semibold text-white">
-                              {cartCount}
-                            </span>
-                          ) : null}
-                        </span>
+          <AnimatePresence>
+            {mobileOpen ? (
+              <>
+                <motion.button
+                  type="button"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="fixed inset-0 z-10 bg-black/40 backdrop-blur-[2px]"
+                  aria-label="Close menu"
+                  onClick={() => setMobileOpen(false)}
+                />
+                <motion.div
+                  id="mobile-nav"
+                  initial={{ opacity: 0, y: -18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -14 }}
+                  transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                  className="md:hidden absolute inset-x-0 top-full z-20 border-b border-gold/30 bg-[linear-gradient(180deg,rgba(200,169,106,0.22),rgba(255,250,244,0.94))] shadow-soft backdrop-blur-xl"
+                >
+                  <div className="ka-container py-4">
+                    <div className="grid gap-2">
+                      <NavLink to="/" end className={mobileNavLinkClass} onClick={() => setMobileOpen(false)}>
+                        Home
                       </NavLink>
-                    ) : isAdmin ? (
-                      <NavLink to="/admin" className={mobileNavLinkClass} onClick={() => setMobileOpen(false)}>
-                        Admin
+                      <NavLink to="/products" className={mobileNavLinkClass} onClick={() => setMobileOpen(false)}>
+                        Products
                       </NavLink>
-                    ) : null}
 
-                    {!isAdmin ? (
-                      <NavLink to="/track-order" className={mobileNavLinkClass} onClick={() => setMobileOpen(false)}>
-                        Track Order
+                      {!isAdmin ? (
+                        <NavLink to="/cart" className={mobileNavLinkClass} onClick={() => setMobileOpen(false)}>
+                          <span className="inline-flex items-center gap-2">
+                            Cart
+                            {cartCount > 0 ? (
+                              <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-ember px-2 py-0.5 text-[10px] font-semibold text-white">
+                                {cartCount}
+                              </span>
+                            ) : null}
+                          </span>
+                        </NavLink>
+                      ) : isAdmin ? (
+                        <NavLink to="/admin" className={mobileNavLinkClass} onClick={() => setMobileOpen(false)}>
+                          Admin
+                        </NavLink>
+                      ) : null}
+
+                      {!isAdmin ? (
+                        <NavLink to="/track-order" className={mobileNavLinkClass} onClick={() => setMobileOpen(false)}>
+                          Track Order
+                        </NavLink>
+                      ) : null}
+
+                      {!isAdmin ? (
+                        <NavLink to="/contact" className={mobileNavLinkClass} onClick={() => setMobileOpen(false)}>
+                          Contact
+                        </NavLink>
+                      ) : null}
+
+                      <NavLink to="/account" className={mobileNavLinkClass} onClick={() => setMobileOpen(false)}>
+                        {user ? 'Account' : 'Login'}
                       </NavLink>
-                    ) : null}
-
-                    {!isAdmin ? (
-                      <NavLink to="/contact" className={mobileNavLinkClass} onClick={() => setMobileOpen(false)}>
-                        Contact
-                      </NavLink>
-                    ) : null}
-
-                    <NavLink to="/account" className={mobileNavLinkClass} onClick={() => setMobileOpen(false)}>
-                      {user ? 'Account' : 'Login'}
-                    </NavLink>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </>
-          ) : null}
+                </motion.div>
+              </>
+            ) : null}
+          </AnimatePresence>
         </header>
       )}
 
-      <Routes>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.main
+          key={routeKey}
+          variants={pageShell}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          className="relative"
+        >
+          <Suspense fallback={<RouteLoader />}>
+            <Routes location={location}>
         <Route path="/" element={<Home />} />
         <Route path="/collections" element={<Collections />} />
         <Route path="/about" element={<Navigate to="/" replace />} />
@@ -484,9 +534,11 @@ function AppShell() {
             </ProtectedRoute>
           }
         />
-
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          </Suspense>
+        </motion.main>
+      </AnimatePresence>
     </div>
   )
 }

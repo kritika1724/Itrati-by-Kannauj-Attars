@@ -9,9 +9,9 @@ const asyncHandler = require('../utils/asyncHandler')
 const router = express.Router()
 
 router.post('/register', asyncHandler(async (req, res) => {
-  return res.status(403).json({
-    message: 'New account registration is currently closed. Please contact Kannauj Attars directly.',
-  })
+    return res.status(403).json({
+      message: 'New account registration is currently closed. Please contact Itrati by Kannauj Attars directly.',
+    })
 }))
 
 router.post(

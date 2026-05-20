@@ -1,17 +1,22 @@
 export const BUSINESS = {
-  name: 'Kannauj Attars',
-  displayName: 'Kannauj Attars™',
-  firmName: 'Kannauj Attars - 1998',
-  displayFirmName: 'Kannauj Attars™ - 1998',
+  name: 'Itrati by Kannauj Attars',
+  brandName: 'Itrati',
+  displayName: 'Itrati™',
+  endorsement: 'by Kannauj Attars',
+  fullDisplayName: 'Itrati™ by Kannauj Attars',
+  firmName: 'Itrati by Kannauj Attars - 1998',
+  displayFirmName: 'Itrati™ by Kannauj Attars - 1998',
   since: 1998,
+  heroKicker: 'The Art of Indian Perfumery',
+  heroTagline: 'The Essence of Timeless Fragrance',
   email: 'kannaujattars@yahoo.com',
   emails: ['kannaujattars@yahoo.com'],
   phones: ['+91-9415124521', '+91-7007627057'],
   founder: 'Mr. Pawan Trivedi',
   founderTitle:
-    'Founder, Kannauj Attars - 1998 | President, The Attars & Perfumers Association Kannauj',
+    'Founder, Itrati by Kannauj Attars - 1998 | President, The Attars & Perfumers Association Kannauj',
   about:
-    "Kannauj Attars - 1998 is a private enterprise founded in Kannauj, India - home to one of the country's oldest perfume traditions. Rooted in heritage distillation and crafted with modern consistency, we serve both personal buyers and bulk/trade requirements with the same focus on quality, clarity, and lasting character.",
+    "Itrati by Kannauj Attars - 1998 is a private enterprise founded in Kannauj, India - home to one of the country's oldest perfume traditions. Rooted in heritage distillation and crafted with modern consistency, we serve both personal buyers and bulk/trade requirements with the same focus on quality, clarity, and lasting character.",
   legacyIntro:
     'Rooted in the timeless legacy of Kannauj, our journey in perfumery spans generations. From the era of Sundar Lal Suraj Narayan to Laxmi Narayan Trivedi in 1930, the tradition of crafting natural fragrances has been carefully preserved and passed down.',
   legacyTimeline: [
@@ -29,9 +34,9 @@ export const BUSINESS = {
     },
     {
       year: '1998',
-      title: 'Kannauj Attars established',
+      title: 'Itrati by Kannauj Attars established',
       copy:
-        'Pawan Trivedi founded Kannauj Attars, carrying this heritage into the modern era while preserving authenticity and craft.',
+        'Pawan Trivedi founded Itrati by Kannauj Attars, carrying this heritage into the modern era while preserving authenticity and craft.',
     },
     {
       year: '2015-16',

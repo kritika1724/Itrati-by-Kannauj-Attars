@@ -6,6 +6,7 @@ import { auth } from '../../services/api'
 import { useEffect, useMemo } from 'react'
 import { openRazorpayCheckout } from '../../utils/razorpay'
 import { saveLastOrder } from '../../utils/orderStorage'
+import { BUSINESS } from '../../config/business'
 
 function PlaceOrder() {
   const navigate = useNavigate()
@@ -51,7 +52,7 @@ function PlaceOrder() {
       razorpayOrderId: rzp.razorpayOrderId,
       amount: rzp.amount,
       currency: rzp.currency,
-      name: 'Kannauj Attars',
+      name: BUSINESS.fullDisplayName,
       description: `Order ${order.publicOrderId || order._id}`,
       prefill: {
         name: shippingAddress?.fullName || user?.name || '',

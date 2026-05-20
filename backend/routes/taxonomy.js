@@ -3,7 +3,7 @@ const { protect, adminOnly } = require('../middleware/auth')
 const TaxonomyTerm = require('../models/TaxonomyTerm')
 const asyncHandler = require('../utils/asyncHandler')
 const { slugifyTerm } = require('../config/taxonomy')
-const { ensureDefaultTaxonomy, getTaxonomyPayload } = require('../utils/taxonomy')
+const { getTaxonomyPayload, clearTaxonomyPayloadCache } = require('../utils/taxonomy')
 
 const router = express.Router()
 const ALLOWED_GROUPS = new Set(['purpose', 'family'])
@@ -11,8 +11,8 @@ const ALLOWED_GROUPS = new Set(['purpose', 'family'])
 router.get(
   '/',
   asyncHandler(async (_req, res) => {
-    await ensureDefaultTaxonomy()
     const payload = await getTaxonomyPayload()
+    res.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=1200')
     res.json(payload)
   })
 )
@@ -57,6 +57,8 @@ router.post(
       sortOrder: (lastTerm?.sortOrder || 0) + 10,
       isActive: true,
     })
+
+    clearTaxonomyPayloadCache()
 
     res.status(201).json({
       message: 'Filter created',

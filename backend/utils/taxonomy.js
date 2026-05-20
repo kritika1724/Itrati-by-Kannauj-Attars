@@ -1,5 +1,9 @@
 const TaxonomyTerm = require('../models/TaxonomyTerm')
 const { DEFAULT_TAXONOMY_TERMS } = require('../config/taxonomy')
+const { getCache, setCache, deleteCache } = require('./appCache')
+
+const TAXONOMY_CACHE_KEY = 'taxonomy:payload'
+const TAXONOMY_TTL_MS = Number(process.env.TAXONOMY_CACHE_TTL_MS || 10 * 60 * 1000)
 
 const ensureDefaultTaxonomy = async () => {
   if (!Array.isArray(DEFAULT_TAXONOMY_TERMS) || DEFAULT_TAXONOMY_TERMS.length === 0) return
@@ -22,6 +26,9 @@ const ensureDefaultTaxonomy = async () => {
 }
 
 const getTaxonomyPayload = async () => {
+  const cached = getCache(TAXONOMY_CACHE_KEY)
+  if (cached) return cached
+
   const [purposes, families] = await Promise.all([
     TaxonomyTerm.find({ group: 'purpose', isActive: true })
       .sort({ sortOrder: 1, label: 1 })
@@ -33,7 +40,7 @@ const getTaxonomyPayload = async () => {
       .lean(),
   ])
 
-  return {
+  const payload = {
     purposes: purposes.map((term) => ({
       id: term.slug,
       label: term.label,
@@ -45,6 +52,13 @@ const getTaxonomyPayload = async () => {
       sortOrder: term.sortOrder || 0,
     })),
   }
+
+  setCache(TAXONOMY_CACHE_KEY, payload, TAXONOMY_TTL_MS)
+  return payload
 }
 
-module.exports = { ensureDefaultTaxonomy, getTaxonomyPayload }
+const clearTaxonomyPayloadCache = () => {
+  deleteCache(TAXONOMY_CACHE_KEY)
+}
+
+module.exports = { ensureDefaultTaxonomy, getTaxonomyPayload, clearTaxonomyPayloadCache }

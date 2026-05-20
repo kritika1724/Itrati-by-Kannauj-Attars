@@ -15,7 +15,7 @@ const protect = async (req, res, next) => {
     if (decoded?.typ && decoded.typ !== 'access') {
       return res.status(401).json({ message: 'Token invalid' })
     }
-    const user = await User.findById(decoded.id).select('-password')
+    const user = await User.findById(decoded.id).select('_id name email').lean()
 
     if (!user) {
       return res.status(401).json({ message: 'Not authorized' })
@@ -45,7 +45,7 @@ const optionalProtect = async (req, _res, next) => {
       return next()
     }
 
-    const user = await User.findById(decoded.id).select('-password')
+    const user = await User.findById(decoded.id).select('_id name email').lean()
     if (!user) {
       return next()
     }

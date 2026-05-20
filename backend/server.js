@@ -35,6 +35,7 @@ const app = express()
 app.set('trust proxy', 1)
 app.disable('x-powered-by')
 app.use(express.json({ limit: '1mb' }))
+app.use(express.urlencoded({ extended: false, limit: '1mb' }))
 if (cookieParser) {
   app.use(cookieParser())
 } else {
@@ -137,6 +138,7 @@ app.use(
 )
 
 app.get('/api/health', (req, res) => {
+  res.set('Cache-Control', 'no-store')
   res.json({ status: 'ok' })
 })
 
@@ -165,7 +167,23 @@ app.use(
 // Serve the React app in production (single deploy).
 if (process.env.NODE_ENV === 'production') {
   const distPath = path.join(__dirname, '..', 'frontend', 'dist')
-  app.use(express.static(distPath))
+  app.use(
+    express.static(distPath, {
+      etag: true,
+      index: false,
+      maxAge: '7d',
+      setHeaders(res, filePath) {
+        if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-cache')
+          return
+        }
+
+        if (/\.(js|css|woff2?|png|jpe?g|webp|svg|gif|mp4|webm)$/i.test(filePath)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+        }
+      },
+    })
+  )
   app.get('*', (req, res) => {
     // Don’t hijack API or uploads routes
     if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
@@ -212,6 +230,8 @@ const start = async () => {
     const server = app.listen(port, () => {
       console.log(`Server running on port ${port}`)
     })
+    server.keepAliveTimeout = Number(process.env.KEEP_ALIVE_TIMEOUT_MS || 65000)
+    server.headersTimeout = Number(process.env.HEADERS_TIMEOUT_MS || 66000)
     server.on('error', (err) => {
       if (err && err.code === 'EADDRINUSE') {
         console.error(

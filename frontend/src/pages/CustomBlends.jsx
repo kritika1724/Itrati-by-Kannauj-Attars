@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import AdminAssetImage from '../components/AdminAssetImage'
+import { BUSINESS } from '../config/business'
 
 function CustomBlends() {
   return (
@@ -84,7 +85,7 @@ function CustomBlends() {
 
       <footer className="bg-midnight px-6 py-14 text-white">
         <div className="mx-auto w-full max-w-6xl">
-          <h2 className="font-display text-2xl">Kannauj Attars</h2>
+          <h2 className="font-display text-2xl">{BUSINESS.fullDisplayName}</h2>
           <p className="mt-2 text-sm text-white/75">Custom blends with craft and consistency.</p>
         </div>
       </footer>

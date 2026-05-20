@@ -13,6 +13,21 @@ const TaxonomyContext = createContext({
   refresh: async () => {},
 })
 
+const TAXONOMY_CACHE_KEY = 'ka:taxonomy:v1'
+
+const readCachedTaxonomy = () => {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = window.sessionStorage.getItem(TAXONOMY_CACHE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
 const makeLookupMap = (items = []) =>
   items.reduce((acc, item) => {
     if (item?.id) acc[item.id] = item.label || item.id
@@ -20,17 +35,26 @@ const makeLookupMap = (items = []) =>
   }, {})
 
 export function TaxonomyProvider({ children }) {
-  const [purposes, setPurposes] = useState(PURPOSE_TAGS)
-  const [families, setFamilies] = useState(FAMILY_TAGS)
-  const [loading, setLoading] = useState(true)
+  const cachedTaxonomy = readCachedTaxonomy()
+  const [purposes, setPurposes] = useState(cachedTaxonomy?.purposes?.length ? cachedTaxonomy.purposes : PURPOSE_TAGS)
+  const [families, setFamilies] = useState(cachedTaxonomy?.families?.length ? cachedTaxonomy.families : FAMILY_TAGS)
+  const [loading, setLoading] = useState(!cachedTaxonomy)
   const [error, setError] = useState('')
 
   const refresh = useCallback(async () => {
     try {
       setError('')
       const data = await api.getTaxonomy()
-      setPurposes(Array.isArray(data?.purposes) && data.purposes.length ? data.purposes : PURPOSE_TAGS)
-      setFamilies(Array.isArray(data?.families) && data.families.length ? data.families : FAMILY_TAGS)
+      const nextPurposes = Array.isArray(data?.purposes) && data.purposes.length ? data.purposes : PURPOSE_TAGS
+      const nextFamilies = Array.isArray(data?.families) && data.families.length ? data.families : FAMILY_TAGS
+      setPurposes(nextPurposes)
+      setFamilies(nextFamilies)
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem(
+          TAXONOMY_CACHE_KEY,
+          JSON.stringify({ purposes: nextPurposes, families: nextFamilies })
+        )
+      }
     } catch (err) {
       setError(err.message || 'Unable to load filters')
       setPurposes(PURPOSE_TAGS)

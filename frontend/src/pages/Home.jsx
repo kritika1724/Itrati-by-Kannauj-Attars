@@ -1,24 +1,95 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { FiDroplet, FiWind, FiFeather, FiUser, FiMail, FiPhone, FiPackage, FiAward } from 'react-icons/fi'
+import {
+  FiAward,
+  FiMail,
+  FiPhone,
+  FiUser,
+} from 'react-icons/fi'
 import AdminAssetImage from '../components/AdminAssetImage'
 import RecentlyViewedStrip from '../components/RecentlyViewedStrip'
 import { useSiteAssets } from '../components/SiteAssetsProvider'
 import { BUSINESS } from '../config/business'
+import { fadeLeft, fadeUp, heroStagger, revealCard, staggerGrid, viewportOnce } from '../lib/motion'
 import { auth } from '../services/api'
 import { toAssetUrl } from '../utils/media'
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  show: { opacity: 1, y: 0 },
-}
+const collectionCards = [
+  {
+    title: 'Premium Attars Collection',
+    copy: 'Signature attars with elegant projection, polished depth, and a distinctly Kannauj soul.',
+    assetKey: 'home.explore.signature',
+    link: '/collections/signature',
+    cta: 'Explore attars',
+  },
+  {
+    title: 'Essential Oils',
+    copy: 'Steam-distilled oils and floral waters shaped for ritual, wellness, gifting, and formulation.',
+    assetKey: 'home.story.botanicals',
+    link: '/products?purpose=skin_hair',
+    cta: 'View essential oils',
+  },
+  {
+    title: 'Heritage Collection',
+    copy: 'Deeper traditional profiles inspired by Deg-Bhapka craft, slow maturation, and perfume memory.',
+    assetKey: 'home.explore.heritage',
+    link: '/collections/heritage',
+    cta: 'View heritage line',
+  },
+]
+
+const heritagePillars = [
+  {
+    title: 'Generational perfumery',
+    copy: 'From Sundar Lal Suraj Narayan to Laxmi Narayan Trivedi and onward, the craft has moved through the family with care.',
+  },
+  {
+    title: 'Kannauj, the perfume city',
+    copy: 'Every blend stays tied to a city known for roses, kewra, mitti attar, and one of India’s oldest fragrance traditions.',
+  },
+  {
+    title: 'GI-tagged authenticity',
+    copy: 'The legacy is protected by Geographical Indication recognition, reinforcing a genuine connection to place and method.',
+  },
+]
+
+const distillationNotes = [
+  {
+    title: 'Flower selection',
+    copy: 'Fresh botanicals are chosen around season, aroma profile, and the softness needed for a balanced attar.',
+  },
+  {
+    title: 'Deg-Bhapka process',
+    copy: 'Copper stills, steam pressure, and slow condensation preserve floral depth while keeping the extraction graceful.',
+  },
+  {
+    title: 'Maturation and balance',
+    copy: 'The distillate is allowed to settle so the fragrance develops rounded edges, clarity, and long wear.',
+  },
+]
+
+const clientVoices = [
+  {
+    title: 'Luxury gifting houses',
+    quote: 'Clients look for fragrance stories that feel rooted, refined, and distinctly Indian — that is where Itrati feels different.',
+  },
+  {
+    title: 'Wellness and ritual buyers',
+    quote: 'Soft floral waters, calming oils, and nostalgic earth notes make the range feel personal rather than generic.',
+  },
+  {
+    title: 'Trade and bulk partners',
+    quote: 'Consistency, dependable communication, and heritage credibility matter just as much as the fragrance itself.',
+  },
+]
 
 function Home() {
   const { assets, uploadAndSetAsset } = useSiteAssets()
   const [user, setUser] = useState(auth.getUser())
   const [videoBusy, setVideoBusy] = useState(false)
   const [videoMessage, setVideoMessage] = useState('')
+  const [deferredReady, setDeferredReady] = useState(false)
   const isAdmin = user?.isAdmin === true
   const homeVideo = assets?.['home.top.video']
     ? toAssetUrl(assets['home.top.video'], import.meta.env.VITE_API_ASSET)
@@ -28,6 +99,31 @@ function Home() {
     const onAuth = () => setUser(auth.getUser())
     window.addEventListener('authchange', onAuth)
     return () => window.removeEventListener('authchange', onAuth)
+  }, [])
+
+  useEffect(() => {
+    let timer = 0
+    let cancelled = false
+    let idleHandle = 0
+
+    const revealDeferred = () => {
+      if (!cancelled) setDeferredReady(true)
+    }
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      idleHandle = window.requestIdleCallback(revealDeferred, { timeout: 900 })
+      timer = window.setTimeout(revealDeferred, 950)
+    } else {
+      timer = window.setTimeout(revealDeferred, 220)
+    }
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+      if (typeof window !== 'undefined' && 'cancelIdleCallback' in window && idleHandle) {
+        window.cancelIdleCallback(idleHandle)
+      }
+    }
   }, [])
 
   const uploadHomeBackgroundVideo = async (file) => {
@@ -44,29 +140,34 @@ function Home() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-sand">
-      {homeVideo ? (
-        <div className="fixed inset-0 z-0 overflow-hidden">
-          <video
-            src={homeVideo}
-            className="h-full w-full object-cover object-center"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-          />
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,250,244,0.88)_0%,rgba(255,250,244,0.74)_48%,rgba(17,27,58,0.42)_100%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(201,162,74,0.26),rgba(201,162,74,0)_42%)]" />
+    <div className="relative min-h-screen text-ink">
+      <div className="pointer-events-none sticky top-0 z-0 h-screen overflow-hidden">
+        <div className="absolute inset-0 origin-center">
+          {homeVideo ? (
+            <video
+              src={homeVideo}
+              className="ka-hero-video h-full w-full object-cover object-center"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+            />
+          ) : (
+            <div className="h-full w-full bg-[radial-gradient(circle_at_28%_18%,rgba(232,208,176,0.26),transparent_30%),radial-gradient(circle_at_72%_26%,rgba(255,255,255,0.14),transparent_34%),linear-gradient(140deg,#1C140F_0%,#5A4430_36%,#C19A61_82%,#F6EFE5_100%)]" />
+          )}
         </div>
-      ) : (
-        <div className="fixed inset-0 z-0 bg-[linear-gradient(135deg,#FFF6EC_0%,#F6F7FB_46%,#E6D3B3_100%)]" />
-      )}
+
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,16,36,0.42)_0%,rgba(9,20,45,0.38)_34%,rgba(10,22,48,0.56)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_44%,rgba(7,16,36,0.30),transparent_28%),radial-gradient(circle_at_top,rgba(171,222,255,0.18),transparent_34%),linear-gradient(180deg,rgba(255,250,244,0.02)_0%,rgba(255,250,244,0.04)_30%,rgba(255,250,244,0.10)_68%,rgba(255,250,244,0.16)_100%)]" />
+        <div className="ka-mist-layer absolute inset-x-0 bottom-0 h-56 opacity-90" />
+        <div className="ka-mist-layer ka-mist-layer-alt absolute inset-x-0 bottom-10 h-44 opacity-55" />
+      </div>
 
       {isAdmin ? (
-        <div className="fixed bottom-5 right-5 z-50 max-w-[calc(100vw-2rem)] rounded-2xl border border-gold/30 bg-midnight/82 p-3 text-white shadow-[0_18px_45px_rgba(7,11,24,0.28)] backdrop-blur-md">
-          <label className="block text-[11px] font-semibold uppercase tracking-[0.22em] text-white/85">
-            Home background video
+        <div className="fixed bottom-5 right-5 z-50 max-w-[calc(100vw-2rem)] rounded-[1.6rem] border border-white/20 bg-[rgba(19,13,9,0.82)] p-3 text-white shadow-[0_24px_70px_rgba(8,5,2,0.38)] backdrop-blur-xl">
+          <label className="block text-[11px] font-semibold uppercase tracking-[0.24em] text-white/85">
+            Hero video
             <input
               type="file"
               accept="video/mp4,video/webm,video/quicktime,video/ogg,video/x-m4v,.mp4,.webm,.mov,.m4v,.ogg"
@@ -75,395 +176,499 @@ function Home() {
                 const file = e.target.files?.[0]
                 if (file) uploadHomeBackgroundVideo(file)
               }}
-              className="mt-2 block w-full max-w-xs text-[11px] text-white file:mr-3 file:rounded-full file:border-0 file:bg-white/90 file:px-3 file:py-1 file:text-[11px] file:font-semibold file:text-ink hover:file:bg-white disabled:opacity-60"
+              className="mt-2 block w-full max-w-xs text-[11px] text-white file:mr-3 file:rounded-full file:border-0 file:bg-white/90 file:px-3 file:py-1.5 file:text-[11px] file:font-semibold file:text-ink hover:file:bg-white disabled:opacity-60"
             />
           </label>
           {videoMessage ? <p className="mt-2 text-[11px] font-semibold text-white/90">{videoMessage}</p> : null}
         </div>
       ) : null}
 
-      <div className="relative z-10">
-      <header className="relative overflow-hidden px-6 py-20 md:py-24">
-        <div className="absolute inset-0 z-0 bg-[linear-gradient(90deg,rgba(255,250,244,0.52)_0%,rgba(255,250,244,0.24)_52%,rgba(17,27,58,0.16)_100%)]" />
-        <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_top_right,rgba(201,162,74,0.24),rgba(201,162,74,0)_42%)]" />
-        <div className="absolute -right-24 -top-20 z-0 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(201,162,74,0.34)_0%,rgba(201,162,74,0)_72%)] opacity-60" />
-        <div className="absolute -left-20 bottom-10 z-0 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(17,27,58,0.16)_0%,rgba(17,27,58,0)_72%)] opacity-55" />
-
-        <div className="relative z-10 mx-auto grid w-full max-w-6xl gap-12 lg:grid-cols-[1.15fr_0.85fr]">
+      <div className="relative z-10 -mt-[100vh]">
+      <section id="top" className="relative z-10 min-h-screen">
+        <div className="ka-container relative z-10 flex min-h-screen flex-col justify-center py-28">
           <motion.div
+            variants={heroStagger}
             initial="hidden"
             animate="show"
-            variants={fadeUp}
-            transition={{ duration: 0.6 }}
-            className="space-y-6 rounded-[32px] border border-white/60 bg-white/72 p-6 shadow-[0_24px_70px_rgba(17,27,58,0.14)] backdrop-blur-md sm:p-8"
+            className="relative mx-auto max-w-5xl rounded-[2.8rem] border border-white/10 bg-[linear-gradient(180deg,rgba(7,16,36,0.28),rgba(7,16,36,0.12))] px-6 py-8 text-center text-white shadow-[0_28px_90px_rgba(5,10,24,0.18)] sm:px-10 sm:py-10"
           >
-            <p className="ka-kicker">The fragrance capital of heritage</p>
-            <h1 className="ka-h1">
-              Kannauj attars, crafted in the perfume city of India.
-            </h1>
-            <p className="max-w-xl ka-lead">
-              In Kannauj, perfume is more than scent. It is memory, ritual, and artistry,
-              shaped into timeless attars for personal and trade use.
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <Link
-                to="/collections"
-                className="ka-btn-primary"
-              >
-                Browse collections
-              </Link>
-              <Link
-                to="/gallery"
-                className="ka-btn-outline"
-              >
-                Photo gallery
-              </Link>
-              <a
-                href="#culture"
-                className="ka-btn-outline bg-white/70"
-              >
-                Perfume culture
-              </a>
-            </div>
+            <div className="pointer-events-none absolute inset-x-6 top-1/2 h-[28rem] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(7,16,36,0.34)_0%,rgba(7,16,36,0.14)_42%,transparent_72%)] blur-2xl" />
+            <motion.p
+              variants={fadeUp}
+              className="relative ka-kicker !text-[#EEF6FF] drop-shadow-[0_6px_18px_rgba(7,16,36,0.50)]"
+            >
+              {BUSINESS.heroKicker}
+            </motion.p>
+            <motion.h1
+              variants={fadeUp}
+              className="relative mt-5 font-display text-5xl leading-[0.95] tracking-[-0.04em] text-white drop-shadow-[0_14px_36px_rgba(7,16,36,0.58)] sm:text-6xl lg:text-8xl"
+            >
+              {BUSINESS.brandName}
+            </motion.h1>
+            <motion.p
+              variants={fadeUp}
+              className="relative mt-5 font-display text-2xl leading-tight text-[#F9FBFF] drop-shadow-[0_10px_28px_rgba(7,16,36,0.52)] sm:text-3xl lg:text-4xl"
+            >
+              {BUSINESS.heroTagline}
+            </motion.p>
+            <motion.p
+              variants={fadeUp}
+              className="relative mx-auto mt-7 max-w-3xl text-base leading-8 text-white/92 drop-shadow-[0_8px_22px_rgba(7,16,36,0.44)] sm:text-lg"
+            >
+              {BUSINESS.fullDisplayName} brings the art of Indian perfumery into a modern luxury expression —
+              attars, floral waters, and essential oils shaped by Deg-Bhapka tradition and refined with timeless character.
+            </motion.p>
 
-            <p className="max-w-xl text-sm leading-relaxed text-emberDark/80">
-              Explore signature attars, heritage profiles, and trade-ready fragrance supplies.
-            </p>
+            <motion.div variants={fadeUp} className="mt-10 flex flex-wrap items-center justify-center gap-4">
+              <Link to="/collections" className="ka-btn-primary px-8 py-4 text-sm sm:text-base">
+                Discover the collection
+              </Link>
+            </motion.div>
+
+            <motion.div variants={fadeUp} className="relative mt-12 flex flex-wrap items-center justify-center gap-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/90">
+              <span className="rounded-full border border-white/22 bg-[rgba(7,16,36,0.24)] px-4 py-2 backdrop-blur-md">Since 1998</span>
+              <span className="rounded-full border border-white/22 bg-[rgba(7,16,36,0.24)] px-4 py-2 backdrop-blur-md">GI-tagged heritage</span>
+              <span className="rounded-full border border-white/22 bg-[rgba(7,16,36,0.24)] px-4 py-2 backdrop-blur-md">Kannauj crafted</span>
+            </motion.div>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.15 }}
-            className="relative p-8 overflow-hidden text-white rounded-3xl bg-midnight shadow-soft"
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="relative mt-16 self-center lg:mt-24"
           >
-            <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(circle_at_top,rgba(201,162,74,0.26)_0%,rgba(201,162,74,0)_65%)] opacity-90" />
-            <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(201,162,74,0.35)_0%,rgba(201,162,74,0)_68%)]" />
-            <div className="relative space-y-5">
-              <p className="text-xl font-display">{BUSINESS.displayFirmName}</p>
-              <p className="text-sm text-white/80">
-                A private, family-led house dedicated to natural attars, heritage extraction,
-                and thoughtful modern perfumery.
-              </p>
-              <div className="p-4 border rounded-2xl border-white/15 bg-white/5">
-                <AdminAssetImage
-                  assetKey="home.hero.card"
-                  className="aspect-[4/3] w-full rounded-xl border border-white/10 bg-[linear-gradient(135deg,rgba(201,162,74,0.18),rgba(255,255,255,0.02))]"
-                  imgClassName="p-2 bg-white/10"
-                  defaultAspect="4 / 3"
-                />
-              </div>
-              <div className="flex flex-wrap gap-3 text-xs text-white/70">
-                <span className="px-3 py-1 border rounded-full border-white/20">Indian Attars</span>
-                <span className="px-3 py-1 border rounded-full border-white/20">Botanical oils</span>
-                <span className="px-3 py-1 border rounded-full border-white/20">Made in India</span>
+            <div className="rounded-[2rem] border border-white/12 bg-[rgba(255,248,238,0.12)] px-6 py-4 text-center shadow-[0_22px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-white/65">Craft pillars</p>
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-sm font-medium text-white/88">
+                <span>Attars</span>
+                <span className="h-1 w-1 rounded-full bg-gold" />
+                <span>Floral waters</span>
+                <span className="h-1 w-1 rounded-full bg-gold" />
+                <span>Essential oils</span>
               </div>
             </div>
           </motion.div>
         </div>
-
-      </header>
-
-      <section id="culture" className="px-6 py-20">
-        <div className="w-full max-w-6xl mx-auto">
-          <div className="max-w-2xl mb-10">
-            <p className="ka-kicker">Kannauj legacy</p>
-            <h2 className="mt-4 ka-h2">The perfume culture of Kannauj</h2>
-            <p className="mt-4 text-muted">
-              For centuries, Kannauj has shaped the art of attar making. The craft is slow,
-              precise, and deeply respectful of nature.
-            </p>
-          </div>
-          <div className="grid gap-6 md:grid-cols-3">
-            {[
-              {
-                icon: FiDroplet,
-                title: 'Deg & Bhapka distillation',
-                copy: 'Traditional copper stills gently capture floral, woody, and resinous notes.',
-              },
-              {
-                icon: FiWind,
-                title: 'Seasonal botanicals',
-                copy: 'Flowers, herbs, and spices are sourced in season for the truest expression of each harvest.',
-              },
-              {
-                icon: FiFeather,
-                title: 'Slow maceration',
-                copy: 'Attars rest and mature so the blend settles into a smooth, lingering trail.',
-              },
-            ].map(({ icon: Icon, title, copy }) => (
-              <motion.article
-                key={title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-                className="p-6 transition ka-panel group hover:-translate-y-1 hover:shadow-lg hover:shadow-black/10"
-              >
-                <div className="grid w-12 h-12 bg-white border shadow-sm place-items-center rounded-2xl border-gold/20">
-                  <Icon className="text-ember" size={22} />
-                </div>
-                <h3 className="mt-4 text-lg font-semibold text-ink">{title}</h3>
-                <p className="mt-3 text-sm text-muted">{copy}</p>
-              </motion.article>
-            ))}
-          </div>
-        </div>
       </section>
 
-      <section className="px-6 py-20">
-        <div className="w-full max-w-6xl mx-auto">
-          <div className="max-w-2xl mb-10">
-            <p className="ka-kicker">Collections</p>
-            <h2 className="mt-4 ka-h2">Choose your attar journey</h2>
-            <p className="mt-4 text-muted">Discover blends that align with your mood, season, and story.</p>
-          </div>
-          <div className="grid gap-6 md:grid-cols-3">
-            {[
-              {
-                title: 'Signature Attars',
-                copy: 'Balanced profiles for everyday elegance and quiet confidence.',
-                link: '/collections/signature',
-                assetKey: 'home.explore.signature',
-                cardClass:
-                  'border-[#d7deec] shadow-[0_18px_42px_rgba(17,27,58,0.08)] hover:border-[#c8a96a]/60 hover:shadow-[0_24px_50px_rgba(17,27,58,0.12)]',
-                buttonClass: 'border-[#d7deec] hover:border-gold/60',
-              },
-              {
-                title: 'Heritage Collection',
-                copy: 'Deep, traditional scents that honor classic Kannauj recipes.',
-                link: '/collections/heritage',
-                assetKey: 'home.explore.heritage',
-                cardClass:
-                  'border-[#e4d1ae] shadow-[0_18px_42px_rgba(122,85,50,0.08)] hover:border-[#c8a96a]/70 hover:shadow-[0_24px_50px_rgba(122,85,50,0.12)]',
-                buttonClass: 'border-[#e4d1ae] hover:border-gold/70',
-              },
-              {
-                title: 'Custom Blends',
-                copy: 'Personalized attars crafted for occasions, gifting, or identity.',
-                link: '/custom-blends',
-                assetKey: 'home.explore.custom',
-                cardClass:
-                  'border-[#d9d4cf] shadow-[0_18px_42px_rgba(60,75,116,0.08)] hover:border-[#c8a96a]/65 hover:shadow-[0_24px_50px_rgba(60,75,116,0.12)]',
-                buttonClass: 'border-[#d9d4cf] hover:border-gold/65',
-              },
-            ].map(({ title, copy, link, assetKey, cardClass, buttonClass }) => (
-              <article
-                key={title}
-                className={`flex h-full flex-col justify-between rounded-3xl border bg-white/88 p-6 backdrop-blur-md transition duration-300 hover:-translate-y-1 ${cardClass}`}
-              >
-                <div>
-                  <AdminAssetImage
-                    assetKey={assetKey}
-                    className="ka-frame ka-mediaBg aspect-[5/4] w-full"
-                    imgClassName="p-2"
-                    defaultAspect="5 / 4"
-                    fit="contain"
-                  />
-                  <h3 className="mt-4 text-lg font-semibold text-ink">{title}</h3>
-                  <p className="mt-3 text-sm text-muted">{copy}</p>
-                </div>
-                <Link
-                  to={link}
-                  className={`inline-flex w-fit items-center rounded-full border bg-white px-4 py-2 text-xs font-semibold text-emberDark transition duration-300 hover:bg-clay/60 ${buttonClass}`}
+      {deferredReady ? (
+      <div className="relative z-10">
+        <section className="px-6 py-24 md:py-28">
+          <div className="mx-auto w-full max-w-7xl">
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={viewportOnce}
+              variants={fadeUp}
+              className="mx-auto max-w-3xl rounded-[2rem] border border-white/70 bg-[rgba(255,255,255,0.84)] px-6 py-8 text-center shadow-[0_20px_60px_rgba(7,16,36,0.10)] backdrop-blur-md"
+            >
+              <p className="ka-kicker !text-[#4E638A]">Premium Collections</p>
+              <h2 className="mt-5 ka-h1 text-[clamp(2.7rem,6vw,5.2rem)] text-[#0F1E46]">
+                Designed like a luxury fragrance house, rooted like Kannauj.
+              </h2>
+              <p className="mt-6 text-base leading-8 text-[#2C446A] sm:text-lg">
+                Explore signature attars, floral waters, and essential oils through collections that feel cinematic, calm, and deeply premium.
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={viewportOnce}
+              variants={staggerGrid(0.08, 0.05)}
+              className="mt-14 grid gap-6 lg:grid-cols-3"
+            >
+              {collectionCards.map((card) => (
+                <motion.article
+                  key={card.title}
+                  variants={revealCard}
+                  className="ka-shine-card rounded-[2.2rem] border border-white/70 bg-white/82 p-5 shadow-[0_26px_90px_rgba(28,19,13,0.08)] backdrop-blur-xl"
                 >
-                  View details
-                </Link>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+                  <AdminAssetImage
+                    assetKey={card.assetKey}
+                    className="ka-frame aspect-[4/5] w-full rounded-[1.8rem] bg-[linear-gradient(140deg,rgba(235,220,197,0.78),rgba(255,255,255,0.98),rgba(112,85,58,0.08))]"
+                    imgClassName="p-2"
+                    defaultAspect="4 / 5"
+                    fit="cover"
+                  />
+                  <div className="mt-6">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#4E638A]">Collection</p>
+                    <h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">{card.title}</h3>
+                    <p className="mt-4 text-sm leading-7 text-[#304A72]">{card.copy}</p>
+                  </div>
+                  <Link to={card.link} className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#1F3E73] transition hover:text-ink">
+                    {card.cta}
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                </motion.article>
+              ))}
+            </motion.div>
 
-      <section id="about-brand" className="px-6 py-20">
-        <div className="w-full max-w-6xl mx-auto">
-          <div className="max-w-3xl mb-10">
-            <p className="ka-kicker">About {BUSINESS.displayName}</p>
-            <h2 className="mt-4 ka-h2">
-              {BUSINESS.name} — a private enterprise founded in {BUSINESS.since}
-            </h2>
-            <p className="mt-4 text-muted">{BUSINESS.about}</p>
           </div>
+        </section>
 
-          <div className="grid gap-8 lg:items-start lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="p-8 ka-panel">
-              <div className="flex items-center gap-3">
-                <FiUser className="text-ember" size={24} />
-                <h3 className="text-xl font-semibold text-ink">Founder & CEO</h3>
+        <section className="px-6 py-24 md:py-28">
+          <div className="mx-auto grid w-full max-w-7xl gap-10 lg:grid-cols-[1fr_0.92fr]">
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={viewportOnce}
+              variants={fadeLeft}
+              className="lg:sticky lg:top-28 h-fit overflow-hidden rounded-[2.4rem] border border-white/10 bg-[linear-gradient(180deg,#1C140F,#120C08)] p-6 text-white shadow-[0_40px_120px_rgba(15,9,5,0.44)] sm:p-8"
+            >
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(200,163,104,0.20),rgba(200,163,104,0)_46%)]" />
+              <div className="relative">
+                <p className="ka-kicker !text-white/58">Traditional Deg Bhapka Distillation</p>
+                <h2 className="mt-4 font-display text-4xl leading-tight text-white md:text-5xl">
+                  The slow craft behind every drop.
+                </h2>
+                <p className="mt-5 max-w-xl text-sm leading-8 text-white/72 sm:text-base">
+                  {BUSINESS.craftNote}
+                </p>
+
+                <div className="mt-8 rounded-[2rem] border border-white/10 bg-white/5 p-3 backdrop-blur-md">
+                  <AdminAssetImage
+                    assetKey="home.story.distillation"
+                    className="aspect-[16/10] w-full rounded-[1.5rem] border border-white/10 bg-[linear-gradient(135deg,rgba(200,163,104,0.18),rgba(255,255,255,0.08),rgba(255,255,255,0.02))]"
+                    imgClassName="p-2"
+                    defaultAspect="16 / 10"
+                    fit="cover"
+                  />
+                </div>
+
+                <div className="mt-8 flex flex-wrap gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/75">
+                  <span className="rounded-full border border-white/14 bg-white/6 px-4 py-2">Copper stills</span>
+                  <span className="rounded-full border border-white/14 bg-white/6 px-4 py-2">Slow condensation</span>
+                  <span className="rounded-full border border-white/14 bg-white/6 px-4 py-2">Balanced maturation</span>
+                </div>
               </div>
-              <div className="mt-6">
+            </motion.div>
+
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={viewportOnce}
+              variants={staggerGrid(0.1, 0.05)}
+              className="space-y-5"
+            >
+              {distillationNotes.map((item, index) => (
+                <motion.article
+                  key={item.title}
+                  variants={revealCard}
+                  className="rounded-[2rem] border border-white/70 bg-[rgba(255,252,247,0.84)] p-7 shadow-[0_24px_70px_rgba(18,12,8,0.08)] backdrop-blur-xl"
+                >
+                  <div className="flex items-center gap-4">
+                    <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[linear-gradient(145deg,#E8D4B3,#C8A368)] text-sm font-semibold text-midnight">
+                      0{index + 1}
+                    </span>
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-muted">Process</p>
+                      <h3 className="mt-1 text-2xl font-semibold text-ink">{item.title}</h3>
+                    </div>
+                  </div>
+                  <p className="mt-5 text-sm leading-8 text-muted sm:text-base">{item.copy}</p>
+                </motion.article>
+              ))}
+
+              <motion.div variants={revealCard} className="rounded-[2rem] border border-gold/15 bg-[linear-gradient(135deg,rgba(247,238,226,0.94),rgba(255,255,255,0.86))] p-7 shadow-[0_20px_65px_rgba(18,12,8,0.05)]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-muted">Why this matters</p>
+                <p className="mt-4 text-lg leading-8 text-ink">
+                  Slow distillation gives attars their softness, diffusion, and memory. The fragrance does not shout — it unfolds.
+                </p>
+              </motion.div>
+            </motion.div>
+          </div>
+        </section>
+
+
+        <section id="heritage" className="px-6 py-24 md:py-28">
+          <div className="mx-auto grid w-full max-w-7xl gap-10 lg:grid-cols-[0.85fr_1.15fr]">
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={viewportOnce}
+              variants={fadeLeft}
+              className="ka-shine-card lg:sticky lg:top-28 h-fit rounded-[2.25rem] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.90),rgba(246,249,255,0.82))] p-8 shadow-[0_28px_90px_rgba(7,16,36,0.12)] backdrop-blur-md"
+            >
+              <p className="ka-kicker !text-[#6A7EA6]">Heritage of Kannauj</p>
+              <h2 className="mt-5 ka-h1 max-w-xl text-[clamp(2.7rem,6vw,5.5rem)] text-[#0F1E46]">
+                Ancient perfume heritage, expressed with modern clarity.
+              </h2>
+              <p className="mt-6 max-w-lg text-base leading-8 text-[#39527F] sm:text-lg">
+                {BUSINESS.about}
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <span className="rounded-full border border-[#D4DDEE] bg-white/95 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#0F1E46] shadow-sm">
+                  Family legacy
+                </span>
+                <span className="rounded-full border border-[#D4DDEE] bg-white/95 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#0F1E46] shadow-sm">
+                  Premium Indian attars
+                </span>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={viewportOnce}
+              variants={staggerGrid(0.09, 0.04)}
+              className="space-y-6"
+            >
+              {heritagePillars.map((item, index) => (
+                <motion.article
+                  key={item.title}
+                  variants={revealCard}
+                  className="ka-shine-card rounded-[2rem] border border-white/70 bg-white/78 p-7 shadow-[0_24px_80px_rgba(28,19,13,0.08)] backdrop-blur-xl"
+                >
+                  <div className="flex items-center gap-4">
+                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-gold/30 bg-gold/12 text-sm font-semibold text-[#0F1E46]">
+                      0{index + 1}
+                    </span>
+                    <h3 className="text-2xl font-semibold tracking-[-0.02em] text-ink">{item.title}</h3>
+                  </div>
+                  <p className="mt-4 text-sm leading-7 text-[#445D89] sm:text-base">{item.copy}</p>
+                </motion.article>
+              ))}
+
+              <motion.div variants={revealCard} className="grid gap-4 sm:grid-cols-2">
+                {BUSINESS.legacyTimeline.map((item) => (
+                  <div
+                    key={`${item.year}-${item.title}`}
+                    className="rounded-[1.8rem] border border-gold/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(247,240,229,0.92))] p-6 shadow-[0_20px_60px_rgba(28,19,13,0.06)]"
+                  >
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#6A7EA6]">{item.year}</p>
+                    <h3 className="mt-3 text-lg font-semibold text-ink">{item.title}</h3>
+                    <p className="mt-3 text-sm leading-7 text-[#445D89]">{item.copy}</p>
+                  </div>
+                ))}
+              </motion.div>
+            </motion.div>
+          </div>
+        </section>
+
+        <section className="px-6 py-24 md:py-28">
+          <div className="mx-auto grid w-full max-w-7xl gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={viewportOnce}
+              variants={fadeLeft}
+              className="rounded-[2.2rem] border border-white/75 bg-white/82 p-7 shadow-[0_28px_90px_rgba(28,19,13,0.07)] backdrop-blur-xl sm:p-8"
+            >
+              <div className="flex items-center gap-3">
+                <FiUser className="text-ruby" size={22} />
+                <p className="ka-kicker">Founder & Credibility</p>
+              </div>
+
+              <div className="mt-6 rounded-[2rem] border border-gold/18 bg-[linear-gradient(135deg,rgba(249,243,234,0.84),rgba(255,255,255,0.92))] p-3">
                 <AdminAssetImage
                   assetKey="about.ceo.photo"
-                  className="ka-frame aspect-[4/5] w-full bg-[radial-gradient(circle_at_top,rgba(201,162,74,0.22),rgba(255,255,255,0.95))]"
-                  imgClassName="p-3"
+                  className="aspect-[4/5] w-full rounded-[1.5rem] border border-white/70 bg-white/90"
+                  imgClassName="p-2"
                   defaultAspect="4 / 5"
                   fit="contain"
                 />
               </div>
-              <p className="mt-4 text-lg font-semibold text-ink">{BUSINESS.founder}</p>
-              <p className="mt-1 text-sm font-semibold text-emberDark">Founder, {BUSINESS.displayFirmName}</p>
-              <p className="mt-3 text-sm text-muted">
-                Established in {BUSINESS.since}, the enterprise continues to blend authentic Kannauj craft with
-                dependable quality for both personal buyers and trade requirements.
+
+              <h3 className="mt-6 text-3xl font-semibold tracking-[-0.03em] text-ink">{BUSINESS.founder}</h3>
+              <p className="mt-2 text-sm font-semibold uppercase tracking-[0.22em] text-ruby">
+                Founder, {BUSINESS.firmName}
               </p>
-              <Link
-                to="/ceo"
-                className="inline-flex items-center px-4 py-2 mt-5 text-xs font-semibold transition bg-white border rounded-full w-fit border-slate-200 text-emberDark hover:border-gold/50 hover:bg-clay/60"
+              <p className="mt-4 text-sm leading-8 text-muted">
+                President, The Attars & Perfumers Association Kannauj — guiding the brand with craft authority, regional credibility, and active participation in the wider perfume community.
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link to="/ceo" className="ka-btn-outline px-6 py-3">
+                  Know about CEO
+                </Link>
+                <Link to="/contact" className="ka-btn-primary px-6 py-3">
+                  Request a consultation
+                </Link>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={viewportOnce}
+              variants={staggerGrid(0.08, 0.04)}
+              className="space-y-6"
+            >
+              <motion.div variants={revealCard} className="rounded-[2.2rem] border border-white/75 bg-[linear-gradient(135deg,rgba(255,252,246,0.94),rgba(246,236,220,0.84))] p-8 shadow-[0_28px_90px_rgba(28,19,13,0.07)]">
+                <div className="flex items-center gap-3">
+                  <FiAward className="text-ruby" size={22} />
+                  <p className="ka-kicker">Association credibility</p>
+                </div>
+                <div className="mt-6 grid gap-3">
+                  {BUSINESS.associations.map((association) => (
+                    <div
+                      key={`${association.name}-${association.location}`}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-[1.4rem] border border-white/80 bg-white/76 px-5 py-4"
+                    >
+                      <p className="text-sm font-semibold text-ink">{association.name}</p>
+                      <span className="rounded-full border border-gold/25 bg-gold/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-ruby">
+                        {association.location}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+
+              <motion.div variants={revealCard} className="rounded-[2.2rem] border border-[#d8c4a3]/30 bg-[linear-gradient(160deg,#20140F_0%,#130C08_100%)] p-8 text-white shadow-[0_34px_110px_rgba(15,10,7,0.42)]">
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div>
+                    <p className="ka-kicker !text-white/58">Business details</p>
+                    <p className="mt-4 text-lg font-semibold text-white">{BUSINESS.displayFirmName}</p>
+                    <p className="mt-3 text-sm leading-7 text-white/72">
+                      Private enterprise rooted in Kannauj, serving both personal fragrance buyers and bulk or trade requirements.
+                    </p>
+                  </div>
+                  <div className="space-y-4 text-sm font-semibold text-white/86">
+                    <a href={`mailto:${BUSINESS.email}`} className="flex items-center gap-3 hover:text-white">
+                      <FiMail size={18} />
+                      {BUSINESS.email}
+                    </a>
+                    {BUSINESS.phones.map((phone) => (
+                      <a key={phone} href={`tel:${phone.replace(/\s+/g, '')}`} className="flex items-center gap-3 hover:text-white">
+                        <FiPhone size={18} />
+                        {phone}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div
+                variants={revealCard}
+                className="overflow-hidden rounded-[2.2rem] border border-white/75 bg-white/82 p-3 shadow-[0_24px_80px_rgba(28,19,13,0.07)] backdrop-blur-xl"
               >
-                Know about CEO →
+                <AdminAssetImage
+                  assetKey="home.credibility.photo"
+                  className="w-full rounded-[1.6rem] border border-white/70 bg-[linear-gradient(140deg,rgba(243,235,223,0.72),rgba(255,255,255,0.96),rgba(17,27,58,0.08))]"
+                  imgClassName="p-2"
+                  defaultAspect="4 / 3"
+                  fit="cover"
+                />
+              </motion.div>
+            </motion.div>
+          </div>
+        </section>
+
+        <section className="px-6 py-24 md:py-28">
+          <div className="mx-auto w-full max-w-7xl">
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={viewportOnce}
+              variants={fadeUp}
+              className="mx-auto max-w-3xl rounded-[2rem] border border-white/70 bg-[rgba(255,255,255,0.84)] px-6 py-8 text-center shadow-[0_20px_60px_rgba(7,16,36,0.10)] backdrop-blur-md"
+            >
+              <p className="ka-kicker !text-[#4E638A]">Luxury Testimonials</p>
+              <h2 className="mt-5 ka-h1 text-[clamp(2.6rem,5.8vw,5rem)] text-[#0F1E46]">Emotion first. Elegance always.</h2>
+              <p className="mt-6 text-base leading-8 text-[#2C446A] sm:text-lg">
+                What keeps buyers returning is not just the scent — it is the calm, finish, and heritage behind it.
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={viewportOnce}
+              variants={staggerGrid(0.08, 0.05)}
+              className="mt-12 grid gap-6 lg:grid-cols-3"
+            >
+              {clientVoices.map((item) => (
+                <motion.article
+                  key={item.title}
+                  variants={revealCard}
+                  className="rounded-[2rem] border border-white/75 bg-white/82 p-7 shadow-[0_24px_80px_rgba(28,19,13,0.07)] backdrop-blur-xl"
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#4E638A]">{item.title}</p>
+                  <p className="mt-5 font-display text-2xl leading-10 text-ink">“{item.quote}”</p>
+                </motion.article>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
+        <motion.section
+          initial="hidden"
+          whileInView="show"
+          viewport={viewportOnce}
+          variants={fadeUp}
+          className="px-6 pb-10"
+        >
+          <div className="mx-auto w-full max-w-7xl rounded-[2.3rem] border border-[#d9c2a0]/32 bg-[linear-gradient(135deg,rgba(34,23,16,0.96),rgba(89,66,45,0.96))] p-8 text-white shadow-[0_34px_110px_rgba(15,10,7,0.44)] sm:p-10">
+            <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
+              <div>
+                <p className="ka-kicker !text-white/58">For personal luxury and trade supply</p>
+                <h2 className="mt-4 font-display text-4xl leading-tight text-white md:text-5xl">
+                  Ancient Indian fragrance heritage, presented with a modern luxury eye.
+                </h2>
+                <p className="mt-5 max-w-3xl text-sm leading-8 text-white/72 sm:text-base">
+                  Whether you are discovering a personal attar, sourcing floral waters, or looking for dependable trade support, {BUSINESS.fullDisplayName} brings the city’s legacy forward with restraint and refinement.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <Link to="/products" className="ka-btn-primary px-7 py-4">
+                  Shop products
+                </Link>
+                <Link to="/contact" className="ka-btn-darkOutline px-7 py-4">
+                  Contact for bulk
+                </Link>
+              </div>
+            </div>
+          </div>
+        </motion.section>
+
+        <div className="bg-white/50 backdrop-blur-sm">
+          <RecentlyViewedStrip />
+        </div>
+
+        <footer className="px-6 py-16">
+          <div className="mx-auto grid w-full max-w-7xl gap-10 rounded-[2.4rem] border border-white/70 bg-[linear-gradient(180deg,rgba(255,252,247,0.92),rgba(243,233,219,0.88))] p-8 shadow-[0_24px_80px_rgba(28,19,13,0.06)] md:grid-cols-[1fr_auto] md:items-end sm:p-10">
+            <div>
+              <p className="ka-kicker">{BUSINESS.fullDisplayName}</p>
+              <h2 className="mt-4 font-display text-4xl leading-tight text-ink md:text-5xl">
+                Quiet luxury from the perfume city of India.
+              </h2>
+              <p className="mt-5 max-w-2xl text-sm leading-8 text-muted sm:text-base">
+                Crafted in Kannauj, refined for modern buyers, and guided by a thousand-year fragrance tradition that still feels intimate today.
+              </p>
+            </div>
+
+            <div className="space-y-3 text-sm font-semibold text-ruby">
+              <a href={`mailto:${BUSINESS.email}`} className="flex items-center gap-3 hover:text-ink">
+                <FiMail size={18} />
+                {BUSINESS.email}
+              </a>
+              {BUSINESS.phones.map((phone) => (
+                <a key={phone} href={`tel:${phone.replace(/\s+/g, '')}`} className="flex items-center gap-3 hover:text-ink">
+                  <FiPhone size={18} />
+                  {phone}
+                </a>
+              ))}
+              <Link to="/contact" className="mt-4 inline-flex items-center gap-2 text-ink">
+                Reach {BUSINESS.brandName}
+                <span aria-hidden="true">→</span>
               </Link>
             </div>
-
-            <div className="grid self-start gap-6">
-              <div className="p-8 ka-card">
-                <div className="flex items-center gap-3">
-                  <FiPackage className="text-ember" size={24} />
-                  <h3 className="text-xl font-semibold text-ink">Business details</h3>
-                </div>
-                <p className="mt-4 text-sm text-muted">Private enterprise: {BUSINESS.displayName}</p>
-                <p className="mt-2 text-sm font-semibold text-emberDark">Firm: {BUSINESS.displayFirmName}</p>
-
-                {Array.isArray(BUSINESS.associations) && BUSINESS.associations.length ? (
-                  <div className="p-5 mt-4 border rounded-2xl border-gold/25 bg-clay/60">
-                    <div className="flex items-center gap-3">
-                      <FiAward className="text-ember" size={18} />
-                      <p className="text-xs font-semibold uppercase tracking-[0.32em] text-muted">
-                        Member of :
-                      </p>
-                    </div>
-                    <div className="grid gap-3 mt-4">
-                      {BUSINESS.associations.map((association) => (
-                        <div
-                          key={`${association.name}-${association.location}`}
-                          className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border rounded-2xl border-white/40 bg-white/70"
-                        >
-                          <p className="text-sm font-semibold text-ink">{association.name}</p>
-                          {association.location ? (
-                            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-emberDark">
-                              {association.location}
-                            </span>
-                          ) : null}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-
-                <div className="mt-6 space-y-3 text-sm font-semibold text-emberDark">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <FiMail size={18} />
-                    <div className="flex flex-wrap gap-x-4 gap-y-1">
-                      {(BUSINESS.emails || [BUSINESS.email]).map((email) => (
-                        <a key={email} href={`mailto:${email}`} className="hover:text-ink">
-                          {email}
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <FiPhone size={18} />
-                    <div className="flex flex-wrap gap-x-4 gap-y-1">
-                      {(BUSINESS.phones || []).map((phone) => (
-                        <a key={phone} href={`tel:${phone.replace(/\s+/g, '')}`} className="hover:text-ink">
-                          {phone}
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="relative overflow-hidden p-8 text-white shadow-soft rounded-[28px] bg-[linear-gradient(135deg,#111B3A_0%,#0B122B_58%,#070B18_100%)]">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(201,162,74,0.24),rgba(201,162,74,0)_42%)]" />
-                <div className="relative">
-                  <p className="text-xs font-semibold uppercase tracking-[0.34em] text-white/65">Industry Leadership</p>
-                  <h3 className="mt-3 text-2xl font-semibold text-white">Mr. Pawan Trivedi serves as President of The Attars & Perfumers Association Kannauj</h3>
-                  <p className="max-w-xl mt-4 text-sm leading-7 text-white/78">
-                    Alongside leading {BUSINESS.displayName}, he remains actively connected to the wider perfume community of
-                    Kannauj through association leadership, heritage advocacy, and support for the region&apos;s traditional
-                    attar craft.
-                  </p>
-
-                  <div className="mt-5 flex flex-wrap gap-2 text-[11px] font-semibold text-white/85">
-                    <span className="rounded-full border border-white/15 bg-white/6 px-3 py-1.5">President role</span>
-                    <span className="rounded-full border border-white/15 bg-white/6 px-3 py-1.5">Kannauj association</span>
-                    <span className="rounded-full border border-white/15 bg-white/6 px-3 py-1.5">Heritage advocacy</span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-3 mt-5">
-                    <Link
-                      to="/ceo"
-                      className="inline-flex items-center px-4 py-2 text-xs font-semibold transition bg-white rounded-full text-emberDark hover:bg-gold hover:text-ink"
-                    >
-                      Know about CEO
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
-
-          <div className="mt-10 grid gap-6 lg:grid-cols-[0.92fr_1.08fr]">
-            <div className="rounded-[28px] border border-gold/20 bg-white/86 p-8 shadow-[0_20px_55px_rgba(17,27,58,0.08)] backdrop-blur-sm">
-              <p className="ka-kicker">Heritage & Craft</p>
-              <h3 className="mt-4 text-2xl font-semibold text-ink">A legacy carried through generations</h3>
-              <p className="mt-4 text-sm leading-7 text-muted">{BUSINESS.legacyIntro}</p>
-
-              <div className="mt-6 rounded-3xl border border-gold/20 bg-clay/55 p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted">Deg-Bhapka tradition</p>
-                <p className="mt-3 text-sm leading-7 text-muted">{BUSINESS.craftNote}</p>
-              </div>
-
-              <div className="mt-4 rounded-3xl border border-emerald-100 bg-white p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted">GI-tagged authenticity</p>
-                <p className="mt-3 text-sm leading-7 text-muted">{BUSINESS.giNote}</p>
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              {BUSINESS.legacyTimeline.map((item) => (
-                <div
-                  key={`${item.year}-${item.title}`}
-                  className="rounded-[28px] border border-white/75 bg-white/88 p-6 shadow-[0_18px_45px_rgba(17,27,58,0.08)] backdrop-blur-sm"
-                >
-                  <span className="rounded-full border border-gold/25 bg-gold/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-emberDark">
-                    {item.year}
-                  </span>
-                  <h3 className="mt-4 text-lg font-semibold text-ink">{item.title}</h3>
-                  <p className="mt-3 text-sm leading-7 text-muted">{item.copy}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <div className="bg-white/64 backdrop-blur-sm">
-        <RecentlyViewedStrip />
+        </footer>
       </div>
-
-      <footer className="px-6 py-16 text-white bg-midnight">
-        <div className="flex flex-wrap items-center justify-between w-full max-w-6xl gap-6 mx-auto">
-          <div>
-            <h2 className="text-2xl font-display">{BUSINESS.displayName}</h2>
-            <p className="mt-2 text-sm text-white/75">Private business rooted in Kannauj perfumery.</p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              to="/products"
-              className="px-5 py-2 ka-btn-primary"
-            >
-              Browse products
-            </Link>
-            <a
-              href="#top"
-              className="px-5 py-2 ka-btn-darkOutline"
-            >
-              Back to top
-            </a>
+      ) : (
+        <div className="relative z-10 px-6 pb-20">
+          <div className="mx-auto w-full max-w-7xl rounded-[2rem] border border-white/16 bg-[rgba(255,255,255,0.12)] px-6 py-6 text-center text-white/88 shadow-[0_18px_60px_rgba(5,10,24,0.14)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-white/70">Loading the Kannauj story</p>
+            <div className="mx-auto mt-4 h-2 w-28 overflow-hidden rounded-full bg-white/12">
+              <div className="h-full w-1/2 animate-pulse rounded-full bg-white/55" />
+            </div>
           </div>
         </div>
-      </footer>
+      )}
       </div>
     </div>
   )

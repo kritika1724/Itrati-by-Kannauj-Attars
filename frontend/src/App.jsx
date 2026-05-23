@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, NavLink, Navigate, Link, useLocation } from 'react-router-dom'
 import { useSelector } from 'react-redux'
-import { Suspense, lazy, useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { auth } from './services/api'
 import { FiMenu, FiX } from 'react-icons/fi'
 import { AnimatePresence, motion, useScroll, useSpring } from 'framer-motion'
@@ -20,15 +20,10 @@ const TrackOrder = lazy(() => import('./pages/TrackOrder'))
 const Account = lazy(() => import('./pages/Account'))
 const OAuthCallback = lazy(() => import('./pages/OAuthCallback'))
 const NotFound = lazy(() => import('./pages/NotFound'))
-const CustomBlends = lazy(() => import('./pages/CustomBlends'))
 const Signature = lazy(() => import('./pages/collections/Signature'))
 const Heritage = lazy(() => import('./pages/collections/Heritage'))
 const PurposeCollection = lazy(() => import('./pages/collections/PurposeCollection'))
 const Gallery = lazy(() => import('./pages/Gallery'))
-const CreateBlend = lazy(() => import('./pages/CreateBlend'))
-const DiscoveryQuiz = lazy(() => import('./pages/DiscoveryQuiz'))
-const Knowledge = lazy(() => import('./pages/Knowledge'))
-const KnowledgeArticle = lazy(() => import('./pages/KnowledgeArticle'))
 const Ceo = lazy(() => import('./pages/Ceo'))
 const Cart = lazy(() => import('./pages/Cart'))
 const Shipping = lazy(() => import('./pages/checkout/Shipping'))
@@ -87,9 +82,11 @@ function AppShell() {
   const location = useLocation()
   const cartCount = useSelector((state) => state.cart.items.reduce((sum, i) => sum + i.qty, 0))
   const [user, setUser] = useState(auth.getUser())
+  const headerRef = useRef(null)
   const isAdmin = user?.isAdmin === true
   const isLoggedIn = !!user
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [headerHeight, setHeaderHeight] = useState(88)
   const inAdminArea = isAdmin && location.pathname.startsWith('/admin')
   const { scrollYProgress } = useScroll()
   const routeKey = `${location.pathname}${location.search}`
@@ -104,6 +101,34 @@ function AppShell() {
     window.addEventListener('authchange', onAuth)
     return () => window.removeEventListener('authchange', onAuth)
   }, [])
+
+  useEffect(() => {
+    if (inAdminArea) return undefined
+    const node = headerRef.current
+    if (!node || typeof window === 'undefined') return undefined
+
+    const updateHeight = () => {
+      const next = Math.round(node.getBoundingClientRect().height)
+      if (next > 0) setHeaderHeight(next)
+    }
+
+    updateHeight()
+
+    let resizeObserver
+    if ('ResizeObserver' in window) {
+      resizeObserver = new ResizeObserver(updateHeight)
+      resizeObserver.observe(node)
+    }
+
+    window.addEventListener('resize', updateHeight)
+    window.addEventListener('orientationchange', updateHeight)
+
+    return () => {
+      resizeObserver?.disconnect()
+      window.removeEventListener('resize', updateHeight)
+      window.removeEventListener('orientationchange', updateHeight)
+    }
+  }, [inAdminArea])
 
   useEffect(() => {
     // Close mobile menu on md+ screens.
@@ -132,6 +157,27 @@ function AppShell() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [mobileOpen])
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined
+    const previousOverflow = document.body.style.overflow
+    const previousOverscroll = document.body.style.overscrollBehavior
+
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden'
+      document.body.style.overscrollBehavior = 'contain'
+    }
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.body.style.overscrollBehavior = previousOverscroll
+    }
+  }, [mobileOpen])
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    document.documentElement.style.setProperty('--ka-nav-height', `${headerHeight}px`)
+  }, [headerHeight])
 
   useEffect(() => {
     if (inAdminArea) {
@@ -207,7 +253,10 @@ function AppShell() {
           </div>
         </header>
       ) : (
-        <header className="ka-nav-shell sticky top-0 z-20 relative border-b border-white/45 bg-[linear-gradient(180deg,rgba(255,250,244,0.76),rgba(255,250,244,0.58))] shadow-[0_18px_50px_rgba(37,25,16,0.10)] backdrop-blur-2xl">
+        <header
+          ref={headerRef}
+          className="ka-nav-shell sticky top-0 z-40 relative border-b border-white/45 bg-[linear-gradient(180deg,rgba(255,250,244,0.76),rgba(255,250,244,0.58))] shadow-[0_18px_50px_rgba(37,25,16,0.10)] backdrop-blur-2xl"
+        >
           <div className="ka-container flex items-center justify-between gap-4 py-5">
             <Link
               to="/"
@@ -224,11 +273,11 @@ function AppShell() {
               title={BUSINESS.displayName}
             >
               <LogoMark />
-              <div className="flex min-w-0 flex-col">
-                <span className="truncate font-display text-xl tracking-wide text-ink sm:text-2xl">
+              <div className="flex min-w-0 flex-col leading-tight">
+                <span className="truncate font-display text-lg tracking-wide text-ink sm:text-2xl">
                   {BUSINESS.displayName}
                 </span>
-                <span className="truncate text-xs uppercase tracking-[0.3em] text-muted">
+                <span className="truncate text-[10px] uppercase tracking-[0.22em] text-muted sm:text-xs sm:tracking-[0.3em]">
                   {BUSINESS.endorsement} • Since {BUSINESS.since}
                 </span>
               </div>
@@ -276,7 +325,7 @@ function AppShell() {
 
             <button
               type="button"
-              className="md:hidden inline-flex items-center justify-center rounded-2xl border border-gold/35 bg-[rgba(255,250,244,0.56)] px-3 py-3 text-emberDark shadow-sm transition hover:border-gold/60 hover:bg-[rgba(200,169,106,0.20)]"
+              className="relative z-50 inline-flex items-center justify-center rounded-2xl border border-gold/35 bg-[rgba(255,250,244,0.56)] px-3 py-3 text-emberDark shadow-sm transition hover:border-gold/60 hover:bg-[rgba(200,169,106,0.20)] md:hidden"
               aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={mobileOpen}
               aria-controls="mobile-nav"
@@ -295,7 +344,7 @@ function AppShell() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="fixed inset-0 z-10 bg-black/40 backdrop-blur-[2px]"
+                  className="fixed inset-0 z-30 bg-black/42 backdrop-blur-[2px]"
                   aria-label="Close menu"
                   onClick={() => setMobileOpen(false)}
                 />
@@ -305,9 +354,10 @@ function AppShell() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -14 }}
                   transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                  className="md:hidden absolute inset-x-0 top-full z-20 border-b border-gold/30 bg-[linear-gradient(180deg,rgba(200,169,106,0.22),rgba(255,250,244,0.94))] shadow-soft backdrop-blur-xl"
+                  style={{ top: `${Math.max(headerHeight + 8, 80)}px` }}
+                  className="fixed inset-x-3 z-40 max-h-[calc(100svh-6.5rem)] overflow-y-auto rounded-[1.75rem] border border-gold/24 bg-[linear-gradient(180deg,rgba(255,250,244,0.98),rgba(247,250,255,0.96))] shadow-[0_30px_80px_rgba(11,20,48,0.18)] backdrop-blur-2xl md:hidden"
                 >
-                  <div className="ka-container py-4">
+                  <div className="p-3">
                     <div className="grid gap-2">
                       <NavLink to="/" end className={mobileNavLinkClass} onClick={() => setMobileOpen(false)}>
                         Home
@@ -379,11 +429,6 @@ function AppShell() {
         <Route path="/collections/purpose/:purposeId" element={<PurposeCollection />} />
         <Route path="/collections/signature" element={<Signature />} />
         <Route path="/collections/heritage" element={<Heritage />} />
-        <Route path="/custom-blends" element={<CustomBlends />} />
-        <Route path="/create-blend" element={<CreateBlend />} />
-        <Route path="/discovery-quiz" element={<DiscoveryQuiz />} />
-        <Route path="/knowledge" element={<Knowledge />} />
-        <Route path="/knowledge/:slug" element={<KnowledgeArticle />} />
         <Route path="/ceo" element={<Ceo />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/account" element={<Account />} />

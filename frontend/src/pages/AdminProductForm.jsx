@@ -22,6 +22,7 @@ const schema = yup.object({
   isBestSeller: yup.boolean().default(false),
   isNewArrival: yup.boolean().default(false),
   sampleEnabled: yup.boolean().default(false),
+  availableSizesText: yup.string().default(''),
   highlights: yup.string(),
 })
 
@@ -86,6 +87,7 @@ function AdminProductForm() {
       setValue('sampleEnabled', product.sample?.enabled === true)
       setValue('sampleLabel', product.sample?.label || '')
       setValue('samplePrice', product.sample?.price ?? '')
+      setValue('availableSizesText', product.availableSizesText || '')
       setValue('highlights', product.highlights?.join(', ') || '')
       setImages(product.images || [])
       setImageZoom(clampImageZoom(product.imageZoom))
@@ -568,6 +570,18 @@ function AdminProductForm() {
               <p className="mt-3 text-xs text-muted">
                 Add a sale price to any pack if you want the product to show a Sale badge and discounted price.
               </p>
+
+              <div className="mt-5 rounded-2xl border border-slate-200/80 bg-white p-4">
+                <label className="text-sm font-semibold text-ink">Available sizes line (optional)</label>
+                <input
+                  {...register('availableSizesText')}
+                  placeholder="50ml | 100ml | 250ml | Bulk orders available"
+                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/20"
+                />
+                <p className="mt-2 text-xs text-muted">
+                  Leave this blank to auto-show pack labels. Add custom text if you want a different sizes line for this product.
+                </p>
+              </div>
             </div>
 
             <div>

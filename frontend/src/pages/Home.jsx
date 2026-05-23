@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -87,6 +87,7 @@ const clientVoices = [
 function Home() {
   const { assets, uploadAndSetAsset } = useSiteAssets()
   const [user, setUser] = useState(auth.getUser())
+  const heroVideoRef = useRef(null)
   const [videoBusy, setVideoBusy] = useState(false)
   const [videoMessage, setVideoMessage] = useState('')
   const [deferredReady, setDeferredReady] = useState(false)
@@ -126,6 +127,36 @@ function Home() {
     }
   }, [])
 
+  useEffect(() => {
+    const video = heroVideoRef.current
+    if (!video || !homeVideo) return undefined
+
+    const ensurePlayback = () => {
+      video.muted = true
+      video.defaultMuted = true
+      video.loop = true
+      video.playsInline = true
+      if (document.visibilityState === 'hidden') return
+      const playPromise = video.play()
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {})
+      }
+    }
+
+    ensurePlayback()
+    video.addEventListener('loadedmetadata', ensurePlayback)
+    video.addEventListener('canplay', ensurePlayback)
+    window.addEventListener('pageshow', ensurePlayback)
+    document.addEventListener('visibilitychange', ensurePlayback)
+
+    return () => {
+      video.removeEventListener('loadedmetadata', ensurePlayback)
+      video.removeEventListener('canplay', ensurePlayback)
+      window.removeEventListener('pageshow', ensurePlayback)
+      document.removeEventListener('visibilitychange', ensurePlayback)
+    }
+  }, [homeVideo])
+
   const uploadHomeBackgroundVideo = async (file) => {
     setVideoBusy(true)
     setVideoMessage('')
@@ -141,16 +172,22 @@ function Home() {
 
   return (
     <div className="relative min-h-screen text-ink">
-      <div className="pointer-events-none sticky top-0 z-0 h-screen overflow-hidden">
+      <div aria-hidden="true" className="pointer-events-none sticky top-0 z-0 h-[100svh] overflow-hidden">
         <div className="absolute inset-0 origin-center">
           {homeVideo ? (
             <video
+              ref={heroVideoRef}
               src={homeVideo}
-              className="ka-hero-video h-full w-full object-cover object-center"
+              className="ka-hero-video pointer-events-none h-full w-full select-none object-cover object-center"
               autoPlay
               muted
+              defaultMuted
               loop
               playsInline
+              controls={false}
+              disablePictureInPicture
+              disableRemotePlayback
+              tabIndex={-1}
               preload="metadata"
             />
           ) : (
@@ -183,14 +220,14 @@ function Home() {
         </div>
       ) : null}
 
-      <div className="relative z-10 -mt-[100vh]">
-      <section id="top" className="relative z-10 min-h-screen">
-        <div className="ka-container relative z-10 flex min-h-screen flex-col justify-center py-28">
+      <div className="relative z-10 -mt-[100svh]">
+      <section id="top" className="relative z-10 min-h-[100svh]">
+        <div className="ka-container relative z-10 flex min-h-[100svh] flex-col justify-center py-24 sm:py-28">
           <motion.div
             variants={heroStagger}
             initial="hidden"
             animate="show"
-            className="relative mx-auto max-w-5xl rounded-[2.8rem] border border-white/10 bg-[linear-gradient(180deg,rgba(7,16,36,0.28),rgba(7,16,36,0.12))] px-6 py-8 text-center text-white shadow-[0_28px_90px_rgba(5,10,24,0.18)] sm:px-10 sm:py-10"
+            className="relative mx-auto max-w-5xl rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(7,16,36,0.34),rgba(7,16,36,0.16))] px-5 py-7 text-center text-white shadow-[0_28px_90px_rgba(5,10,24,0.18)] sm:rounded-[2.8rem] sm:px-10 sm:py-10"
           >
             <div className="pointer-events-none absolute inset-x-6 top-1/2 h-[28rem] -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(7,16,36,0.34)_0%,rgba(7,16,36,0.14)_42%,transparent_72%)] blur-2xl" />
             <motion.p
@@ -201,19 +238,19 @@ function Home() {
             </motion.p>
             <motion.h1
               variants={fadeUp}
-              className="relative mt-5 font-display text-5xl leading-[0.95] tracking-[-0.04em] text-white drop-shadow-[0_14px_36px_rgba(7,16,36,0.58)] sm:text-6xl lg:text-8xl"
+              className="relative mt-5 font-display text-4xl leading-[0.95] tracking-[-0.04em] text-white drop-shadow-[0_14px_36px_rgba(7,16,36,0.58)] sm:text-6xl lg:text-8xl"
             >
               {BUSINESS.brandName}
             </motion.h1>
             <motion.p
               variants={fadeUp}
-              className="relative mt-5 font-display text-2xl leading-tight text-[#F9FBFF] drop-shadow-[0_10px_28px_rgba(7,16,36,0.52)] sm:text-3xl lg:text-4xl"
+              className="relative mt-5 font-display text-xl leading-tight text-[#F9FBFF] drop-shadow-[0_10px_28px_rgba(7,16,36,0.52)] sm:text-3xl lg:text-4xl"
             >
               {BUSINESS.heroTagline}
             </motion.p>
             <motion.p
               variants={fadeUp}
-              className="relative mx-auto mt-7 max-w-3xl text-base leading-8 text-white/92 drop-shadow-[0_8px_22px_rgba(7,16,36,0.44)] sm:text-lg"
+              className="relative mx-auto mt-6 max-w-3xl text-sm leading-7 text-white/92 drop-shadow-[0_8px_22px_rgba(7,16,36,0.44)] sm:mt-7 sm:text-lg sm:leading-8"
             >
               {BUSINESS.fullDisplayName} brings the art of Indian perfumery into a modern luxury expression —
               attars, floral waters, and essential oils shaped by Deg-Bhapka tradition and refined with timeless character.
@@ -236,7 +273,7 @@ function Home() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="relative mt-16 self-center lg:mt-24"
+            className="relative mt-10 self-center sm:mt-16 lg:mt-24"
           >
             <div className="rounded-[2rem] border border-white/12 bg-[rgba(255,248,238,0.12)] px-6 py-4 text-center shadow-[0_22px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl">
               <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-white/65">Craft pillars</p>
@@ -265,10 +302,10 @@ function Home() {
             >
               <p className="ka-kicker !text-[#4E638A]">Premium Collections</p>
               <h2 className="mt-5 ka-h1 text-[clamp(2.7rem,6vw,5.2rem)] text-[#0F1E46]">
-                Designed like a luxury fragrance house, rooted like Kannauj.
+                Inspired by centuries of fragrance craftsmanship
               </h2>
               <p className="mt-6 text-base leading-8 text-[#2C446A] sm:text-lg">
-                Explore signature attars, floral waters, and essential oils through collections that feel cinematic, calm, and deeply premium.
+                Explore signature attars, floral waters, and essential oils.
               </p>
             </motion.div>
 
@@ -287,7 +324,7 @@ function Home() {
                 >
                   <AdminAssetImage
                     assetKey={card.assetKey}
-                    className="ka-frame aspect-[4/5] w-full rounded-[1.8rem] bg-[linear-gradient(140deg,rgba(235,220,197,0.78),rgba(255,255,255,0.98),rgba(112,85,58,0.08))]"
+                    className="ka-frame aspect-[4/5] w-full rounded-[1.8rem] bg-[linear-gradient(140deg,rgba(235,220,197,0.78),rgba(255,255,255,0.99),rgba(112,85,58,0.08))]"
                     imgClassName="p-2"
                     defaultAspect="4 / 5"
                     fit="cover"
@@ -356,10 +393,10 @@ function Home() {
                 <motion.article
                   key={item.title}
                   variants={revealCard}
-                  className="rounded-[2rem] border border-white/70 bg-[rgba(255,252,247,0.84)] p-7 shadow-[0_24px_70px_rgba(18,12,8,0.08)] backdrop-blur-xl"
+                  className="rounded-[2rem] border border-white/70 bg-[rgba(255,255,255,0.90)] p-7 shadow-[0_24px_70px_rgba(11,20,48,0.08)] backdrop-blur-xl"
                 >
                   <div className="flex items-center gap-4">
-                    <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[linear-gradient(145deg,#E8D4B3,#C8A368)] text-sm font-semibold text-midnight">
+                    <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[linear-gradient(145deg,#F2DE9A,#C9A24A)] text-sm font-semibold text-midnight">
                       0{index + 1}
                     </span>
                     <div>
@@ -435,7 +472,7 @@ function Home() {
                 {BUSINESS.legacyTimeline.map((item) => (
                   <div
                     key={`${item.year}-${item.title}`}
-                    className="rounded-[1.8rem] border border-gold/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(247,240,229,0.92))] p-6 shadow-[0_20px_60px_rgba(28,19,13,0.06)]"
+                    className="rounded-[1.8rem] border border-gold/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(247,240,229,0.92))] p-6 shadow-[0_20px_60px_rgba(11,20,48,0.06)]"
                   >
                     <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#6A7EA6]">{item.year}</p>
                     <h3 className="mt-3 text-lg font-semibold text-ink">{item.title}</h3>
@@ -461,7 +498,7 @@ function Home() {
                 <p className="ka-kicker">Founder & Credibility</p>
               </div>
 
-              <div className="mt-6 rounded-[2rem] border border-gold/18 bg-[linear-gradient(135deg,rgba(249,243,234,0.84),rgba(255,255,255,0.92))] p-3">
+              <div className="mt-6 rounded-[2rem] border border-gold/18 bg-[linear-gradient(135deg,rgba(249,243,234,0.84),rgba(255,255,255,0.95))] p-3">
                 <AdminAssetImage
                   assetKey="about.ceo.photo"
                   className="aspect-[4/5] w-full rounded-[1.5rem] border border-white/70 bg-white/90"

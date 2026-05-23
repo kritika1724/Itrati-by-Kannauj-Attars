@@ -13,7 +13,7 @@ const PRODUCTS_LIST_CACHE_PREFIX = 'products:list:'
 const PRODUCT_DETAIL_CACHE_PREFIX = 'products:detail:'
 const PRODUCTS_CACHE_TTL_MS = Number(process.env.PRODUCTS_CACHE_TTL_MS || 30 * 1000)
 const PUBLIC_PRODUCT_LIST_SELECT =
-  'name description category purposeTags familyTags featuredCollections isBestSeller isNewArrival sample price packs images imageZoom rating numReviews createdAt'
+  'name description category purposeTags familyTags featuredCollections isBestSeller isNewArrival sample availableSizesText price packs images imageZoom rating numReviews createdAt'
 const ADMIN_PRODUCT_LIST_SELECT = `${PUBLIC_PRODUCT_LIST_SELECT} stock`
 
 const normalizeCollections = (value) => {
@@ -47,6 +47,8 @@ const normalizeImageZoom = (value) => {
   if (!Number.isFinite(zoom)) return 1
   return Math.min(Math.max(zoom, 1), 2.5)
 }
+
+const normalizeAvailableSizesText = (value) => String(value || '').trim()
 
 const findReviewOrder = async (orderId) => {
   const value = String(orderId || '').trim()
@@ -223,6 +225,7 @@ router.post('/', protect, adminOnly, asyncHandler(async (req, res) => {
     isBestSeller,
     isNewArrival,
     sample,
+    availableSizesText,
     price,
     packs,
     images,
@@ -246,6 +249,7 @@ router.post('/', protect, adminOnly, asyncHandler(async (req, res) => {
     isBestSeller: isBestSeller === true,
     isNewArrival: isNewArrival === true,
     sample: normalizeSample(sample),
+    availableSizesText: normalizeAvailableSizesText(availableSizesText),
     price,
     packs: Array.isArray(packs) ? packs : [],
     images,
@@ -276,6 +280,7 @@ router.put('/:id', protect, adminOnly, asyncHandler(async (req, res) => {
     'isBestSeller',
     'isNewArrival',
     'sample',
+    'availableSizesText',
     'price',
     'packs',
     'images',
@@ -295,6 +300,8 @@ router.put('/:id', protect, adminOnly, asyncHandler(async (req, res) => {
         product[field] = normalizeProductStock(req.body[field])
       } else if (field === 'imageZoom') {
         product[field] = normalizeImageZoom(req.body[field])
+      } else if (field === 'availableSizesText') {
+        product[field] = normalizeAvailableSizesText(req.body[field])
       } else {
         product[field] = req.body[field]
       }

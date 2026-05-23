@@ -102,9 +102,10 @@ function Ceo() {
           <div className="rounded-3xl border border-slate-200/80 bg-white p-8 shadow-lg shadow-black/10">
             <h2 className="text-xl font-semibold text-ink">About</h2>
             <p className="mt-4 text-sm leading-relaxed text-muted">
-              Founded in 1998, {BUSINESS.displayName} is a private enterprise based in Kannauj — widely recognized as India’s
-              perfume heritage city. Under the leadership of Mr. Pawan Trivedi, the focus remains on consistent quality,
-              thoughtful blending, and reliable supply.
+              Founded in 1998, Kannauj Attars is a private enterprise based in Kannauj — widely recognized as India’s
+              perfume heritage city. {BUSINESS.displayName} is its newer brand expression, introduced in 2026. Under the
+              leadership of Mr. Pawan Trivedi, who also serves as President of The Attars & Perfumers Association Kannauj,
+              the focus remains on consistent quality, thoughtful blending, and reliable supply.
             </p>
             <p className="mt-4 text-sm leading-relaxed text-muted">
               The business deals in aromatics chemicals, as well as Pan Masala and Zafrani Jarda compounds, supporting
@@ -117,11 +118,11 @@ function Ceo() {
                 <Link to="/products" className="ka-btn-primary px-5 py-2">
                   Products
                 </Link>
-                <Link to="/custom-blends" className="ka-btn-ghost px-5 py-2">
-                  Custom blends
+                <Link to="/collections" className="ka-btn-ghost px-5 py-2">
+                  Collections
                 </Link>
-                <Link to="/knowledge" className="ka-btn-ghost px-5 py-2">
-                  Knowledge center
+                <Link to="/contact" className="ka-btn-ghost px-5 py-2">
+                  Contact
                 </Link>
               </div>
             </div>

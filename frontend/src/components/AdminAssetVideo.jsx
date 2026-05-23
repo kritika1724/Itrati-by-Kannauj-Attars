@@ -65,7 +65,7 @@ function AdminAssetVideo({
           preload="metadata"
         />
       ) : showPlaceholder ? (
-        <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(35,60,122,0.12),rgba(255,250,244,0.94),rgba(200,169,106,0.18))]">
+        <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(35,60,122,0.12),rgba(255,255,255,0.96),rgba(201,162,74,0.16))]">
           <div className="rounded-full border border-gold/35 bg-[rgba(255,250,244,0.9)] px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-emberDark shadow-sm">
             Home top video
           </div>

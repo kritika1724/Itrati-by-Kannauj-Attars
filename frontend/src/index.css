@@ -96,7 +96,7 @@
 @layer components {
   /* Layout */
   .ka-container {
-    @apply mx-auto w-full max-w-7xl px-6;
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
   }
 
   .ka-shell {
@@ -104,7 +104,7 @@
   }
 
   .ka-section {
-    @apply py-20 md:py-24;
+    @apply py-16 sm:py-20 md:py-24;
   }
 
   /* Type */
@@ -126,7 +126,7 @@
     @apply rounded-[2rem] border border-white/70 bg-white/90 shadow-[0_20px_56px_rgba(11,20,48,0.08)];
   }
   .ka-panel {
-    @apply rounded-[2rem] border border-white/70 bg-[rgba(255,252,247,0.9)] shadow-[0_16px_44px_rgba(11,20,48,0.06)];
+    @apply rounded-[2rem] border border-white/70 bg-[rgba(255,255,255,0.95)] shadow-[0_16px_44px_rgba(11,20,48,0.06)];
   }
   .ka-divider {
     @apply h-px w-full;
@@ -140,7 +140,7 @@
   }
   .ka-btn-primary {
     @apply inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition;
-    @apply border border-[#5aa1d7]/22 bg-[linear-gradient(135deg,#172754_0%,#0c1738_100%)] text-white shadow-[0_18px_45px_rgba(12,23,56,0.26)] hover:bg-emberDark;
+    @apply border border-gold/30 bg-[linear-gradient(135deg,#172754_0%,#0c1738_100%)] text-white shadow-[0_18px_45px_rgba(12,23,56,0.26)] hover:bg-emberDark;
     @apply focus:outline-none focus:ring-2 focus:ring-ember/20 focus:ring-offset-2 focus:ring-offset-white;
   }
   .ka-btn-outline {
@@ -227,7 +227,7 @@
 
   .ka-nav-shell {
     position: relative;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .ka-nav-shell::after {
@@ -307,11 +307,12 @@
 
   .ka-hero-video {
     filter: saturate(0.94) contrast(1.01) brightness(0.92);
+    will-change: transform;
   }
 
   .ka-mist-layer {
     background:
-      radial-gradient(circle at 18% 50%, rgba(236, 245, 255, 0.34), transparent 32%),
+      radial-gradient(circle at 18% 50%, rgba(255, 255, 255, 0.26), transparent 32%),
       radial-gradient(circle at 48% 55%, rgba(255, 255, 255, 0.2), transparent 36%),
       radial-gradient(circle at 72% 46%, rgba(125, 210, 255, 0.18), transparent 34%);
     filter: blur(14px);
@@ -355,6 +356,23 @@
   .ka-shine-card:hover::after {
     left: 118%;
     opacity: 1;
+  }
+}
+
+@media (max-width: 767px) {
+  .ka-page-aura::before,
+  .ka-page-aura::after {
+    filter: blur(34px);
+    opacity: 0.7;
+  }
+
+  .ka-mist-layer,
+  .ka-mist-layer-alt {
+    filter: blur(10px);
+  }
+
+  .ka-shine-card::after {
+    display: none;
   }
 }
 

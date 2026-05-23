@@ -25,6 +25,7 @@ const productSchema = new mongoose.Schema(
       label: { type: String, default: '' },
       price: { type: Number, default: 0 },
     },
+    availableSizesText: { type: String, default: '' },
     price: { type: Number, required: true },
     packs: {
       type: [

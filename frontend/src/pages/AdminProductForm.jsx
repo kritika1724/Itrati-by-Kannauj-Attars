@@ -32,6 +32,14 @@ const clampImageZoom = (value) => {
   return Math.min(Math.max(n, 1), 2.5)
 }
 
+const DEFAULT_DETAIL_SECTIONS = [
+  { title: 'How to Use', content: '' },
+  { title: 'Ingredients / Purity', content: '' },
+  { title: 'Shipping & Returns', content: '' },
+]
+
+const createDefaultDetailSections = () => DEFAULT_DETAIL_SECTIONS.map((section) => ({ ...section }))
+
 function AdminProductForm() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -41,10 +49,12 @@ function AdminProductForm() {
   const [imageZoom, setImageZoom] = useState(1)
   const [uploadingImages, setUploadingImages] = useState(false)
   const [packs, setPacks] = useState([{ label: '200 gm', price: '', salePrice: '', stock: '' }])
+  const [detailSections, setDetailSections] = useState(createDefaultDetailSections)
   const [purposeTags, setPurposeTags] = useState([])
   const [familyTags, setFamilyTags] = useState([])
+  const [featuredCollections, setFeaturedCollections] = useState([])
   const [message, setMessage] = useState('')
-  const { buyerTypes, purposes: purposeOptions, families: familyOptions } = useTaxonomy()
+  const { buyerTypes, purposes: purposeOptions, families: familyOptions, collections: collectionOptions } = useTaxonomy()
 
   const hasPacks = useMemo(() => packs.some((p) => (p.label || '').trim() && p.price !== ''), [packs])
 
@@ -73,6 +83,7 @@ function AdminProductForm() {
       setValue('isBestSeller', false)
       setValue('isNewArrival', false)
       setValue('sampleEnabled', false)
+      setDetailSections(createDefaultDetailSections())
     }
     if (!isEditing) return
     const load = async () => {
@@ -89,10 +100,19 @@ function AdminProductForm() {
       setValue('samplePrice', product.sample?.price ?? '')
       setValue('availableSizesText', product.availableSizesText || '')
       setValue('highlights', product.highlights?.join(', ') || '')
+      setDetailSections(
+        Array.isArray(product.detailSections) && product.detailSections.length
+          ? product.detailSections.map((section) => ({
+              title: section?.title || '',
+              content: section?.content || '',
+            }))
+          : createDefaultDetailSections()
+      )
       setImages(product.images || [])
       setImageZoom(clampImageZoom(product.imageZoom))
       setPurposeTags(Array.isArray(product.purposeTags) ? product.purposeTags : [])
       setFamilyTags(Array.isArray(product.familyTags) ? product.familyTags : [])
+      setFeaturedCollections(Array.isArray(product.featuredCollections) ? product.featuredCollections : [])
       if (Array.isArray(product.packs) && product.packs.length) {
         setPacks(
           product.packs.map((p) => ({
@@ -186,12 +206,19 @@ function AdminProductForm() {
       ...data,
       stock: Math.max(0, Number(data.stock || 0)),
       price: Number(basePrice),
-      highlights: data.highlights ? data.highlights.split(',').map((item) => item.trim()) : [],
+      highlights: data.highlights ? data.highlights.split(',').map((item) => item.trim()).filter(Boolean) : [],
+      detailSections: detailSections
+        .map((section) => ({
+          title: String(section.title || '').trim(),
+          content: String(section.content || '').trim(),
+        }))
+        .filter((section) => section.title && section.content),
       images,
       imageZoom: clampImageZoom(imageZoom),
       packs: normalizedPacks,
       purposeTags,
       familyTags,
+      featuredCollections,
       sample: data.sampleEnabled
         ? { enabled: true, label: String(data.sampleLabel || '').trim(), price: Number(data.samplePrice) }
         : { enabled: false, label: '', price: 0 },
@@ -270,6 +297,78 @@ function AdminProductForm() {
                 <p className="mt-2 text-xs text-red-600">{errors.description.message}</p>
               )}
             </div>
+
+            <div className="rounded-3xl border border-slate-200/80 bg-clay/50 p-6">
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-muted">Product detail sections</p>
+                  <h3 className="mt-2 text-lg font-semibold text-ink">Accordion content</h3>
+                  <p className="mt-2 text-sm text-muted">
+                    Add only the sections you want shown on the product page. Nothing will be auto-written there anymore.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDetailSections((prev) => [...prev, { title: '', content: '' }])}
+                  className="rounded-full bg-ember px-5 py-2 text-sm font-semibold text-white transition hover:bg-emberDark"
+                >
+                  + Add section
+                </button>
+              </div>
+
+              <div className="mt-5 grid gap-4">
+                {detailSections.map((section, index) => (
+                  <div key={`${index}-${section.title}`} className="rounded-2xl border border-slate-200/80 bg-white p-4">
+                    <div className="grid gap-4 md:grid-cols-[0.9fr_auto]">
+                      <div>
+                        <label className="text-xs font-semibold text-muted">Section title</label>
+                        <input
+                          value={section.title}
+                          onChange={(e) =>
+                            setDetailSections((prev) =>
+                              prev.map((item, itemIndex) =>
+                                itemIndex === index ? { ...item, title: e.target.value } : item
+                              )
+                            )
+                          }
+                          placeholder="How to Use"
+                          className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/20"
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <button
+                          type="button"
+                          onClick={() => setDetailSections((prev) => prev.filter((_, itemIndex) => itemIndex !== index))}
+                          className="rounded-full border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-600 hover:border-red-300"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="text-xs font-semibold text-muted">Section content</label>
+                      <textarea
+                        value={section.content}
+                        onChange={(e) =>
+                          setDetailSections((prev) =>
+                            prev.map((item, itemIndex) =>
+                              itemIndex === index ? { ...item, content: e.target.value } : item
+                            )
+                          )
+                        }
+                        rows="5"
+                        placeholder={'- Point one\n- Point two\n\nOr write a short paragraph.'}
+                        className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/20"
+                      />
+                      <p className="mt-2 text-xs text-muted">
+                        Use paragraphs, `-` bullets, or numbered lines like `1.` and `2.`.
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
             <div className="grid gap-6 md:grid-cols-2">
               <div>
                 <label className="text-sm font-semibold text-ink">Category</label>
@@ -282,11 +381,15 @@ function AdminProductForm() {
                 )}
               </div>
               <div>
-                <label className="text-sm font-semibold text-ink">Highlights (comma separated)</label>
+                <label className="text-sm font-semibold text-ink">Product points (comma separated)</label>
                 <input
                   {...register('highlights')}
+                  placeholder="Refined, Pure, Traditional"
                   className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/20"
                 />
+                <p className="mt-2 text-xs text-muted">
+                  These points appear on the product card and detail view, joined with ` • `.
+                </p>
               </div>
             </div>
 
@@ -327,20 +430,6 @@ function AdminProductForm() {
                 <input
                   type="checkbox"
                   {...register('isBestSeller')}
-                  className="mt-1 h-5 w-5 accent-ember"
-                />
-              </label>
-
-              <label className="mt-4 flex cursor-pointer items-start justify-between gap-4 rounded-3xl border border-slate-200/80 bg-white px-5 py-4">
-                <div>
-                  <p className="text-sm font-semibold text-ink">Show “New” tag</p>
-                  <p className="mt-1 text-xs text-muted">
-                    Turn this on if you want the product card to display a New badge.
-                  </p>
-                </div>
-                <input
-                  type="checkbox"
-                  {...register('isNewArrival')}
                   className="mt-1 h-5 w-5 accent-ember"
                 />
               </label>
@@ -484,6 +573,53 @@ function AdminProductForm() {
                   <p className="mt-3 text-xs text-muted">
                     You can select multiple purposes/families (example: “Luxury gifting” + “Woody”).
                   </p>
+                </div>
+              </div>
+
+              <div className="mt-6 rounded-3xl border border-slate-200/80 bg-white p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <label className="text-sm font-semibold text-ink">Featured collections</label>
+                    <p className="mt-1 text-xs text-muted">
+                      Add this product to any number of admin-created collections like Signature, Heritage, Self Care, or future curated edits.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/admin/filters')}
+                    className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-emberDark transition hover:border-gold/50"
+                  >
+                    Add collection
+                  </button>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {collectionOptions.map((collection) => {
+                    const active = featuredCollections.includes(collection.id)
+                    return (
+                      <button
+                        key={collection.id}
+                        type="button"
+                        onClick={() =>
+                          setFeaturedCollections((prev) =>
+                            prev.includes(collection.id)
+                              ? prev.filter((x) => x !== collection.id)
+                              : [...prev, collection.id]
+                          )
+                        }
+                        className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
+                          active
+                            ? 'bg-ember text-white'
+                            : 'border border-slate-200 bg-white text-emberDark hover:border-gold/50'
+                        }`}
+                      >
+                        {collection.label}
+                      </button>
+                    )
+                  })}
+                  {collectionOptions.length === 0 ? (
+                    <p className="text-xs text-muted">No collections yet. Create one from Manage filters first.</p>
+                  ) : null}
                 </div>
               </div>
             </div>

@@ -7,14 +7,17 @@ import { AnimatePresence, motion, useScroll, useSpring } from 'framer-motion'
 
 import ProtectedRoute from './components/ProtectedRoute'
 import LogoMark from './components/LogoMark'
+import BrandWordmark from './components/BrandWordmark'
 import CursorGlow from './components/CursorGlow'
 import { BUSINESS } from './config/business'
 import { pageShell } from './lib/motion'
+import { wishlistStorage } from './components/product/wishlist'
 
 const Home = lazy(() => import('./pages/Home'))
 const Collections = lazy(() => import('./pages/Collections'))
 const Contact = lazy(() => import('./pages/Contact'))
 const Products = lazy(() => import('./pages/Products'))
+const Wishlist = lazy(() => import('./pages/Wishlist'))
 const ProductDetail = lazy(() => import('./pages/ProductDetail'))
 const TrackOrder = lazy(() => import('./pages/TrackOrder'))
 const Account = lazy(() => import('./pages/Account'))
@@ -23,6 +26,7 @@ const NotFound = lazy(() => import('./pages/NotFound'))
 const Signature = lazy(() => import('./pages/collections/Signature'))
 const Heritage = lazy(() => import('./pages/collections/Heritage'))
 const PurposeCollection = lazy(() => import('./pages/collections/PurposeCollection'))
+const FeaturedCollection = lazy(() => import('./pages/collections/FeaturedCollection'))
 const Gallery = lazy(() => import('./pages/Gallery'))
 const Ceo = lazy(() => import('./pages/Ceo'))
 const Cart = lazy(() => import('./pages/Cart'))
@@ -81,6 +85,7 @@ function RouteLoader() {
 function AppShell() {
   const location = useLocation()
   const cartCount = useSelector((state) => state.cart.items.reduce((sum, i) => sum + i.qty, 0))
+  const [wishlistCount, setWishlistCount] = useState(() => wishlistStorage.read().length)
   const [user, setUser] = useState(auth.getUser())
   const headerRef = useRef(null)
   const isAdmin = user?.isAdmin === true
@@ -100,6 +105,16 @@ function AppShell() {
     const onAuth = () => setUser(auth.getUser())
     window.addEventListener('authchange', onAuth)
     return () => window.removeEventListener('authchange', onAuth)
+  }, [])
+
+  useEffect(() => {
+    const syncWishlist = (event) => {
+      const next = Array.isArray(event?.detail) ? event.detail.length : wishlistStorage.read().length
+      setWishlistCount(next)
+    }
+
+    window.addEventListener('wishlistchange', syncWishlist)
+    return () => window.removeEventListener('wishlistchange', syncWishlist)
   }, [])
 
   useEffect(() => {
@@ -272,12 +287,10 @@ function AppShell() {
               aria-label="Go to home"
               title={BUSINESS.displayName}
             >
-              <LogoMark />
-              <div className="flex min-w-0 flex-col leading-tight">
-                <span className="truncate font-display text-lg tracking-wide text-ink sm:text-2xl">
-                  {BUSINESS.displayName}
-                </span>
-                <span className="truncate text-[10px] uppercase tracking-[0.22em] text-muted sm:text-xs sm:tracking-[0.3em]">
+              <LogoMark className="h-14 w-14 sm:h-[3.5rem] sm:w-[3.5rem]" />
+              <div className="flex min-w-0 flex-col items-start justify-center leading-none">
+                <BrandWordmark className="ml-1 sm:ml-1.5 max-w-[11.25rem] sm:max-w-[15.5rem]" />
+                <span className="truncate pl-1.5 pt-0.5 text-[10px] uppercase tracking-[0.22em] text-muted sm:pl-2.5 sm:text-xs sm:tracking-[0.3em]">
                   {BUSINESS.endorsement} • Since {BUSINESS.since}
                 </span>
               </div>
@@ -290,6 +303,18 @@ function AppShell() {
               <NavLink to="/products" className={navLinkClass}>
                 Products
               </NavLink>
+              {!isAdmin ? (
+                <NavLink to="/wishlist" className={navLinkClass}>
+                  <span className="inline-flex items-center gap-2">
+                    Wishlist
+                    {wishlistCount > 0 && (
+                      <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-[#C9A24A] px-2 py-0.5 text-[10px] font-semibold text-[#19213C]">
+                        {wishlistCount}
+                      </span>
+                    )}
+                  </span>
+                </NavLink>
+              ) : null}
               {!isAdmin ? (
                 <NavLink to="/cart" className={navLinkClass}>
                   <span className="inline-flex items-center gap-2">
@@ -367,6 +392,19 @@ function AppShell() {
                       </NavLink>
 
                       {!isAdmin ? (
+                        <NavLink to="/wishlist" className={mobileNavLinkClass} onClick={() => setMobileOpen(false)}>
+                          <span className="inline-flex items-center gap-2">
+                            Wishlist
+                            {wishlistCount > 0 ? (
+                              <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-[#C9A24A] px-2 py-0.5 text-[10px] font-semibold text-[#19213C]">
+                                {wishlistCount}
+                              </span>
+                            ) : null}
+                          </span>
+                        </NavLink>
+                      ) : null}
+
+                      {!isAdmin ? (
                         <NavLink to="/cart" className={mobileNavLinkClass} onClick={() => setMobileOpen(false)}>
                           <span className="inline-flex items-center gap-2">
                             Cart
@@ -423,12 +461,23 @@ function AppShell() {
         <Route path="/about" element={<Navigate to="/" replace />} />
         <Route path="/explore" element={<Navigate to="/" replace />} />
         <Route path="/products" element={<Products />} />
+        <Route
+          path="/wishlist"
+          element={
+            isAdmin ? (
+              <Navigate to="/admin" replace />
+            ) : (
+              <Wishlist />
+            )
+          }
+        />
         <Route path="/products/:id" element={<ProductDetail />} />
         <Route path="/track-order" element={<TrackOrder />} />
         <Route path="/gallery" element={<Gallery />} />
         <Route path="/collections/purpose/:purposeId" element={<PurposeCollection />} />
         <Route path="/collections/signature" element={<Signature />} />
         <Route path="/collections/heritage" element={<Heritage />} />
+        <Route path="/collections/:collectionSlug" element={<FeaturedCollection />} />
         <Route path="/ceo" element={<Ceo />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/account" element={<Account />} />

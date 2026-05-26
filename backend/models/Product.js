@@ -42,6 +42,15 @@ const productSchema = new mongoose.Schema(
     imageZoom: { type: Number, default: 1, min: 1, max: 2.5 },
     stock: { type: Number, default: 0 },
     highlights: { type: [String], default: [] },
+    detailSections: {
+      type: [
+        {
+          title: { type: String, required: true },
+          content: { type: String, required: true },
+        },
+      ],
+      default: [],
+    },
     rating: { type: Number, default: 0 },
     numReviews: { type: Number, default: 0 },
     reviews: { type: [reviewSchema], default: [] },

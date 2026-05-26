@@ -57,8 +57,6 @@ const COLLECTION_MAP = {
   },
 }
 
-const COLLECTION_VALUES = new Set(Object.keys(COLLECTION_MAP))
-
 const toUiSort = (value) => {
   if (value === 'price_asc') return 'price_asc'
   if (value === 'price_desc') return 'price_desc'
@@ -77,17 +75,29 @@ function Products() {
   const searchRef = useRef(null)
   const toastTimer = useRef(0)
 
-  const collectionKey = (searchParams.get('collection') || '').trim().toLowerCase()
-  const activeCollection = COLLECTION_VALUES.has(collectionKey) ? collectionKey : ''
-  const collectionMeta = activeCollection ? COLLECTION_MAP[activeCollection] : null
-
   const {
     purposes: taxonomyPurposes,
     families: taxonomyFamilies,
+    collections: taxonomyCollections,
     purposeMap,
     familyMap,
+    collectionMap,
     loading: taxonomyLoading,
   } = useTaxonomy()
+
+  const availableCollectionKeys = useMemo(
+    () => new Set([...Object.keys(COLLECTION_MAP), ...taxonomyCollections.map((item) => item.id)]),
+    [taxonomyCollections]
+  )
+
+  const collectionKey = (searchParams.get('collection') || '').trim().toLowerCase()
+  const activeCollection = availableCollectionKeys.has(collectionKey) ? collectionKey : ''
+  const collectionMeta = activeCollection
+    ? COLLECTION_MAP[activeCollection] || {
+        title: collectionMap[activeCollection] || activeCollection,
+        lead: `${collectionMap[activeCollection] || activeCollection} curated by admin.`,
+      }
+    : null
 
   const [products, setProducts] = useState([])
   const [pages, setPages] = useState(1)
@@ -315,21 +325,17 @@ function Products() {
     <div className="min-h-screen bg-[linear-gradient(180deg,#FFFFFF_0%,#F7F2EA_52%,#FFFDF8_100%)] text-[#19213C]">
       <section className="border-b border-[rgba(25,33,60,0.06)] px-4 pb-10 pt-10 sm:px-6 lg:px-8">
         <motion.div initial="hidden" animate="show" variants={fadeUp} className="mx-auto w-full max-w-[1480px]">
-          <div className="max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.34em] text-[#8D7667]">
-              {pageMeta ? 'Collection view' : 'Product listing'}
-            </p>
-            <h1 className="mt-4 font-display text-4xl leading-[1.02] tracking-[-0.05em] text-[#19213C] sm:text-5xl xl:text-6xl">
-              {pageMeta ? pageMeta.title : 'A refined product wall for attars, rose waters, and essential oils.'}
-            </h1>
-            <p className="mt-5 max-w-2xl text-base leading-8 text-[#5F6475] sm:text-lg">
-              {pageMeta
-                ? pageMeta.lead
-                : 'Explore premium fragrance creations from Kannauj through a cleaner, calmer catalogue designed for touch, scroll, and discovery across every screen.'}
-            </p>
-          </div>
+          {pageMeta ? (
+            <div className="max-w-3xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.34em] text-[#8D7667]">Collection view</p>
+              <h1 className="mt-4 font-display text-4xl leading-[1.02] tracking-[-0.05em] text-[#19213C] sm:text-5xl xl:text-6xl">
+                {pageMeta.title}
+              </h1>
+              <p className="mt-5 max-w-2xl text-base leading-8 text-[#5F6475] sm:text-lg">{pageMeta.lead}</p>
+            </div>
+          ) : null}
 
-          <div className="mt-8 flex flex-wrap items-center gap-3">
+          <div className={`${pageMeta ? 'mt-8' : ''} flex flex-wrap items-center gap-3`}>
             <Link to="/collections" className="rounded-full bg-[#19213C] px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(25,33,60,0.18)] transition hover:bg-[#10162A]">
               Shop by purpose
             </Link>

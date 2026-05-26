@@ -80,7 +80,7 @@ const clientVoices = [
   },
   {
     title: 'Trade and bulk partners',
-    quote: 'Consistency, dependable communication, and heritage credibility matter just as much as the fragrance itself.',
+    quote: 'Consistency, dependable communication, and heritage trust matter just as much as the fragrance itself.',
   },
 ]
 
@@ -222,7 +222,7 @@ function Home() {
 
       <div className="relative z-10 -mt-[100svh]">
       <section id="top" className="relative z-10 min-h-[100svh]">
-        <div className="ka-container relative z-10 flex min-h-[100svh] flex-col justify-center py-24 sm:py-28">
+        <div className="ka-container relative z-10 flex min-h-[100svh] flex-col justify-center py-16 sm:py-24">
           <motion.div
             variants={heroStagger}
             initial="hidden"
@@ -260,6 +260,9 @@ function Home() {
               <Link to="/collections" className="ka-btn-primary px-8 py-4 text-sm sm:text-base">
                 Discover the collection
               </Link>
+              <Link to="/products" className="ka-btn-primary px-8 py-4 text-sm sm:text-base">
+                Explore products
+              </Link>
             </motion.div>
 
             <motion.div variants={fadeUp} className="relative mt-12 flex flex-wrap items-center justify-center gap-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/90">
@@ -273,7 +276,7 @@ function Home() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="relative mt-10 self-center sm:mt-16 lg:mt-24"
+            className="relative mt-8 self-center sm:mt-14 lg:mt-20"
           >
             <div className="rounded-[2rem] border border-white/12 bg-[rgba(255,248,238,0.12)] px-6 py-4 text-center shadow-[0_22px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl">
               <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-white/65">Craft pillars</p>
@@ -291,14 +294,14 @@ function Home() {
 
       {deferredReady ? (
       <div className="relative z-10">
-        <section className="px-6 py-24 md:py-28">
+        <section className="px-4 py-16 sm:px-6 sm:py-20 md:py-24">
           <div className="mx-auto w-full max-w-7xl">
             <motion.div
               initial="hidden"
               whileInView="show"
               viewport={viewportOnce}
               variants={fadeUp}
-              className="mx-auto max-w-3xl rounded-[2rem] border border-white/70 bg-[rgba(255,255,255,0.84)] px-6 py-8 text-center shadow-[0_20px_60px_rgba(7,16,36,0.10)] backdrop-blur-md"
+              className="mx-auto max-w-3xl rounded-[2rem] border border-white/70 bg-[rgba(255,255,255,0.84)] px-5 py-6 text-center shadow-[0_20px_60px_rgba(7,16,36,0.10)] backdrop-blur-md sm:px-6 sm:py-8"
             >
               <p className="ka-kicker !text-[#4E638A]">Premium Collections</p>
               <h2 className="mt-5 ka-h1 text-[clamp(2.7rem,6vw,5.2rem)] text-[#0F1E46]">
@@ -314,27 +317,30 @@ function Home() {
               whileInView="show"
               viewport={viewportOnce}
               variants={staggerGrid(0.08, 0.05)}
-              className="mt-14 grid gap-6 lg:grid-cols-3"
+              className="mt-10 grid grid-cols-2 gap-4 sm:mt-14 lg:grid-cols-3 lg:gap-6"
             >
               {collectionCards.map((card) => (
                 <motion.article
                   key={card.title}
                   variants={revealCard}
-                  className="ka-shine-card rounded-[2.2rem] border border-white/70 bg-white/82 p-5 shadow-[0_26px_90px_rgba(28,19,13,0.08)] backdrop-blur-xl"
+                  className="ka-shine-card rounded-[1.6rem] border border-white/70 bg-white/82 p-3.5 shadow-[0_26px_90px_rgba(28,19,13,0.08)] backdrop-blur-xl sm:rounded-[2.2rem] sm:p-5"
                 >
                   <AdminAssetImage
                     assetKey={card.assetKey}
-                    className="ka-frame aspect-[4/5] w-full rounded-[1.8rem] bg-[linear-gradient(140deg,rgba(235,220,197,0.78),rgba(255,255,255,0.99),rgba(112,85,58,0.08))]"
+                    className="ka-frame aspect-[1/1.12] w-full rounded-[1.25rem] bg-[linear-gradient(140deg,rgba(235,220,197,0.78),rgba(255,255,255,0.99),rgba(112,85,58,0.08))] sm:aspect-[4/5] sm:rounded-[1.8rem]"
                     imgClassName="p-2"
                     defaultAspect="4 / 5"
                     fit="cover"
                   />
-                  <div className="mt-6">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#4E638A]">Collection</p>
-                    <h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-ink">{card.title}</h3>
-                    <p className="mt-4 text-sm leading-7 text-[#304A72]">{card.copy}</p>
+                  <div className="mt-4 sm:mt-6">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#4E638A] sm:text-[11px] sm:tracking-[0.28em]">Collection</p>
+                    <h3 className="mt-2 text-base font-semibold leading-snug tracking-[-0.03em] text-ink sm:mt-3 sm:text-2xl">{card.title}</h3>
+                    <p className="mt-2 text-[11px] leading-5 text-[#304A72] sm:mt-4 sm:text-sm sm:leading-7">{card.copy}</p>
                   </div>
-                  <Link to={card.link} className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#1F3E73] transition hover:text-ink">
+                  <Link
+                    to={card.link}
+                    className="mt-4 inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#1F3E73] transition hover:text-ink sm:mt-6 sm:gap-2 sm:text-sm"
+                  >
                     {card.cta}
                     <span aria-hidden="true">→</span>
                   </Link>
@@ -345,26 +351,26 @@ function Home() {
           </div>
         </section>
 
-        <section className="px-6 py-24 md:py-28">
+        <section className="px-4 py-16 sm:px-6 sm:py-20 md:py-24">
           <div className="mx-auto grid w-full max-w-7xl gap-10 lg:grid-cols-[1fr_0.92fr]">
             <motion.div
               initial="hidden"
               whileInView="show"
               viewport={viewportOnce}
               variants={fadeLeft}
-              className="lg:sticky lg:top-28 h-fit overflow-hidden rounded-[2.4rem] border border-white/10 bg-[linear-gradient(180deg,#1C140F,#120C08)] p-6 text-white shadow-[0_40px_120px_rgba(15,9,5,0.44)] sm:p-8"
+              className="lg:sticky lg:top-28 h-fit overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,#1C140F,#120C08)] p-5 text-white shadow-[0_40px_120px_rgba(15,9,5,0.44)] sm:rounded-[2.4rem] sm:p-8"
             >
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(200,163,104,0.20),rgba(200,163,104,0)_46%)]" />
               <div className="relative">
                 <p className="ka-kicker !text-white/58">Traditional Deg Bhapka Distillation</p>
-                <h2 className="mt-4 font-display text-4xl leading-tight text-white md:text-5xl">
+                <h2 className="mt-4 font-display text-3xl leading-tight text-white sm:text-4xl md:text-5xl">
                   The slow craft behind every drop.
                 </h2>
-                <p className="mt-5 max-w-xl text-sm leading-8 text-white/72 sm:text-base">
+                <p className="mt-5 max-w-xl text-[13px] leading-7 text-white/72 sm:text-base sm:leading-8">
                   {BUSINESS.craftNote}
                 </p>
 
-                <div className="mt-8 rounded-[2rem] border border-white/10 bg-white/5 p-3 backdrop-blur-md">
+                <div className="mt-6 rounded-[1.5rem] border border-white/10 bg-white/5 p-3 backdrop-blur-md sm:mt-8 sm:rounded-[2rem]">
                   <AdminAssetImage
                     assetKey="home.story.distillation"
                     className="aspect-[16/10] w-full rounded-[1.5rem] border border-white/10 bg-[linear-gradient(135deg,rgba(200,163,104,0.18),rgba(255,255,255,0.08),rgba(255,255,255,0.02))]"
@@ -374,7 +380,7 @@ function Home() {
                   />
                 </div>
 
-                <div className="mt-8 flex flex-wrap gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/75">
+                <div className="mt-6 flex flex-wrap gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/75 sm:mt-8 sm:gap-3 sm:text-[11px] sm:tracking-[0.22em]">
                   <span className="rounded-full border border-white/14 bg-white/6 px-4 py-2">Copper stills</span>
                   <span className="rounded-full border border-white/14 bg-white/6 px-4 py-2">Slow condensation</span>
                   <span className="rounded-full border border-white/14 bg-white/6 px-4 py-2">Balanced maturation</span>
@@ -393,24 +399,24 @@ function Home() {
                 <motion.article
                   key={item.title}
                   variants={revealCard}
-                  className="rounded-[2rem] border border-white/70 bg-[rgba(255,255,255,0.90)] p-7 shadow-[0_24px_70px_rgba(11,20,48,0.08)] backdrop-blur-xl"
+                  className="rounded-[1.7rem] border border-white/70 bg-[rgba(255,255,255,0.90)] p-5 shadow-[0_24px_70px_rgba(11,20,48,0.08)] backdrop-blur-xl sm:rounded-[2rem] sm:p-7"
                 >
                   <div className="flex items-center gap-4">
                     <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[linear-gradient(145deg,#F2DE9A,#C9A24A)] text-sm font-semibold text-midnight">
                       0{index + 1}
                     </span>
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-muted">Process</p>
-                      <h3 className="mt-1 text-2xl font-semibold text-ink">{item.title}</h3>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted sm:text-[11px] sm:tracking-[0.28em]">Process</p>
+                      <h3 className="mt-1 text-xl font-semibold text-ink sm:text-2xl">{item.title}</h3>
                     </div>
                   </div>
-                  <p className="mt-5 text-sm leading-8 text-muted sm:text-base">{item.copy}</p>
+                  <p className="mt-4 text-[13px] leading-7 text-muted sm:mt-5 sm:text-base sm:leading-8">{item.copy}</p>
                 </motion.article>
               ))}
 
-              <motion.div variants={revealCard} className="rounded-[2rem] border border-gold/15 bg-[linear-gradient(135deg,rgba(247,238,226,0.94),rgba(255,255,255,0.86))] p-7 shadow-[0_20px_65px_rgba(18,12,8,0.05)]">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-muted">Why this matters</p>
-                <p className="mt-4 text-lg leading-8 text-ink">
+              <motion.div variants={revealCard} className="rounded-[1.7rem] border border-gold/15 bg-[linear-gradient(135deg,rgba(247,238,226,0.94),rgba(255,255,255,0.86))] p-5 shadow-[0_20px_65px_rgba(18,12,8,0.05)] sm:rounded-[2rem] sm:p-7">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted sm:text-[11px] sm:tracking-[0.28em]">Why this matters</p>
+                <p className="mt-4 text-base leading-7 text-ink sm:text-lg sm:leading-8">
                   Slow distillation gives attars their softness, diffusion, and memory. The fragrance does not shout — it unfolds.
                 </p>
               </motion.div>
@@ -419,20 +425,20 @@ function Home() {
         </section>
 
 
-        <section id="heritage" className="px-6 py-24 md:py-28">
+        <section id="heritage" className="px-4 py-16 sm:px-6 sm:py-20 md:py-24">
           <div className="mx-auto grid w-full max-w-7xl gap-10 lg:grid-cols-[0.85fr_1.15fr]">
             <motion.div
               initial="hidden"
               whileInView="show"
               viewport={viewportOnce}
               variants={fadeLeft}
-              className="ka-shine-card lg:sticky lg:top-28 h-fit rounded-[2.25rem] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.90),rgba(246,249,255,0.82))] p-8 shadow-[0_28px_90px_rgba(7,16,36,0.12)] backdrop-blur-md"
+              className="ka-shine-card lg:sticky lg:top-28 h-fit rounded-[2rem] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.90),rgba(246,249,255,0.82))] p-6 shadow-[0_28px_90px_rgba(7,16,36,0.12)] backdrop-blur-md sm:rounded-[2.25rem] sm:p-8"
             >
               <p className="ka-kicker !text-[#6A7EA6]">Heritage of Kannauj</p>
               <h2 className="mt-5 ka-h1 max-w-xl text-[clamp(2.7rem,6vw,5.5rem)] text-[#0F1E46]">
                 Ancient perfume heritage, expressed with modern clarity.
               </h2>
-              <p className="mt-6 max-w-lg text-base leading-8 text-[#39527F] sm:text-lg">
+              <p className="mt-6 max-w-lg text-sm leading-7 text-[#39527F] sm:text-lg sm:leading-8">
                 {BUSINESS.about}
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
@@ -456,27 +462,27 @@ function Home() {
                 <motion.article
                   key={item.title}
                   variants={revealCard}
-                  className="ka-shine-card rounded-[2rem] border border-white/70 bg-white/78 p-7 shadow-[0_24px_80px_rgba(28,19,13,0.08)] backdrop-blur-xl"
+                  className="ka-shine-card rounded-[1.7rem] border border-white/70 bg-white/78 p-5 shadow-[0_24px_80px_rgba(28,19,13,0.08)] backdrop-blur-xl sm:rounded-[2rem] sm:p-7"
                 >
                   <div className="flex items-center gap-4">
                     <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-gold/30 bg-gold/12 text-sm font-semibold text-[#0F1E46]">
                       0{index + 1}
                     </span>
-                    <h3 className="text-2xl font-semibold tracking-[-0.02em] text-ink">{item.title}</h3>
+                    <h3 className="text-xl font-semibold tracking-[-0.02em] text-ink sm:text-2xl">{item.title}</h3>
                   </div>
-                  <p className="mt-4 text-sm leading-7 text-[#445D89] sm:text-base">{item.copy}</p>
+                  <p className="mt-4 text-[13px] leading-7 text-[#445D89] sm:text-base">{item.copy}</p>
                 </motion.article>
               ))}
 
-              <motion.div variants={revealCard} className="grid gap-4 sm:grid-cols-2">
+              <motion.div variants={revealCard} className="grid grid-cols-2 gap-3 sm:gap-4">
                 {BUSINESS.legacyTimeline.map((item) => (
                   <div
                     key={`${item.year}-${item.title}`}
-                    className="rounded-[1.8rem] border border-gold/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(247,240,229,0.92))] p-6 shadow-[0_20px_60px_rgba(11,20,48,0.06)]"
+                    className="rounded-[1.3rem] border border-gold/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(247,240,229,0.92))] p-4 shadow-[0_20px_60px_rgba(11,20,48,0.06)] sm:rounded-[1.8rem] sm:p-6"
                   >
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#6A7EA6]">{item.year}</p>
-                    <h3 className="mt-3 text-lg font-semibold text-ink">{item.title}</h3>
-                    <p className="mt-3 text-sm leading-7 text-[#445D89]">{item.copy}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6A7EA6] sm:text-[11px] sm:tracking-[0.28em]">{item.year}</p>
+                    <h3 className="mt-2 text-sm font-semibold leading-snug text-ink sm:mt-3 sm:text-lg">{item.title}</h3>
+                    <p className="mt-2 text-[11px] leading-5 text-[#445D89] sm:mt-3 sm:text-sm sm:leading-7">{item.copy}</p>
                   </div>
                 ))}
               </motion.div>
@@ -484,21 +490,21 @@ function Home() {
           </div>
         </section>
 
-        <section className="px-6 py-24 md:py-28">
+        <section className="px-4 py-16 sm:px-6 sm:py-20 md:py-24">
           <div className="mx-auto grid w-full max-w-7xl gap-8 lg:grid-cols-[0.9fr_1.1fr]">
             <motion.div
               initial="hidden"
               whileInView="show"
               viewport={viewportOnce}
               variants={fadeLeft}
-              className="rounded-[2.2rem] border border-white/75 bg-white/82 p-7 shadow-[0_28px_90px_rgba(28,19,13,0.07)] backdrop-blur-xl sm:p-8"
+              className="rounded-[1.9rem] border border-white/75 bg-white/82 p-5 shadow-[0_28px_90px_rgba(28,19,13,0.07)] backdrop-blur-xl sm:rounded-[2.2rem] sm:p-8"
             >
               <div className="flex items-center gap-3">
                 <FiUser className="text-ruby" size={22} />
-                <p className="ka-kicker">Founder & Credibility</p>
+                <p className="ka-kicker">Founder & Leadership</p>
               </div>
 
-              <div className="mt-6 rounded-[2rem] border border-gold/18 bg-[linear-gradient(135deg,rgba(249,243,234,0.84),rgba(255,255,255,0.95))] p-3">
+              <div className="mt-5 rounded-[1.6rem] border border-gold/18 bg-[linear-gradient(135deg,rgba(249,243,234,0.84),rgba(255,255,255,0.95))] p-3 sm:mt-6 sm:rounded-[2rem]">
                 <AdminAssetImage
                   assetKey="about.ceo.photo"
                   className="aspect-[4/5] w-full rounded-[1.5rem] border border-white/70 bg-white/90"
@@ -508,12 +514,12 @@ function Home() {
                 />
               </div>
 
-              <h3 className="mt-6 text-3xl font-semibold tracking-[-0.03em] text-ink">{BUSINESS.founder}</h3>
+              <h3 className="mt-5 text-2xl font-semibold tracking-[-0.03em] text-ink sm:mt-6 sm:text-3xl">{BUSINESS.founder}</h3>
               <p className="mt-2 text-sm font-semibold uppercase tracking-[0.22em] text-ruby">
                 Founder, {BUSINESS.firmName}
               </p>
-              <p className="mt-4 text-sm leading-8 text-muted">
-                President, The Attars & Perfumers Association Kannauj — guiding the brand with craft authority, regional credibility, and active participation in the wider perfume community.
+              <p className="mt-4 text-[13px] leading-7 text-muted sm:text-sm sm:leading-8">
+                President, The Attars & Perfumers Association Kannauj — guiding the brand with craft authority, regional leadership, and active participation in the wider perfume community.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
@@ -531,12 +537,12 @@ function Home() {
               whileInView="show"
               viewport={viewportOnce}
               variants={staggerGrid(0.08, 0.04)}
-              className="space-y-6"
+              className="space-y-4 sm:space-y-6"
             >
-              <motion.div variants={revealCard} className="rounded-[2.2rem] border border-white/75 bg-[linear-gradient(135deg,rgba(255,252,246,0.94),rgba(246,236,220,0.84))] p-8 shadow-[0_28px_90px_rgba(28,19,13,0.07)]">
+              <motion.div variants={revealCard} className="rounded-[1.9rem] border border-white/75 bg-[linear-gradient(135deg,rgba(255,252,246,0.94),rgba(246,236,220,0.84))] p-6 shadow-[0_28px_90px_rgba(28,19,13,0.07)] sm:rounded-[2.2rem] sm:p-8">
                 <div className="flex items-center gap-3">
                   <FiAward className="text-ruby" size={22} />
-                  <p className="ka-kicker">Association credibility</p>
+                  <p className="ka-kicker">Association leadership</p>
                 </div>
                 <div className="mt-6 grid gap-3">
                   {BUSINESS.associations.map((association) => (
@@ -553,7 +559,7 @@ function Home() {
                 </div>
               </motion.div>
 
-              <motion.div variants={revealCard} className="rounded-[2.2rem] border border-[#d8c4a3]/30 bg-[linear-gradient(160deg,#20140F_0%,#130C08_100%)] p-8 text-white shadow-[0_34px_110px_rgba(15,10,7,0.42)]">
+              <motion.div variants={revealCard} className="rounded-[1.9rem] border border-[#d8c4a3]/30 bg-[linear-gradient(160deg,#20140F_0%,#130C08_100%)] p-6 text-white shadow-[0_34px_110px_rgba(15,10,7,0.42)] sm:rounded-[2.2rem] sm:p-8">
                 <div className="grid gap-6 sm:grid-cols-2">
                   <div>
                     <p className="ka-kicker !text-white/58">Business details</p>
@@ -593,14 +599,14 @@ function Home() {
           </div>
         </section>
 
-        <section className="px-6 py-24 md:py-28">
+        <section className="px-4 py-16 sm:px-6 sm:py-20 md:py-24">
           <div className="mx-auto w-full max-w-7xl">
             <motion.div
               initial="hidden"
               whileInView="show"
               viewport={viewportOnce}
               variants={fadeUp}
-              className="mx-auto max-w-3xl rounded-[2rem] border border-white/70 bg-[rgba(255,255,255,0.84)] px-6 py-8 text-center shadow-[0_20px_60px_rgba(7,16,36,0.10)] backdrop-blur-md"
+              className="mx-auto max-w-3xl rounded-[2rem] border border-white/70 bg-[rgba(255,255,255,0.84)] px-5 py-6 text-center shadow-[0_20px_60px_rgba(7,16,36,0.10)] backdrop-blur-md sm:px-6 sm:py-8"
             >
               <p className="ka-kicker !text-[#4E638A]">Luxury Testimonials</p>
               <h2 className="mt-5 ka-h1 text-[clamp(2.6rem,5.8vw,5rem)] text-[#0F1E46]">Emotion first. Elegance always.</h2>
@@ -614,16 +620,16 @@ function Home() {
               whileInView="show"
               viewport={viewportOnce}
               variants={staggerGrid(0.08, 0.05)}
-              className="mt-12 grid gap-6 lg:grid-cols-3"
+              className="mt-10 grid grid-cols-2 gap-4 sm:mt-12 lg:grid-cols-3 lg:gap-6"
             >
               {clientVoices.map((item) => (
                 <motion.article
                   key={item.title}
                   variants={revealCard}
-                  className="rounded-[2rem] border border-white/75 bg-white/82 p-7 shadow-[0_24px_80px_rgba(28,19,13,0.07)] backdrop-blur-xl"
+                  className="rounded-[1.7rem] border border-white/75 bg-white/82 p-5 shadow-[0_24px_80px_rgba(28,19,13,0.07)] backdrop-blur-xl sm:rounded-[2rem] sm:p-7"
                 >
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#4E638A]">{item.title}</p>
-                  <p className="mt-5 font-display text-2xl leading-10 text-ink">“{item.quote}”</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#4E638A] sm:text-[11px] sm:tracking-[0.28em]">{item.title}</p>
+                  <p className="mt-4 font-display text-lg leading-7 text-ink sm:mt-5 sm:text-2xl sm:leading-10">“{item.quote}”</p>
                 </motion.article>
               ))}
             </motion.div>
@@ -635,7 +641,7 @@ function Home() {
           whileInView="show"
           viewport={viewportOnce}
           variants={fadeUp}
-          className="px-6 pb-10"
+          className="px-4 pb-8 sm:px-6 sm:pb-10"
         >
           <div className="mx-auto w-full max-w-7xl rounded-[2.3rem] border border-[#d9c2a0]/32 bg-[linear-gradient(135deg,rgba(34,23,16,0.96),rgba(89,66,45,0.96))] p-8 text-white shadow-[0_34px_110px_rgba(15,10,7,0.44)] sm:p-10">
             <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
@@ -665,8 +671,8 @@ function Home() {
           <RecentlyViewedStrip />
         </div>
 
-        <footer className="px-6 py-16">
-          <div className="mx-auto grid w-full max-w-7xl gap-10 rounded-[2.4rem] border border-white/70 bg-[linear-gradient(180deg,rgba(255,252,247,0.92),rgba(243,233,219,0.88))] p-8 shadow-[0_24px_80px_rgba(28,19,13,0.06)] md:grid-cols-[1fr_auto] md:items-end sm:p-10">
+        <footer className="px-4 py-12 sm:px-6 sm:py-16">
+          <div className="mx-auto grid w-full max-w-7xl gap-10 rounded-[2.1rem] border border-white/70 bg-[linear-gradient(180deg,rgba(255,252,247,0.92),rgba(243,233,219,0.88))] p-6 shadow-[0_24px_80px_rgba(28,19,13,0.06)] md:grid-cols-[1fr_auto] md:items-end sm:rounded-[2.4rem] sm:p-10">
             <div>
               <p className="ka-kicker">{BUSINESS.fullDisplayName}</p>
               <h2 className="mt-4 font-display text-4xl leading-tight text-ink md:text-5xl">

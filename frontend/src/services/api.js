@@ -111,9 +111,21 @@ export const api = {
     ).toString()
     return request(`/products${qs ? `?${qs}` : ''}`)
   },
-  getTaxonomy: () => request('/taxonomy'),
+  getTaxonomy: () =>
+    request('/taxonomy', {
+      cache: 'no-store',
+    }),
   createTaxonomyTerm: (payload) =>
     request('/taxonomy', { method: 'POST', body: JSON.stringify(payload) }),
+  updateTaxonomyTerm: (group, slug, payload) =>
+    request(`/taxonomy/${encodeURIComponent(group)}/${encodeURIComponent(slug)}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
+  deleteTaxonomyTerm: (group, slug) =>
+    request(`/taxonomy/${encodeURIComponent(group)}/${encodeURIComponent(slug)}`, {
+      method: 'DELETE',
+    }),
   getProduct: (id) => request(`/products/${id}`),
   createProduct: (payload) =>
     request('/products', { method: 'POST', body: JSON.stringify(payload) }),

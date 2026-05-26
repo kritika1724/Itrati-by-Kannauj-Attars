@@ -20,11 +20,8 @@ import RelatedProducts from '../components/product/RelatedProducts'
 import MobileStickyCart from '../components/product/MobileStickyCart'
 import {
   getExperienceCopy,
-  getHowToUseItems,
   getMinPack,
   getPriceMeta,
-  getPurityItems,
-  getShippingReturnItems,
 } from '../components/product/productPresentation'
 
 const schema = yup.object({
@@ -229,11 +226,14 @@ function ProductDetail() {
     )
   }
 
-  const accordionItems = [
-    { title: 'How to Use', content: getHowToUseItems(product) },
-    { title: 'Ingredients / Purity', content: getPurityItems(product) },
-    { title: 'Shipping & Returns', content: getShippingReturnItems(product) },
-  ]
+  const accordionItems = Array.isArray(product?.detailSections)
+    ? product.detailSections
+        .map((item) => ({
+          title: String(item?.title || '').trim(),
+          content: String(item?.content || '').trim(),
+        }))
+        .filter((item) => item.title && item.content)
+    : []
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#FFFFFF_0%,#F7F2EA_52%,#FFFDF8_100%)] text-[#19213C]">
@@ -347,7 +347,7 @@ function ProductDetail() {
           </div>
 
           <div className="space-y-6 xl:sticky xl:top-[calc(var(--ka-nav-height,88px)+1.5rem)] xl:self-start">
-            <ProductAccordion items={accordionItems} defaultOpen={0} />
+            {accordionItems.length ? <ProductAccordion items={accordionItems} defaultOpen={0} /> : null}
             <RelatedProducts products={relatedProducts} familyMap={familyMap} />
           </div>
         </div>

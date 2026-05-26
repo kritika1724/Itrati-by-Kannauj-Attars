@@ -6,14 +6,16 @@ const TaxonomyContext = createContext({
   buyerTypes: BUYER_TYPES,
   purposes: PURPOSE_TAGS,
   families: FAMILY_TAGS,
+  collections: [],
   purposeMap: {},
   familyMap: {},
+  collectionMap: {},
   loading: true,
   error: '',
   refresh: async () => {},
 })
 
-const TAXONOMY_CACHE_KEY = 'ka:taxonomy:v1'
+const TAXONOMY_CACHE_KEY = 'ka:taxonomy:v2'
 
 const readCachedTaxonomy = () => {
   if (typeof window === 'undefined') return null
@@ -38,6 +40,7 @@ export function TaxonomyProvider({ children }) {
   const cachedTaxonomy = readCachedTaxonomy()
   const [purposes, setPurposes] = useState(cachedTaxonomy?.purposes?.length ? cachedTaxonomy.purposes : PURPOSE_TAGS)
   const [families, setFamilies] = useState(cachedTaxonomy?.families?.length ? cachedTaxonomy.families : FAMILY_TAGS)
+  const [collections, setCollections] = useState(cachedTaxonomy?.collections?.length ? cachedTaxonomy.collections : [])
   const [loading, setLoading] = useState(!cachedTaxonomy)
   const [error, setError] = useState('')
 
@@ -47,18 +50,21 @@ export function TaxonomyProvider({ children }) {
       const data = await api.getTaxonomy()
       const nextPurposes = Array.isArray(data?.purposes) && data.purposes.length ? data.purposes : PURPOSE_TAGS
       const nextFamilies = Array.isArray(data?.families) && data.families.length ? data.families : FAMILY_TAGS
+      const nextCollections = Array.isArray(data?.collections) ? data.collections : []
       setPurposes(nextPurposes)
       setFamilies(nextFamilies)
+      setCollections(nextCollections)
       if (typeof window !== 'undefined') {
         window.sessionStorage.setItem(
           TAXONOMY_CACHE_KEY,
-          JSON.stringify({ purposes: nextPurposes, families: nextFamilies })
+          JSON.stringify({ purposes: nextPurposes, families: nextFamilies, collections: nextCollections })
         )
       }
     } catch (err) {
       setError(err.message || 'Unable to load filters')
       setPurposes(PURPOSE_TAGS)
       setFamilies(FAMILY_TAGS)
+      setCollections([])
     } finally {
       setLoading(false)
     }
@@ -73,13 +79,15 @@ export function TaxonomyProvider({ children }) {
       buyerTypes: BUYER_TYPES,
       purposes,
       families,
+      collections,
       purposeMap: makeLookupMap(purposes),
       familyMap: makeLookupMap(families),
+      collectionMap: makeLookupMap(collections),
       loading,
       error,
       refresh,
     }),
-    [purposes, families, loading, error, refresh]
+    [purposes, families, collections, loading, error, refresh]
   )
 
   return <TaxonomyContext.Provider value={value}>{children}</TaxonomyContext.Provider>

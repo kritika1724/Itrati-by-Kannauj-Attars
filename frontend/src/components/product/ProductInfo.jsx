@@ -1,7 +1,6 @@
 import { FiGift, FiShield, FiStar, FiTruck } from 'react-icons/fi'
 import WishlistButton from './WishlistButton'
 import {
-  getAvailableSizesText,
   getBadgeList,
   getDisplayCategory,
   getFragranceNotes,
@@ -34,7 +33,6 @@ function ProductInfo({
   const occasionHighlights = getOccasionHighlights(product, purposeMap)
   const shortDescription = getShortDescription(product?.description, 190)
   const badges = getBadgeList(product)
-  const availableSizesText = getAvailableSizesText(product)
   const sample = product?.sample || {}
   const sampleEnabled = sample.enabled === true && sample.label && Number(sample.price) > 0
   const packs = Array.isArray(product?.packs) ? product.packs : []
@@ -72,9 +70,9 @@ function ProductInfo({
               const filled = index < Math.round(rating.value || 0)
               return <FiStar key={index} className={filled ? 'fill-current text-[#C9A24A]' : 'text-[#D3D7E0]'} size={15} />
             })}
-            <span className="ml-2 font-semibold text-[#19213C]">{rating.value ? rating.value.toFixed(1) : 'New'}</span>
+            {rating.count > 0 ? <span className="ml-2 font-semibold text-[#19213C]">{rating.value.toFixed(1)}</span> : null}
           </div>
-          <span>{rating.count > 0 ? `${rating.count} review${rating.count > 1 ? 's' : ''}` : 'Freshly listed'}</span>
+          <span>{rating.count > 0 ? `${rating.count} review${rating.count > 1 ? 's' : ''}` : '0 reviews'}</span>
           <span>{BUSINESS_NOTE}</span>
         </div>
 
@@ -119,13 +117,6 @@ function ProductInfo({
                 )
               })}
             </div>
-          </div>
-        ) : null}
-
-        {availableSizesText ? (
-          <div className="mt-4 rounded-[1.4rem] border border-[rgba(25,33,60,0.08)] bg-[rgba(252,249,243,0.92)] px-4 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#8D7667]">Available sizes</p>
-            <p className="mt-2 text-sm font-medium leading-7 text-[#47506A]">{availableSizesText}</p>
           </div>
         ) : null}
 

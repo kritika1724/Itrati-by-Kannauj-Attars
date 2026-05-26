@@ -1,18 +1,23 @@
 const express = require('express')
 const { protect, adminOnly } = require('../middleware/auth')
 const TaxonomyTerm = require('../models/TaxonomyTerm')
+const Product = require('../models/Product')
 const asyncHandler = require('../utils/asyncHandler')
 const { slugifyTerm } = require('../config/taxonomy')
 const { getTaxonomyPayload, clearTaxonomyPayloadCache } = require('../utils/taxonomy')
+const { clearCacheByPrefix } = require('../utils/appCache')
 
 const router = express.Router()
-const ALLOWED_GROUPS = new Set(['purpose', 'family'])
+const ALLOWED_GROUPS = new Set(['purpose', 'family', 'collection'])
+const RESERVED_COLLECTIONS = new Set(['signature', 'heritage'])
+const PRODUCTS_LIST_CACHE_PREFIX = 'products:list:'
+const PRODUCT_DETAIL_CACHE_PREFIX = 'products:detail:'
 
 router.get(
   '/',
   asyncHandler(async (_req, res) => {
     const payload = await getTaxonomyPayload()
-    res.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=1200')
+    res.set('Cache-Control', 'no-store')
     res.json(payload)
   })
 )
@@ -63,6 +68,95 @@ router.post(
     res.status(201).json({
       message: 'Filter created',
       term: { id: created.slug, label: created.label, group: created.group },
+    })
+  })
+)
+
+router.put(
+  '/:group/:slug',
+  protect,
+  adminOnly,
+  asyncHandler(async (req, res) => {
+    const group = String(req.params?.group || '')
+      .trim()
+      .toLowerCase()
+    const slug = String(req.params?.slug || '')
+      .trim()
+      .toLowerCase()
+    const label = String(req.body?.label || '').trim()
+
+    if (!ALLOWED_GROUPS.has(group)) {
+      return res.status(400).json({ message: 'Filter type is invalid' })
+    }
+
+    if (!slug) {
+      return res.status(400).json({ message: 'Filter id is required' })
+    }
+
+    if (!label) {
+      return res.status(400).json({ message: 'Filter label is required' })
+    }
+
+    const term = await TaxonomyTerm.findOne({ group, slug })
+    if (!term) {
+      return res.status(404).json({ message: 'Filter not found' })
+    }
+
+    term.label = label
+    await term.save()
+    clearTaxonomyPayloadCache()
+
+    res.json({
+      message: group === 'collection' ? 'Collection updated' : 'Filter updated',
+      term: { id: term.slug, label: term.label, group: term.group },
+    })
+  })
+)
+
+router.delete(
+  '/:group/:slug',
+  protect,
+  adminOnly,
+  asyncHandler(async (req, res) => {
+    const group = String(req.params?.group || '')
+      .trim()
+      .toLowerCase()
+    const slug = String(req.params?.slug || '')
+      .trim()
+      .toLowerCase()
+
+    if (!ALLOWED_GROUPS.has(group)) {
+      return res.status(400).json({ message: 'Filter type is invalid' })
+    }
+
+    if (!slug) {
+      return res.status(400).json({ message: 'Filter id is required' })
+    }
+
+    if (group === 'collection' && RESERVED_COLLECTIONS.has(slug)) {
+      return res.status(400).json({ message: 'This collection is reserved and cannot be deleted' })
+    }
+
+    const term = await TaxonomyTerm.findOne({ group, slug })
+    if (!term) {
+      return res.status(404).json({ message: 'Filter not found' })
+    }
+
+    if (group === 'collection') {
+      await Product.updateMany({ featuredCollections: slug }, { $pull: { featuredCollections: slug } })
+    } else if (group === 'purpose') {
+      await Product.updateMany({ purposeTags: slug }, { $pull: { purposeTags: slug } })
+    } else if (group === 'family') {
+      await Product.updateMany({ familyTags: slug }, { $pull: { familyTags: slug } })
+    }
+
+    await term.deleteOne()
+    clearTaxonomyPayloadCache()
+    clearCacheByPrefix(PRODUCTS_LIST_CACHE_PREFIX)
+    clearCacheByPrefix(PRODUCT_DETAIL_CACHE_PREFIX)
+
+    res.json({
+      message: group === 'collection' ? 'Collection deleted' : 'Filter deleted',
     })
   })
 )

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { FiChevronDown } from 'react-icons/fi'
+import RichTextContent from '../RichTextContent'
 
 function ProductAccordion({ items = [], defaultOpen = 0 }) {
   const [openIndex, setOpenIndex] = useState(defaultOpen)
@@ -45,7 +46,10 @@ function ProductAccordion({ items = [], defaultOpen = 0 }) {
                         ))}
                       </ul>
                     ) : (
-                      <p>{item.content}</p>
+                      <RichTextContent
+                        value={item.content}
+                        className="space-y-4 [&_ol]:pl-5 [&_p]:text-[#5F6475] [&_ul]:pl-5"
+                      />
                     )}
                   </div>
                 </motion.div>

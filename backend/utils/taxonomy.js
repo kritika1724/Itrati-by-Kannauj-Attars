@@ -29,12 +29,16 @@ const getTaxonomyPayload = async () => {
   const cached = getCache(TAXONOMY_CACHE_KEY)
   if (cached) return cached
 
-  const [purposes, families] = await Promise.all([
+  const [purposes, families, collections] = await Promise.all([
     TaxonomyTerm.find({ group: 'purpose', isActive: true })
       .sort({ sortOrder: 1, label: 1 })
       .select('slug label sortOrder')
       .lean(),
     TaxonomyTerm.find({ group: 'family', isActive: true })
+      .sort({ sortOrder: 1, label: 1 })
+      .select('slug label sortOrder')
+      .lean(),
+    TaxonomyTerm.find({ group: 'collection', isActive: true })
       .sort({ sortOrder: 1, label: 1 })
       .select('slug label sortOrder')
       .lean(),
@@ -47,6 +51,11 @@ const getTaxonomyPayload = async () => {
       sortOrder: term.sortOrder || 0,
     })),
     families: families.map((term) => ({
+      id: term.slug,
+      label: term.label,
+      sortOrder: term.sortOrder || 0,
+    })),
+    collections: collections.map((term) => ({
       id: term.slug,
       label: term.label,
       sortOrder: term.sortOrder || 0,

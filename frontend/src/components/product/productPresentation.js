@@ -194,7 +194,6 @@ export const getRatingMeta = (product) => {
 export const getBadgeList = (product) => {
   const badges = []
   if (product?.isBestSeller) badges.push('Bestseller')
-  if (product?.isNewArrival) badges.push('New')
   if (product?.sample?.enabled) badges.push('Pure')
   if (!badges.length) badges.push('Premium')
   return badges.slice(0, 3)
@@ -215,6 +214,13 @@ export const getCategoryFallbackLine = (category) => {
 }
 
 export const getFragranceDescriptors = (product, familyMap = {}) => {
+  const highlights = (Array.isArray(product?.highlights) ? product.highlights : [])
+    .map((item) => String(item || '').trim())
+    .filter(Boolean)
+    .slice(0, 3)
+
+  if (highlights.length) return highlights
+
   const labels = (Array.isArray(product?.familyTags) ? product.familyTags : [])
     .map((id) => familyMap[id] || formatLabel(id))
     .filter(Boolean)

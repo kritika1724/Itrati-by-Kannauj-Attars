@@ -25,6 +25,9 @@ const DEFAULT_TAXONOMY_TERMS = [
   { group: 'family', slug: 'aquatic', label: 'Aquatic', sortOrder: 60 },
   { group: 'family', slug: 'spicy', label: 'Spicy', sortOrder: 70 },
   { group: 'family', slug: 'gourmand', label: 'Gourmand', sortOrder: 80 },
+
+  { group: 'collection', slug: 'signature', label: 'Signature Attars', sortOrder: 10 },
+  { group: 'collection', slug: 'heritage', label: 'Heritage Collection', sortOrder: 20 },
 ]
 
 module.exports = { DEFAULT_TAXONOMY_TERMS, slugifyTerm }

@@ -8,17 +8,16 @@ const escapeRegex = require('../utils/escapeRegex')
 const { getCache, setCache, clearCacheByPrefix } = require('../utils/appCache')
 
 const router = express.Router()
-const ALLOWED_COLLECTIONS = new Set(['signature', 'heritage'])
 const PRODUCTS_LIST_CACHE_PREFIX = 'products:list:'
 const PRODUCT_DETAIL_CACHE_PREFIX = 'products:detail:'
 const PRODUCTS_CACHE_TTL_MS = Number(process.env.PRODUCTS_CACHE_TTL_MS || 30 * 1000)
 const PUBLIC_PRODUCT_LIST_SELECT =
-  'name description category purposeTags familyTags featuredCollections isBestSeller isNewArrival sample availableSizesText price packs images imageZoom rating numReviews createdAt'
+  'name description category purposeTags familyTags featuredCollections isBestSeller isNewArrival sample availableSizesText price packs images imageZoom highlights rating numReviews createdAt'
 const ADMIN_PRODUCT_LIST_SELECT = `${PUBLIC_PRODUCT_LIST_SELECT} stock`
 
 const normalizeCollections = (value) => {
   if (!Array.isArray(value)) return []
-  return [...new Set(value.map((item) => String(item || '').trim().toLowerCase()).filter((item) => ALLOWED_COLLECTIONS.has(item)))]
+  return [...new Set(value.map((item) => String(item || '').trim().toLowerCase()).filter(Boolean))]
 }
 
 const normalizeSample = (value) => {
@@ -49,6 +48,17 @@ const normalizeImageZoom = (value) => {
 }
 
 const normalizeAvailableSizesText = (value) => String(value || '').trim()
+const normalizeHighlights = (value) =>
+  Array.isArray(value) ? value.map((item) => String(item || '').trim()).filter(Boolean).slice(0, 3) : []
+const normalizeDetailSections = (value) =>
+  Array.isArray(value)
+    ? value
+        .map((item) => ({
+          title: String(item?.title || '').trim(),
+          content: String(item?.content || '').trim(),
+        }))
+        .filter((item) => item.title && item.content)
+    : []
 
 const findReviewOrder = async (orderId) => {
   const value = String(orderId || '').trim()
@@ -130,7 +140,7 @@ router.get(
       ? collectionRaw
           .split(',')
           .map((s) => s.trim().toLowerCase())
-          .filter((s) => ALLOWED_COLLECTIONS.has(s))
+          .filter(Boolean)
       : []
 
     if (purposes.length) filter.purposeTags = { $in: purposes }
@@ -232,6 +242,7 @@ router.post('/', protect, adminOnly, asyncHandler(async (req, res) => {
     imageZoom,
     stock,
     highlights,
+    detailSections,
   } = req.body
 
   if (!name || !description || price === undefined) {
@@ -255,7 +266,8 @@ router.post('/', protect, adminOnly, asyncHandler(async (req, res) => {
     images,
     imageZoom: normalizeImageZoom(imageZoom),
     stock: normalizeProductStock(stock),
-    highlights,
+    highlights: normalizeHighlights(highlights),
+    detailSections: normalizeDetailSections(detailSections),
   })
 
   clearCacheByPrefix(PRODUCTS_LIST_CACHE_PREFIX)
@@ -287,6 +299,7 @@ router.put('/:id', protect, adminOnly, asyncHandler(async (req, res) => {
     'imageZoom',
     'stock',
     'highlights',
+    'detailSections',
   ]
   fields.forEach((field) => {
     if (req.body[field] !== undefined) {
@@ -302,6 +315,10 @@ router.put('/:id', protect, adminOnly, asyncHandler(async (req, res) => {
         product[field] = normalizeImageZoom(req.body[field])
       } else if (field === 'availableSizesText') {
         product[field] = normalizeAvailableSizesText(req.body[field])
+      } else if (field === 'highlights') {
+        product[field] = normalizeHighlights(req.body[field])
+      } else if (field === 'detailSections') {
+        product[field] = normalizeDetailSections(req.body[field])
       } else {
         product[field] = req.body[field]
       }

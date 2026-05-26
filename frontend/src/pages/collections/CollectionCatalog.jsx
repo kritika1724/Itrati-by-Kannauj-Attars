@@ -179,14 +179,23 @@ function CollectionCatalog({
                           <p className="text-sm font-semibold text-ink">{product.name}</p>
                           <p className="mt-1 text-xs text-muted">{product.category || 'Product'}</p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => toggleMembership(product, false)}
-                          disabled={busyId === product._id}
-                          className="rounded-full border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-600 disabled:opacity-50"
-                        >
-                          {busyId === product._id ? 'Updating…' : 'Remove'}
-                        </button>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/admin/products/${product._id}`)}
+                            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-emberDark"
+                          >
+                            Edit product
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleMembership(product, false)}
+                            disabled={busyId === product._id}
+                            className="rounded-full border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-600 disabled:opacity-50"
+                          >
+                            {busyId === product._id ? 'Updating…' : 'Remove'}
+                          </button>
+                        </div>
                       </div>
                     ))
                   ) : (
@@ -217,14 +226,23 @@ function CollectionCatalog({
                           <p className="text-sm font-semibold text-ink">{product.name}</p>
                           <p className="mt-1 text-xs text-muted">{product.category || 'Product'}</p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => toggleMembership(product, true)}
-                          disabled={busyId === product._id}
-                          className="rounded-full bg-ember px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
-                        >
-                          {busyId === product._id ? 'Updating…' : 'Add'}
-                        </button>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/admin/products/${product._id}`)}
+                            className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-emberDark"
+                          >
+                            Edit product
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleMembership(product, true)}
+                            disabled={busyId === product._id}
+                            className="rounded-full bg-ember px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                          >
+                            {busyId === product._id ? 'Updating…' : 'Add'}
+                          </button>
+                        </div>
                       </div>
                     ))
                   ) : (

@@ -66,6 +66,51 @@ const adminNavLinkClass = ({ isActive }) =>
       : 'border-white/10 bg-white/5 text-white hover:border-gold/35 hover:bg-white/10'
   }`
 
+const mobileQuickActions = [
+  {
+    key: 'home',
+    label: 'Home',
+    to: '/',
+    symbol: '🏠',
+    isActive: (pathname) => pathname === '/',
+  },
+  {
+    key: 'products',
+    label: 'Products',
+    to: '/products',
+    symbol: '🧴',
+    isActive: (pathname) => pathname.startsWith('/products'),
+  },
+  {
+    key: 'wishlist',
+    label: 'Wishlist',
+    to: '/wishlist',
+    symbol: '🤍',
+    isActive: (pathname) => pathname === '/wishlist',
+  },
+  {
+    key: 'cart',
+    label: 'Cart',
+    to: '/cart',
+    symbol: '🛍️',
+    isActive: (pathname) => pathname === '/cart' || pathname.startsWith('/checkout'),
+  },
+  {
+    key: 'track',
+    label: 'Track',
+    to: '/track-order',
+    symbol: '🚚',
+    isActive: (pathname) => pathname === '/track-order',
+  },
+  {
+    key: 'contact',
+    label: 'Contact',
+    to: '/contact',
+    symbol: '📞',
+    isActive: (pathname) => pathname === '/contact',
+  },
+]
+
 function RouteLoader() {
   return (
     <div className="ka-page-aura min-h-[50vh] bg-sand px-4 py-14 sm:px-6">
@@ -359,6 +404,47 @@ function AppShell() {
               {mobileOpen ? <FiX size={18} /> : <FiMenu size={18} />}
             </button>
           </div>
+
+          {!isAdmin ? (
+            <div className="border-t border-white/45 px-3 pb-3 pt-2 md:hidden">
+              <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {mobileQuickActions.map((action) => {
+                  const active = action.isActive(location.pathname)
+                  const badgeCount =
+                    action.key === 'wishlist' ? wishlistCount : action.key === 'cart' ? cartCount : 0
+
+                  return (
+                    <Link
+                      key={action.key}
+                      to={action.to}
+                      className={`group flex min-w-[4.4rem] flex-1 flex-col items-center justify-center gap-1 rounded-[1.2rem] border px-2 py-2 text-center transition ${
+                        active
+                          ? 'border-gold/40 bg-[rgba(200,169,106,0.14)] text-ink shadow-[0_14px_32px_rgba(200,169,106,0.16)]'
+                          : 'border-white/70 bg-white/82 text-emberDark hover:border-gold/35 hover:bg-white'
+                      }`}
+                    >
+                      <span
+                        className={`relative inline-flex h-9 w-9 items-center justify-center rounded-full transition ${
+                          active
+                            ? 'bg-[linear-gradient(135deg,#E9D28A_0%,#C9A24A_100%)] shadow-[0_10px_24px_rgba(201,162,74,0.24)]'
+                            : 'bg-[rgba(25,33,60,0.06)] group-hover:bg-[rgba(200,169,106,0.16)]'
+                        }`}
+                        aria-hidden="true"
+                      >
+                        <span className="text-base leading-none">{action.symbol}</span>
+                        {badgeCount > 0 ? (
+                          <span className="absolute -right-1.5 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-[#19213C] px-1.5 py-0.5 text-[9px] font-semibold text-white">
+                            {badgeCount}
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className="text-[10px] font-semibold tracking-[0.06em]">{action.label}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          ) : null}
 
           <AnimatePresence>
             {mobileOpen ? (

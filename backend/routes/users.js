@@ -5,6 +5,7 @@ const { isAdminEmail } = require('../config/admin')
 const { signAccessToken, signRefreshToken, hashToken, refreshExpiryDate } = require('../config/tokens')
 const { setCookie, userPayload } = require('./session')
 const asyncHandler = require('../utils/asyncHandler')
+const { loginLimiter } = require('../utils/rateLimit')
 
 const router = express.Router()
 
@@ -16,6 +17,7 @@ router.post('/register', asyncHandler(async (req, res) => {
 
 router.post(
   '/login',
+  loginLimiter,
   asyncHandler(async (req, res) => {
     const { email, password } = req.body
 

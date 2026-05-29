@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom'
 import { FiMail, FiMapPin, FiPhone, FiAward } from 'react-icons/fi'
 import AdminAssetImage from '../components/AdminAssetImage'
 import { BUSINESS } from '../config/business'
+import { useSiteContactProfile } from '../hooks/useSiteContentBlocks'
 
 function Ceo() {
+  const contactProfile = useSiteContactProfile()
+
   return (
     <div className="bg-sand min-h-screen">
       <header className="px-6 pb-12 pt-12">
@@ -67,7 +70,7 @@ function Ceo() {
                   <div>
                     <p className="text-sm font-semibold text-ink">Email</p>
                     <div className="mt-1 space-y-1">
-                      {(BUSINESS.emails || [BUSINESS.email]).map((email) => (
+                      {contactProfile.emails.map((email) => (
                         <a key={email} href={`mailto:${email}`} className="block text-sm text-muted hover:text-ink">
                           {email}
                         </a>
@@ -83,7 +86,7 @@ function Ceo() {
                   <div>
                     <p className="text-sm font-semibold text-ink">Mobile</p>
                     <div className="mt-1 space-y-1">
-                      {(BUSINESS.phones || []).map((phone) => (
+                      {contactProfile.phones.map((phone) => (
                         <a key={phone} href={`tel:${phone.replace(/\s+/g, '')}`} className="block text-sm text-muted hover:text-ink">
                           {phone}
                         </a>
@@ -135,8 +138,8 @@ function Ceo() {
                 <div className="flex items-start gap-3">
                   <FiMapPin className="mt-0.5 text-ember" size={18} />
                   <div>
-                    <p className="text-sm font-semibold text-ink">Kannauj Office</p>
-                    <p className="mt-2 text-sm text-muted">{BUSINESS.offices.kannauj.address}</p>
+                    <p className="text-sm font-semibold text-ink">{contactProfile.offices.kannauj.label}</p>
+                    <p className="mt-2 text-sm text-muted">{contactProfile.offices.kannauj.address}</p>
                   </div>
                 </div>
               </div>
@@ -144,9 +147,9 @@ function Ceo() {
                 <div className="flex items-start gap-3">
                   <FiMapPin className="mt-0.5 text-ember" size={18} />
                   <div>
-                    <p className="text-sm font-semibold text-ink">Mumbai Office</p>
+                    <p className="text-sm font-semibold text-ink">{contactProfile.offices.mumbai.label}</p>
                     <p className="mt-2 text-sm text-muted">
-                      {BUSINESS.offices.mumbai.address}
+                      {contactProfile.offices.mumbai.address}
                     </p>
                   </div>
                 </div>
@@ -159,13 +162,6 @@ function Ceo() {
           </div>
         </div>
       </section>
-
-      <footer className="bg-midnight px-6 py-14 text-white">
-        <div className="mx-auto w-full max-w-6xl">
-          <h2 className="font-display text-2xl">{BUSINESS.displayName}</h2>
-          <p className="mt-2 text-sm text-white/75">Leadership rooted in heritage craft.</p>
-        </div>
-      </footer>
     </div>
   )
 }

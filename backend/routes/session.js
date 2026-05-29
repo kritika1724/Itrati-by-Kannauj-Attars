@@ -5,6 +5,7 @@ const { isAdminEmail } = require('../config/admin')
 const { getRefreshCookieOptions } = require('../config/cookies')
 const { signAccessToken, signRefreshToken, hashToken, refreshExpiryDate } = require('../config/tokens')
 const asyncHandler = require('../utils/asyncHandler')
+const { sessionRefreshLimiter } = require('../utils/rateLimit')
 
 const router = express.Router()
 
@@ -32,7 +33,7 @@ const userPayload = (user) => {
 }
 
 // Refresh access token using httpOnly refresh cookie (rotates refresh token)
-router.post('/refresh', asyncHandler(async (req, res) => {
+router.post('/refresh', sessionRefreshLimiter, asyncHandler(async (req, res) => {
   const token = req.cookies?.[COOKIE_NAME]
   if (!token) return res.status(401).json({ message: 'Not authorized' })
 

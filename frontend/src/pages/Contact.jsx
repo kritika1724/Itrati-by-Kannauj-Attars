@@ -5,7 +5,7 @@ import * as yup from 'yup'
 import { FiMail, FiMapPin, FiPhone } from 'react-icons/fi'
 import { api, auth } from '../services/api'
 import { useLocation } from 'react-router-dom'
-import { BUSINESS } from '../config/business'
+import { useContactPageContent, useSiteContactProfile } from '../hooks/useSiteContentBlocks'
 
 const schema = yup.object({
   name: yup.string().required('Please enter your name.'),
@@ -18,6 +18,8 @@ function Contact() {
   const location = useLocation()
   const [user, setUser] = useState(auth.getUser())
   const isAdmin = user?.isAdmin === true
+  const contactPageContent = useContactPageContent()
+  const contactProfile = useSiteContactProfile()
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
@@ -229,12 +231,12 @@ function Contact() {
     <div className="bg-sand">
       <header className="px-6 pt-12 pb-12">
         <div className="w-full max-w-6xl mx-auto">
-          <p className="ka-kicker">Get in touch</p>
+          <p className="ka-kicker">{contactPageContent.heroKicker}</p>
           <h1 className="mt-4 ka-h1">
-            Talk to us about attars and aromatics.
+            {contactPageContent.heroTitle}
           </h1>
           <p className="mt-4 ka-lead">
-            Reach out for wholesale inquiries, private labeling, custom blends, or gifting options tailored for special occasions.
+            {contactPageContent.heroDescription}
           </p>
         </div>
       </header>
@@ -321,7 +323,7 @@ function Contact() {
               <div>
                 <p className="text-sm font-semibold text-ink">Email</p>
                 <div className="mt-1 space-y-1">
-                  {(BUSINESS.emails || [BUSINESS.email]).map((email) => (
+                  {contactProfile.emails.map((email) => (
                     <a key={email} href={`mailto:${email}`} className="block text-sm text-muted hover:text-ink">
                       {email}
                     </a>
@@ -332,15 +334,15 @@ function Contact() {
             <div className="flex items-start gap-3">
               <FiMapPin className="mt-1 text-ember" size={20} />
               <div>
-                <p className="text-sm font-semibold text-ink">{BUSINESS.offices.kannauj.label}</p>
-                <p className="text-sm text-muted">{BUSINESS.offices.kannauj.address}</p>
+                <p className="text-sm font-semibold text-ink">{contactProfile.offices.kannauj.label}</p>
+                <p className="text-sm text-muted">{contactProfile.offices.kannauj.address}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <FiMapPin className="mt-1 text-ember" size={20} />
               <div>
-                <p className="text-sm font-semibold text-ink">{BUSINESS.offices.mumbai.label}</p>
-                <p className="text-sm text-muted">{BUSINESS.offices.mumbai.address}</p>
+                <p className="text-sm font-semibold text-ink">{contactProfile.offices.mumbai.label}</p>
+                <p className="text-sm text-muted">{contactProfile.offices.mumbai.address}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -348,7 +350,7 @@ function Contact() {
               <div>
                 <p className="text-sm font-semibold text-ink">Phone</p>
                 <div className="mt-1 space-y-1">
-                  {(BUSINESS.phones || []).map((phone) => (
+                  {contactProfile.phones.map((phone) => (
                     <a key={phone} href={`tel:${phone.replace(/\s+/g, '')}`} className="block text-sm text-muted hover:text-ink">
                       {phone}
                     </a>
@@ -359,15 +361,6 @@ function Contact() {
           </div>
         </div>
       </section>
-
-      <footer className="px-6 text-white bg-midnight py-14">
-        <div className="w-full max-w-6xl mx-auto">
-          <h2 className="text-2xl font-display">{BUSINESS.fullDisplayName}</h2>
-          <p className="mt-2 text-sm text-white/75">
-            Mohalla Holi, Kannauj - 209725 (U.P.), India • {BUSINESS.phones?.join(' • ')}
-          </p>
-        </div>
-      </footer>
     </div>
   )
 }

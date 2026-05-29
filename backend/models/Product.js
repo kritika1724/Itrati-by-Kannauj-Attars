@@ -51,6 +51,10 @@ const productSchema = new mongoose.Schema(
       ],
       default: [],
     },
+    relatedProducts: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+      default: [],
+    },
     rating: { type: Number, default: 0 },
     numReviews: { type: Number, default: 0 },
     reviews: { type: [reviewSchema], default: [] },
@@ -68,5 +72,6 @@ productSchema.index({ rating: -1 })
 productSchema.index({ purposeTags: 1 })
 productSchema.index({ familyTags: 1 })
 productSchema.index({ featuredCollections: 1 })
+productSchema.index({ relatedProducts: 1 })
 
 module.exports = mongoose.model('Product', productSchema)

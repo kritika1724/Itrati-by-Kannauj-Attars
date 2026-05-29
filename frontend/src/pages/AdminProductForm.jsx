@@ -39,6 +39,16 @@ const DEFAULT_DETAIL_SECTIONS = [
 ]
 
 const createDefaultDetailSections = () => DEFAULT_DETAIL_SECTIONS.map((section) => ({ ...section }))
+const mergeProductsById = (current = [], incoming = []) => {
+  const map = new Map()
+
+  ;[...current, ...incoming].forEach((item) => {
+    const productId = String(item?._id || '').trim()
+    if (productId) map.set(productId, item)
+  })
+
+  return [...map.values()]
+}
 
 function AdminProductForm() {
   const { id } = useParams()
@@ -53,10 +63,40 @@ function AdminProductForm() {
   const [purposeTags, setPurposeTags] = useState([])
   const [familyTags, setFamilyTags] = useState([])
   const [featuredCollections, setFeaturedCollections] = useState([])
+  const [relatedProductIds, setRelatedProductIds] = useState([])
+  const [relatedProductSearch, setRelatedProductSearch] = useState('')
+  const [relatedProductOptions, setRelatedProductOptions] = useState([])
+  const [relatedProductCatalog, setRelatedProductCatalog] = useState([])
+  const [loadingRelatedProductOptions, setLoadingRelatedProductOptions] = useState(false)
   const [message, setMessage] = useState('')
   const { buyerTypes, purposes: purposeOptions, families: familyOptions, collections: collectionOptions } = useTaxonomy()
 
   const hasPacks = useMemo(() => packs.some((p) => (p.label || '').trim() && p.price !== ''), [packs])
+  const relatedProductCatalogById = useMemo(() => {
+    const map = new Map()
+    relatedProductCatalog.forEach((item) => {
+      const productId = String(item?._id || '').trim()
+      if (productId) map.set(productId, item)
+    })
+    return map
+  }, [relatedProductCatalog])
+  const selectedRelatedProducts = useMemo(
+    () =>
+      relatedProductIds
+        .map((productId) => {
+          const normalizedId = String(productId || '').trim()
+          return (
+            relatedProductCatalogById.get(normalizedId) || {
+              _id: normalizedId,
+              name: `Selected fragrance ${normalizedId.slice(-6)}`,
+              category: '',
+              images: [],
+            }
+          )
+        })
+        .filter((item) => String(item?._id || '').trim()),
+    [relatedProductCatalogById, relatedProductIds]
+  )
 
   const {
     register,
@@ -84,6 +124,7 @@ function AdminProductForm() {
       setValue('isNewArrival', false)
       setValue('sampleEnabled', false)
       setDetailSections(createDefaultDetailSections())
+      setRelatedProductIds([])
     }
     if (!isEditing) return
     const load = async () => {
@@ -113,6 +154,21 @@ function AdminProductForm() {
       setPurposeTags(Array.isArray(product.purposeTags) ? product.purposeTags : [])
       setFamilyTags(Array.isArray(product.familyTags) ? product.familyTags : [])
       setFeaturedCollections(Array.isArray(product.featuredCollections) ? product.featuredCollections : [])
+      setRelatedProductIds(
+        Array.isArray(product.relatedProducts)
+          ? product.relatedProducts
+              .map((item) => String(item?._id || item || '').trim())
+              .filter(Boolean)
+          : []
+      )
+      setRelatedProductCatalog((prev) =>
+        mergeProductsById(
+          prev,
+          Array.isArray(product.relatedProducts)
+            ? product.relatedProducts.filter((item) => item && typeof item === 'object')
+            : []
+        )
+      )
       if (Array.isArray(product.packs) && product.packs.length) {
         setPacks(
           product.packs.map((p) => ({
@@ -128,6 +184,52 @@ function AdminProductForm() {
     }
     load()
   }, [id, isEditing, setValue])
+
+  useEffect(() => {
+    let cancelled = false
+    const timer = window.setTimeout(async () => {
+      try {
+        setLoadingRelatedProductOptions(true)
+        const data = await api.getProducts({
+          page: 1,
+          limit: 24,
+          sort: 'name_asc',
+          keyword: String(relatedProductSearch || '').trim(),
+        })
+        if (cancelled) return
+        const nextOptions = Array.isArray(data?.products)
+          ? data.products.filter((item) => String(item?._id || '') !== String(id || ''))
+          : []
+        setRelatedProductOptions(nextOptions)
+        setRelatedProductCatalog((prev) => mergeProductsById(prev, nextOptions))
+      } catch {
+        if (!cancelled) setRelatedProductOptions([])
+      } finally {
+        if (!cancelled) setLoadingRelatedProductOptions(false)
+      }
+    }, relatedProductSearch.trim() ? 180 : 0)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [id, relatedProductSearch])
+
+  const addRelatedProduct = (product) => {
+    const productId = String(product?._id || '').trim()
+    if (!productId || relatedProductIds.includes(productId)) return
+    if (relatedProductIds.length >= 6) {
+      setMessage('You can pin up to 6 related fragrances manually. Remaining slots auto-fill automatically.')
+      return
+    }
+    setRelatedProductCatalog((prev) => mergeProductsById(prev, [product]))
+    setRelatedProductIds((prev) => [...prev, productId])
+  }
+
+  const removeRelatedProduct = (productId) => {
+    const normalizedId = String(productId || '').trim()
+    setRelatedProductIds((prev) => prev.filter((item) => item !== normalizedId))
+  }
 
   const handleImageUpload = async (event) => {
     const files = Array.from(event.target.files || [])
@@ -213,6 +315,7 @@ function AdminProductForm() {
           content: String(section.content || '').trim(),
         }))
         .filter((section) => section.title && section.content),
+      relatedProducts: relatedProductIds,
       images,
       imageZoom: clampImageZoom(imageZoom),
       packs: normalizedPacks,
@@ -621,6 +724,122 @@ function AdminProductForm() {
                     <p className="text-xs text-muted">No collections yet. Create one from Manage filters first.</p>
                   ) : null}
                 </div>
+              </div>
+
+              <div className="mt-6 rounded-3xl border border-slate-200/80 bg-white p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <label className="text-sm font-semibold text-ink">Related fragrances</label>
+                    <p className="mt-1 text-xs text-muted">
+                      Manually pin up to 6 products here. On the product page, these show first and any remaining spots auto-fill from the same purpose, fragrance family, and category filters.
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-slate-200 bg-clay/70 px-3 py-1 text-[11px] font-semibold text-emberDark">
+                    {relatedProductIds.length}/6 selected
+                  </span>
+                </div>
+
+                <div className="mt-4">
+                  <input
+                    value={relatedProductSearch}
+                    onChange={(e) => setRelatedProductSearch(e.target.value)}
+                    placeholder="Search fragrances by product name"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/20"
+                  />
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {selectedRelatedProducts.map((item) => (
+                    <div
+                      key={`selected-${item._id}`}
+                      className="flex min-w-[14rem] flex-1 items-center gap-3 rounded-2xl border border-gold/20 bg-clay/40 px-3 py-3"
+                    >
+                      <div className="h-14 w-14 overflow-hidden rounded-xl bg-white">
+                        {item.images?.[0] ? (
+                          <img
+                            src={toAssetUrl(item.images[0], import.meta.env.VITE_API_ASSET)}
+                            alt={item.name}
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                          />
+                        ) : null}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-ink">{item.name}</p>
+                        <p className="mt-1 truncate text-[11px] uppercase tracking-[0.18em] text-muted">
+                          {item.category || 'Fragrance'}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeRelatedProduct(item._id)}
+                        className="rounded-full border border-red-200 bg-white px-3 py-1 text-[11px] font-semibold text-red-600 hover:border-red-300"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  {selectedRelatedProducts.length === 0 ? (
+                    <p className="text-xs text-muted">
+                      No manual related fragrances selected yet. The system will still auto-pick from matching filters.
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="mt-5 grid gap-3 md:grid-cols-2">
+                  {relatedProductOptions.map((item) => {
+                    const productId = String(item?._id || '').trim()
+                    const active = relatedProductIds.includes(productId)
+
+                    return (
+                      <div
+                        key={productId}
+                        className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white px-3 py-3"
+                      >
+                        <div className="h-14 w-14 overflow-hidden rounded-xl bg-clay/40">
+                          {item.images?.[0] ? (
+                            <img
+                              src={toAssetUrl(item.images[0], import.meta.env.VITE_API_ASSET)}
+                              alt={item.name}
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : null}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-ink">{item.name}</p>
+                          <p className="mt-1 truncate text-[11px] uppercase tracking-[0.18em] text-muted">
+                            {item.category || 'Fragrance'}
+                          </p>
+                        </div>
+                        {active ? (
+                          <button
+                            type="button"
+                            onClick={() => removeRelatedProduct(productId)}
+                            className="rounded-full border border-slate-200 bg-clay/70 px-3 py-1 text-[11px] font-semibold text-emberDark hover:border-gold/40"
+                          >
+                            Added
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => addRelatedProduct(item)}
+                            className="rounded-full bg-ember px-3 py-1 text-[11px] font-semibold text-white transition hover:bg-emberDark"
+                          >
+                            Add
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {loadingRelatedProductOptions ? (
+                  <p className="mt-3 text-xs text-muted">Loading fragrance suggestions...</p>
+                ) : null}
+                {!loadingRelatedProductOptions && relatedProductOptions.length === 0 ? (
+                  <p className="mt-3 text-xs text-muted">No matching fragrances found for this search.</p>
+                ) : null}
               </div>
             </div>
 

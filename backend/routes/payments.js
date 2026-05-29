@@ -1,6 +1,7 @@
 const express = require('express')
 const crypto = require('crypto')
 const Order = require('../models/Order')
+const { paymentActionLimiter } = require('../utils/rateLimit')
 
 const router = express.Router()
 
@@ -29,7 +30,7 @@ const getOrderOr404 = async (orderId) => {
 }
 
 // Create (or re-create) a Razorpay order for a given app Order.
-router.post('/razorpay/order', async (req, res) => {
+router.post('/razorpay/order', paymentActionLimiter, async (req, res) => {
   try {
     const { keyId, keySecret } = mustGetRazorpayConfig()
 
@@ -102,7 +103,7 @@ router.post('/razorpay/order', async (req, res) => {
 })
 
 // Verify payment signature and mark paid.
-router.post('/razorpay/verify', async (req, res) => {
+router.post('/razorpay/verify', paymentActionLimiter, async (req, res) => {
   try {
     const { keySecret } = mustGetRazorpayConfig()
 

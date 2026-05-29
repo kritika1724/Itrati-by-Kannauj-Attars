@@ -4,8 +4,8 @@ export const PURPOSE_COLLECTION_META = {
     lead: 'Balanced attars and perfume oils selected for clean, comfortable everyday wear.',
   },
   weddings: {
-    title: 'For Weddings',
-    lead: 'Rich floral, festive, and memorable blends suited for wedding wear, gifting, and celebration.',
+    title: 'For Weddings or Parties',
+    lead: 'Rich floral, festive, and memorable blends suited for weddings, parties, gifting, and celebration.',
   },
   meditation_spiritual: {
     title: 'For Meditation & Spiritual',

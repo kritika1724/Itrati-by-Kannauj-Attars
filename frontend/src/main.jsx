@@ -5,6 +5,7 @@ import './index.css'
 import App from './App.jsx'
 import store from './store'
 import { SiteAssetsProvider } from './components/SiteAssetsProvider'
+import { SiteContentProvider } from './components/SiteContentProvider'
 import AuthBootstrap from './components/AuthBootstrap'
 import CartBootstrap from './components/CartBootstrap'
 import RecentlyViewedBootstrap from './components/RecentlyViewedBootstrap'
@@ -14,12 +15,14 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Provider store={store}>
       <TaxonomyProvider>
-        <SiteAssetsProvider>
-          <AuthBootstrap />
-          <CartBootstrap />
-          <RecentlyViewedBootstrap />
-          <App />
-        </SiteAssetsProvider>
+        <SiteContentProvider>
+          <SiteAssetsProvider>
+            <AuthBootstrap />
+            <CartBootstrap />
+            <RecentlyViewedBootstrap />
+            <App />
+          </SiteAssetsProvider>
+        </SiteContentProvider>
       </TaxonomyProvider>
     </Provider>
   </StrictMode>,

@@ -11,6 +11,7 @@ import AdminAssetImage from '../components/AdminAssetImage'
 import RecentlyViewedStrip from '../components/RecentlyViewedStrip'
 import { useSiteAssets } from '../components/SiteAssetsProvider'
 import { BUSINESS } from '../config/business'
+import { useSiteContactProfile } from '../hooks/useSiteContentBlocks'
 import { fadeLeft, fadeUp, heroStagger, revealCard, staggerGrid, viewportOnce } from '../lib/motion'
 import { auth } from '../services/api'
 import { toAssetUrl } from '../utils/media'
@@ -86,6 +87,7 @@ const clientVoices = [
 
 function Home() {
   const { assets, uploadAndSetAsset } = useSiteAssets()
+  const contactProfile = useSiteContactProfile()
   const [user, setUser] = useState(auth.getUser())
   const heroVideoRef = useRef(null)
   const [videoBusy, setVideoBusy] = useState(false)
@@ -425,7 +427,7 @@ function Home() {
         </section>
 
 
-        <section id="heritage" className="px-4 py-16 sm:px-6 sm:py-20 md:py-24">
+        <section id="our-story" className="px-4 py-16 sm:px-6 sm:py-20 md:py-24">
           <div className="mx-auto grid w-full max-w-7xl gap-10 lg:grid-cols-[0.85fr_1.15fr]">
             <motion.div
               initial="hidden"
@@ -434,12 +436,12 @@ function Home() {
               variants={fadeLeft}
               className="ka-shine-card lg:sticky lg:top-28 h-fit rounded-[2rem] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.90),rgba(246,249,255,0.82))] p-6 shadow-[0_28px_90px_rgba(7,16,36,0.12)] backdrop-blur-md sm:rounded-[2.25rem] sm:p-8"
             >
-              <p className="ka-kicker !text-[#6A7EA6]">Heritage of Kannauj</p>
+              <p className="ka-kicker !text-[#6A7EA6]">Our Story</p>
               <h2 className="mt-5 ka-h1 max-w-xl text-[clamp(2.7rem,6vw,5.5rem)] text-[#0F1E46]">
-                Ancient perfume heritage, expressed with modern clarity.
+                A generational perfume story from Kannauj.
               </h2>
               <p className="mt-6 max-w-lg text-sm leading-7 text-[#39527F] sm:text-lg sm:leading-8">
-                {BUSINESS.about}
+                {BUSINESS.legacyIntro}
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <span className="rounded-full border border-[#D4DDEE] bg-white/95 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#0F1E46] shadow-sm">
@@ -569,11 +571,11 @@ function Home() {
                     </p>
                   </div>
                   <div className="space-y-4 text-sm font-semibold text-white/86">
-                    <a href={`mailto:${BUSINESS.email}`} className="flex items-center gap-3 hover:text-white">
+                    <a href={`mailto:${contactProfile.emails[0]}`} className="flex items-center gap-3 hover:text-white">
                       <FiMail size={18} />
-                      {BUSINESS.email}
+                      {contactProfile.emails[0]}
                     </a>
-                    {BUSINESS.phones.map((phone) => (
+                    {contactProfile.phones.map((phone) => (
                       <a key={phone} href={`tel:${phone.replace(/\s+/g, '')}`} className="flex items-center gap-3 hover:text-white">
                         <FiPhone size={18} />
                         {phone}
@@ -671,36 +673,6 @@ function Home() {
           <RecentlyViewedStrip />
         </div>
 
-        <footer className="px-4 py-12 sm:px-6 sm:py-16">
-          <div className="mx-auto grid w-full max-w-7xl gap-10 rounded-[2.1rem] border border-white/70 bg-[linear-gradient(180deg,rgba(255,252,247,0.92),rgba(243,233,219,0.88))] p-6 shadow-[0_24px_80px_rgba(28,19,13,0.06)] md:grid-cols-[1fr_auto] md:items-end sm:rounded-[2.4rem] sm:p-10">
-            <div>
-              <p className="ka-kicker">{BUSINESS.fullDisplayName}</p>
-              <h2 className="mt-4 font-display text-4xl leading-tight text-ink md:text-5xl">
-                Quiet luxury from the perfume city of India.
-              </h2>
-              <p className="mt-5 max-w-2xl text-sm leading-8 text-muted sm:text-base">
-                Crafted in Kannauj, refined for modern buyers, and guided by a thousand-year fragrance tradition that still feels intimate today.
-              </p>
-            </div>
-
-            <div className="space-y-3 text-sm font-semibold text-ruby">
-              <a href={`mailto:${BUSINESS.email}`} className="flex items-center gap-3 hover:text-ink">
-                <FiMail size={18} />
-                {BUSINESS.email}
-              </a>
-              {BUSINESS.phones.map((phone) => (
-                <a key={phone} href={`tel:${phone.replace(/\s+/g, '')}`} className="flex items-center gap-3 hover:text-ink">
-                  <FiPhone size={18} />
-                  {phone}
-                </a>
-              ))}
-              <Link to="/contact" className="mt-4 inline-flex items-center gap-2 text-ink">
-                Reach {BUSINESS.brandName}
-                <span aria-hidden="true">→</span>
-              </Link>
-            </div>
-          </div>
-        </footer>
       </div>
       ) : (
         <div className="relative z-10 px-6 pb-20">

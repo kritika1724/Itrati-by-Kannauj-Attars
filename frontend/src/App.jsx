@@ -9,6 +9,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import LogoMark from './components/LogoMark'
 import BrandWordmark from './components/BrandWordmark'
 import CursorGlow from './components/CursorGlow'
+import SiteFooter from './components/SiteFooter'
 import { BUSINESS } from './config/business'
 import { pageShell } from './lib/motion'
 import { wishlistStorage } from './components/product/wishlist'
@@ -23,6 +24,7 @@ const TrackOrder = lazy(() => import('./pages/TrackOrder'))
 const Account = lazy(() => import('./pages/Account'))
 const OAuthCallback = lazy(() => import('./pages/OAuthCallback'))
 const NotFound = lazy(() => import('./pages/NotFound'))
+const LegalPage = lazy(() => import('./pages/LegalPage'))
 const Signature = lazy(() => import('./pages/collections/Signature'))
 const Heritage = lazy(() => import('./pages/collections/Heritage'))
 const PurposeCollection = lazy(() => import('./pages/collections/PurposeCollection'))
@@ -42,6 +44,7 @@ const AdminOrders = lazy(() => import('./pages/AdminOrders'))
 const AdminProducts = lazy(() => import('./pages/AdminProducts'))
 const AdminProductForm = lazy(() => import('./pages/AdminProductForm'))
 const AdminMedia = lazy(() => import('./pages/AdminMedia'))
+const AdminSiteContent = lazy(() => import('./pages/AdminSiteContent'))
 const AdminContacts = lazy(() => import('./pages/AdminContacts'))
 const AdminFilters = lazy(() => import('./pages/AdminFilters'))
 
@@ -71,42 +74,42 @@ const mobileQuickActions = [
     key: 'home',
     label: 'Home',
     to: '/',
-    symbol: '🏠',
+    symbol: '⌂',
     isActive: (pathname) => pathname === '/',
   },
   {
     key: 'products',
     label: 'Products',
     to: '/products',
-    symbol: '🧴',
+    symbol: '❖',
     isActive: (pathname) => pathname.startsWith('/products'),
   },
   {
     key: 'wishlist',
     label: 'Wishlist',
     to: '/wishlist',
-    symbol: '🤍',
+    symbol: '♡',
     isActive: (pathname) => pathname === '/wishlist',
   },
   {
     key: 'cart',
     label: 'Cart',
     to: '/cart',
-    symbol: '🛍️',
+    symbol: '◌',
     isActive: (pathname) => pathname === '/cart' || pathname.startsWith('/checkout'),
   },
   {
     key: 'track',
     label: 'Track',
     to: '/track-order',
-    symbol: '🚚',
+    symbol: '➜',
     isActive: (pathname) => pathname === '/track-order',
   },
   {
     key: 'contact',
     label: 'Contact',
     to: '/contact',
-    symbol: '📞',
+    symbol: '✆',
     isActive: (pathname) => pathname === '/contact',
   },
 ]
@@ -296,6 +299,9 @@ function AppShell() {
               </NavLink>
               <NavLink to="/admin/media" className={adminNavLinkClass}>
                 Website Images
+              </NavLink>
+              <NavLink to="/admin/content" className={adminNavLinkClass}>
+                Website Content
               </NavLink>
               <NavLink to="/admin/filters" className={adminNavLinkClass}>
                 Filters
@@ -546,6 +552,7 @@ function AppShell() {
         <Route path="/collections" element={<Collections />} />
         <Route path="/about" element={<Navigate to="/" replace />} />
         <Route path="/explore" element={<Navigate to="/" replace />} />
+        <Route path="/discovery-set" element={<Navigate to="/products?keyword=Discovery%20Set" replace />} />
         <Route path="/products" element={<Products />} />
         <Route
           path="/wishlist"
@@ -568,6 +575,10 @@ function AppShell() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/account" element={<Account />} />
         <Route path="/oauth/callback" element={<OAuthCallback />} />
+        <Route path="/terms-of-service" element={<LegalPage />} />
+        <Route path="/refund-policy" element={<LegalPage />} />
+        <Route path="/privacy-policy" element={<LegalPage />} />
+        <Route path="/shipping-policy" element={<LegalPage />} />
 
         <Route
           path="/account/orders"
@@ -691,6 +702,14 @@ function AppShell() {
           }
         />
         <Route
+          path="/admin/content"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminSiteContent />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/admin/media"
           element={
             <ProtectedRoute adminOnly>
@@ -719,6 +738,8 @@ function AppShell() {
           </Suspense>
         </motion.main>
       </AnimatePresence>
+
+      {!inAdminArea ? <SiteFooter /> : null}
     </div>
   )
 }

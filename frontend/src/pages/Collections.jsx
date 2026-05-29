@@ -234,10 +234,6 @@ function Collections() {
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
                   <p className="ka-kicker">Featured collections</p>
-                  <h2 className="mt-3 text-2xl font-semibold text-ink">Admin-curated collection pages</h2>
-                  <p className="mt-3 max-w-3xl text-sm leading-7 text-muted">
-                    These collections are created from admin and can contain any products you choose. A product can appear in more than one collection.
-                  </p>
                 </div>
               </div>
 
@@ -263,14 +259,23 @@ function Collections() {
                 </div>
               ) : null}
 
-              <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
+              <motion.div
+                initial="hidden"
+                whileInView="show"
+                viewport={viewportOnce}
+                variants={staggerGrid(0.08, 0.06)}
+                className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4"
+              >
                 {collections.map((collection) => {
                   const isEditing = editing.group === 'collection' && editing.id === collection.id
                   const isBusy = busy.group === 'collection' && busy.id === collection.id
 
                   return (
-                  <article
+                  <motion.article
                     key={collection.id}
+                    variants={revealCard}
+                    whileHover={{ y: -8, scale: 1.01 }}
+                    transition={{ duration: 0.28 }}
                     className="ka-glow-card flex h-full flex-col overflow-hidden rounded-[24px] border border-white/70 bg-white/88 p-3.5 shadow-[0_24px_60px_rgba(17,27,58,0.10)] backdrop-blur-sm transition duration-300 hover:shadow-[0_30px_70px_rgba(17,27,58,0.14)] sm:rounded-[30px] sm:p-5"
                   >
                     <AdminAssetImage
@@ -285,7 +290,7 @@ function Collections() {
                       <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted sm:text-xs sm:tracking-[0.3em]">
                         Featured collection
                       </p>
-                      {isEditing ? (
+                    {isEditing ? (
                         <div className="mt-3 space-y-3">
                           <input
                             value={editing.label}
@@ -316,7 +321,7 @@ function Collections() {
                             {collection.label}
                           </h2>
                           <p className="mt-2 flex-1 text-[11px] leading-5 text-muted sm:mt-3 sm:text-sm sm:leading-7">
-                            A curated collection page managed by admin. Open it to view products already placed inside and update membership anytime.
+                            A handpicked collection designed for easy browsing, discovery, and refined fragrance shopping.
                           </p>
 
                           <div className="mt-4 flex flex-wrap gap-2 sm:mt-5">
@@ -349,15 +354,18 @@ function Collections() {
                         </>
                       )}
                     </div>
-                  </article>
+                  </motion.article>
                   )
                 })}
                 {!collections.length && isAdmin ? (
-                  <div className="rounded-[24px] border border-dashed border-slate-300 bg-white/76 p-5 text-sm leading-7 text-muted sm:rounded-[30px]">
+                  <motion.div
+                    variants={revealCard}
+                    className="rounded-[24px] border border-dashed border-slate-300 bg-white/76 p-5 text-sm leading-7 text-muted sm:rounded-[30px]"
+                  >
                     Create your first custom collection above, then it will appear here with edit, delete, image upload, and product-management controls.
-                  </div>
+                  </motion.div>
                 ) : null}
-              </div>
+              </motion.div>
             </motion.div>
           ) : null}
 
@@ -373,9 +381,11 @@ function Collections() {
                 <p className="ka-kicker">Need everything in one place?</p>
                 <h2 className="mt-3 text-2xl font-semibold text-ink">View the complete product range</h2>
               </div>
-              <Link to="/products" className="ka-btn-primary px-6 py-3">
-                All products
-              </Link>
+              <motion.div whileHover={{ y: -2, scale: 1.03 }} whileTap={{ scale: 0.98 }} transition={{ duration: 0.2 }}>
+                <Link to="/products" className="ka-btn-primary px-6 py-3">
+                  All products
+                </Link>
+              </motion.div>
             </div>
           </motion.div>
         </div>

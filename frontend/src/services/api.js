@@ -195,6 +195,16 @@ export const api = {
   setAsset: (key, url) => request(`/assets/${encodeURIComponent(key)}`, { method: 'PUT', body: JSON.stringify({ url }) }),
   deleteAsset: (key) => request(`/assets/${encodeURIComponent(key)}`, { method: 'DELETE' }),
 
+  // Site content (admin-editable important text blocks)
+  getSiteContent: () => request('/site-content'),
+  getSiteContentItem: (key) => request(`/site-content/${encodeURIComponent(key)}`),
+  setSiteContent: (key, value) =>
+    request(`/site-content/${encodeURIComponent(key)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ value }),
+    }),
+  deleteSiteContent: (key) => request(`/site-content/${encodeURIComponent(key)}`, { method: 'DELETE' }),
+
   // Contact form
   submitContact: (payload) => request('/contact', { method: 'POST', body: JSON.stringify(payload) }),
   // Admin contact inbox

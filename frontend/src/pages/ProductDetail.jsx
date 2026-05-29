@@ -112,10 +112,15 @@ function ProductDetail() {
           const relatedMap = new Map()
           const addRelated = (items = []) => {
             items.forEach((item) => {
-              if (String(item._id) !== String(data._id)) relatedMap.set(String(item._id), item)
+              const itemId = String(item?._id || '').trim()
+              if (!itemId || itemId === String(data._id)) return
+              relatedMap.set(itemId, item)
             })
           }
 
+          if (Array.isArray(data.relatedProducts) && data.relatedProducts.length) {
+            addRelated(data.relatedProducts.filter((item) => item && typeof item === 'object'))
+          }
           if (Array.isArray(data.familyTags) && data.familyTags.length) {
             const related = await api.getProducts({ family: data.familyTags.slice(0, 3).join(','), limit: 8 })
             addRelated(related.products)

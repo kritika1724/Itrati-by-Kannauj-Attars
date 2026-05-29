@@ -6,7 +6,7 @@ export const BUYER_TYPES = [
 
 export const PURPOSE_TAGS = [
   { id: 'daily_wear', label: 'For Daily Wear' },
-  { id: 'weddings', label: 'For Weddings' },
+  { id: 'weddings', label: 'For Weddings or Parties' },
   { id: 'meditation_spiritual', label: 'For Meditation & Spiritual' },
   { id: 'luxury_gifting', label: 'For Luxury Gifting' },
   { id: 'skin_hair', label: 'For Skin & Hair' },
@@ -25,4 +25,3 @@ export const FAMILY_TAGS = [
   { id: 'spicy', label: 'Spicy' },
   { id: 'gourmand', label: 'Gourmand' },
 ]
-

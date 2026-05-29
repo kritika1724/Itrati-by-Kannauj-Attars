@@ -3,6 +3,7 @@ const ContactMessage = require('../models/ContactMessage')
 const { protect, adminOnly } = require('../middleware/auth')
 const jwt = require('jsonwebtoken')
 const asyncHandler = require('../utils/asyncHandler')
+const { contactSubmitLimiter } = require('../utils/rateLimit')
 
 const router = express.Router()
 
@@ -23,6 +24,7 @@ const tryGetUserIdFromBearer = (req) => {
 // Public: submit contact form
 router.post(
   '/',
+  contactSubmitLimiter,
   asyncHandler(async (req, res) => {
     const { name, email, message } = req.body || {}
 

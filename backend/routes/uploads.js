@@ -3,6 +3,7 @@ const multer = require('multer')
 const path = require('path')
 const fs = require('fs')
 const crypto = require('crypto')
+const { getCloudinaryConfig, getUploadRuntimeStatus } = require('../config/uploadRuntime')
 let sharp
 try {
   // Optional dependency (recommended) to convert HEIC/HEIF to JPG/WebP.
@@ -12,6 +13,7 @@ try {
   sharp = null
 }
 const { protect, adminOnly } = require('../middleware/auth')
+const { uploadWriteLimiter } = require('../utils/rateLimit')
 
 const router = express.Router()
 
@@ -21,16 +23,6 @@ fs.mkdirSync(uploadsDir, { recursive: true })
 const IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.avif']
 const VIDEO_EXTS = ['.mp4', '.webm', '.mov', '.m4v', '.ogg']
 const HEIC_EXTS = ['.heic', '.heif']
-
-const getCloudinaryConfig = () => {
-  const cloudName = String(process.env.CLOUDINARY_CLOUD_NAME || '').trim()
-  const apiKey = String(process.env.CLOUDINARY_API_KEY || '').trim()
-  const apiSecret = String(process.env.CLOUDINARY_API_SECRET || '').trim()
-
-  if (!cloudName || !apiKey || !apiSecret) return null
-
-  return { cloudName, apiKey, apiSecret }
-}
 
 const uploadToCloudinary = async ({ buffer, filename, mimeType }) => {
   const cfg = getCloudinaryConfig()
@@ -121,7 +113,7 @@ const upload = multer({
   limits: { fileSize: 80 * 1024 * 1024 },
 })
 
-router.post('/', protect, adminOnly, (req, res) => {
+router.post('/', protect, adminOnly, uploadWriteLimiter, (req, res) => {
   upload.any()(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ message: err.message || 'Upload failed' })
@@ -179,6 +171,14 @@ router.post('/', protect, adminOnly, (req, res) => {
       }
 
       const filename = `${safeBase}-${stamp}${outExt}`
+      const runtime = getUploadRuntimeStatus()
+      if (!runtime.ready) {
+        return res.status(503).json({
+          message:
+            'Production uploads require Cloudinary configuration. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET, or temporarily allow local uploads explicitly.',
+        })
+      }
+
       const uploaded =
         (await uploadToCloudinary({
           buffer: outBuffer,

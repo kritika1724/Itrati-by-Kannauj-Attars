@@ -4,11 +4,18 @@ const dotenv = require('dotenv')
 const helmet = require('helmet')
 const morgan = require('morgan')
 const rateLimit = require('express-rate-limit')
+const mongoose = require('mongoose')
 let cookieParser
 try {
   cookieParser = require('cookie-parser')
 } catch {
   cookieParser = null
+}
+let compression
+try {
+  compression = require('compression')
+} catch {
+  compression = null
 }
 const connectDB = require('./config/db')
 const path = require('path')
@@ -19,6 +26,7 @@ const uploadRoutes = require('./routes/uploads')
 const orderRoutes = require('./routes/orders')
 const adminRoutes = require('./routes/admin')
 const assetRoutes = require('./routes/assets')
+const siteContentRoutes = require('./routes/siteContent')
 const oauthRoutes = require('./routes/oauth')
 const { router: sessionRoutes } = require('./routes/session')
 const paymentRoutes = require('./routes/payments')
@@ -26,6 +34,9 @@ const contactRoutes = require('./routes/contact')
 const galleryRoutes = require('./routes/gallery')
 const taxonomyRoutes = require('./routes/taxonomy')
 const { ensureDefaultTaxonomy } = require('./utils/taxonomy')
+const { requestMonitor, getMonitoringSnapshot } = require('./utils/monitoring')
+const { getUploadRuntimeStatus } = require('./config/uploadRuntime')
+const { validateStartupConfig, printStartupValidationReport } = require('./config/startupValidation')
 
 dotenv.config()
 // Load env from backend/.env even if server is started from the repo root.
@@ -36,6 +47,7 @@ app.set('trust proxy', 1)
 app.disable('x-powered-by')
 app.use(express.json({ limit: '1mb' }))
 app.use(express.urlencoded({ extended: false, limit: '1mb' }))
+app.use(requestMonitor())
 if (cookieParser) {
   app.use(cookieParser())
 } else {
@@ -98,7 +110,17 @@ app.use(
     },
   })
 )
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'tiny' : 'dev'))
+app.use(morgan(process.env.NODE_ENV === 'production' ? ':method :url :status :res[content-length] - :response-time ms' : 'dev'))
+
+if (compression) {
+  app.use(
+    compression({
+      threshold: 1024,
+    })
+  )
+} else {
+  console.warn('[startup] compression package not installed; responses will not be compressed.')
+}
 
 app.use(
   rateLimit({
@@ -139,7 +161,22 @@ app.use(
 
 app.get('/api/health', (req, res) => {
   res.set('Cache-Control', 'no-store')
-  res.json({ status: 'ok' })
+  const uploads = getUploadRuntimeStatus()
+  const monitoring = getMonitoringSnapshot()
+  const dbConnected = mongoose.connection.readyState === 1
+  const healthy = dbConnected && uploads.ready
+
+  res.status(healthy ? 200 : 503).json({
+    status: healthy ? 'ok' : 'degraded',
+    timestamp: new Date().toISOString(),
+    uptimeSeconds: monitoring.uptimeSeconds,
+    database: {
+      connected: dbConnected,
+      readyState: mongoose.connection.readyState,
+    },
+    uploads,
+    monitoring,
+  })
 })
 
 app.use('/api/auth', authRoutes)
@@ -149,6 +186,7 @@ app.use('/api/uploads', uploadRoutes)
 app.use('/api/orders', orderRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/assets', assetRoutes)
+app.use('/api/site-content', siteContentRoutes)
 app.use('/api/oauth', oauthRoutes)
 app.use('/api/session', sessionRoutes)
 app.use('/api/payments', paymentRoutes)
@@ -222,6 +260,12 @@ app.use((err, req, res, next) => {
 
 const start = async () => {
   try {
+    const startupReport = validateStartupConfig()
+    printStartupValidationReport(startupReport)
+    if (!startupReport.ok) {
+      throw new Error('Startup configuration is invalid. Fix the reported environment variables and redeploy.')
+    }
+
     await connectDB(process.env.MONGO_URI)
     await ensureDefaultTaxonomy()
 

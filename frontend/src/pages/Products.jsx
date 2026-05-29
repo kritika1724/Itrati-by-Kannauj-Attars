@@ -41,7 +41,7 @@ const FAMILY_DEFAULTS = [
 ]
 const OCCASION_DEFAULTS = [
   { id: 'daily_wear', label: 'Daily wear' },
-  { id: 'weddings', label: 'Wedding' },
+  { id: 'weddings', label: 'Weddings or Parties' },
   { id: 'luxury_gifting', label: 'Gifting' },
   { id: 'festive', label: 'Festive' },
 ]

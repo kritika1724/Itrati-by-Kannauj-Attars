@@ -7,11 +7,13 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
+    "check:env": "node scripts/check-env.js",
     "create-admin": "node scripts/create-admin-user.js",
     "seed-products": "node scripts/seed-products.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",

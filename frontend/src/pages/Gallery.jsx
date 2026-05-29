@@ -5,6 +5,7 @@ import { FiPlus, FiTrash2 } from 'react-icons/fi'
 import AdminAssetImage from '../components/AdminAssetImage'
 import { BUSINESS } from '../config/business'
 import { useSiteAssets } from '../components/SiteAssetsProvider'
+import { useSiteContactProfile } from '../hooks/useSiteContentBlocks'
 import { api, auth } from '../services/api'
 import { toAssetUrl } from '../utils/media'
 
@@ -132,6 +133,7 @@ function ExtraPhotosGrid({ title, prefix, description = '' }) {
 
 function Gallery() {
   const [user, setUser] = useState(auth.getUser())
+  const contactProfile = useSiteContactProfile()
   const isAdmin = user?.isAdmin === true
 
   const [dynamicSections, setDynamicSections] = useState([])
@@ -289,8 +291,8 @@ function Gallery() {
                 imgClassName="p-2"
                 defaultAspect="16 / 10"
               />
-              <h3 className="mt-4 text-lg font-semibold text-ink">Kannauj Office</h3>
-              <p className="mt-2 text-sm text-muted">{BUSINESS.offices.kannauj.address}</p>
+              <h3 className="mt-4 text-lg font-semibold text-ink">{contactProfile.offices.kannauj.label}</h3>
+              <p className="mt-2 text-sm text-muted">{contactProfile.offices.kannauj.address}</p>
             </article>
 
             <article className="p-6 ka-card">
@@ -300,8 +302,8 @@ function Gallery() {
                 imgClassName="p-2"
                 defaultAspect="16 / 10"
               />
-              <h3 className="mt-4 text-lg font-semibold text-ink">Mumbai Office</h3>
-              <p className="mt-2 text-sm text-muted">{BUSINESS.offices.mumbai.address}</p>
+              <h3 className="mt-4 text-lg font-semibold text-ink">{contactProfile.offices.mumbai.label}</h3>
+              <p className="mt-2 text-sm text-muted">{contactProfile.offices.mumbai.address}</p>
             </article>
           </div>
 
@@ -573,13 +575,6 @@ function Gallery() {
           </div>
         </section>
       ) : null}
-
-      <footer className="px-6 text-white bg-midnight py-14">
-        <div className="w-full max-w-6xl mx-auto">
-          <h2 className="text-2xl font-display">{BUSINESS.displayName}</h2>
-          {/* <p className="mt-2 text-sm text-white/75"></p> */}
-        </div>
-      </footer>
     </div>
   )
 }

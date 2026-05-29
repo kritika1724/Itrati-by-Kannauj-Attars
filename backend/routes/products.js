@@ -14,6 +14,8 @@ const PRODUCTS_CACHE_TTL_MS = Number(process.env.PRODUCTS_CACHE_TTL_MS || 30 * 1
 const PUBLIC_PRODUCT_LIST_SELECT =
   'name description category purposeTags familyTags featuredCollections isBestSeller isNewArrival sample availableSizesText price packs images imageZoom highlights rating numReviews createdAt'
 const ADMIN_PRODUCT_LIST_SELECT = `${PUBLIC_PRODUCT_LIST_SELECT} stock`
+const RELATED_PRODUCTS_POPULATE_SELECT =
+  'name description category purposeTags familyTags featuredCollections isBestSeller isNewArrival sample availableSizesText price packs.label packs.price packs.salePrice images imageZoom highlights rating numReviews createdAt'
 
 const normalizeCollections = (value) => {
   if (!Array.isArray(value)) return []
@@ -58,6 +60,16 @@ const normalizeDetailSections = (value) =>
           content: String(item?.content || '').trim(),
         }))
         .filter((item) => item.title && item.content)
+    : []
+const normalizeRelatedProducts = (value, selfId = '') =>
+  Array.isArray(value)
+    ? [
+        ...new Set(
+          value
+            .map((item) => String(item?._id || item || '').trim())
+            .filter((itemId) => itemId && mongoose.isValidObjectId(itemId) && itemId !== String(selfId || ''))
+        ),
+      ].slice(0, 6)
     : []
 
 const findReviewOrder = async (orderId) => {
@@ -205,7 +217,10 @@ router.get(
       }
     }
 
-    const query = Product.findById(req.params.id)
+    const query = Product.findById(req.params.id).populate({
+      path: 'relatedProducts',
+      select: RELATED_PRODUCTS_POPULATE_SELECT,
+    })
     if (req.user?.isAdmin !== true) {
       query.select('-stock -packs.stock')
     }
@@ -243,6 +258,7 @@ router.post('/', protect, adminOnly, asyncHandler(async (req, res) => {
     stock,
     highlights,
     detailSections,
+    relatedProducts,
   } = req.body
 
   if (!name || !description || price === undefined) {
@@ -268,6 +284,7 @@ router.post('/', protect, adminOnly, asyncHandler(async (req, res) => {
     stock: normalizeProductStock(stock),
     highlights: normalizeHighlights(highlights),
     detailSections: normalizeDetailSections(detailSections),
+    relatedProducts: normalizeRelatedProducts(relatedProducts),
   })
 
   clearCacheByPrefix(PRODUCTS_LIST_CACHE_PREFIX)
@@ -300,6 +317,7 @@ router.put('/:id', protect, adminOnly, asyncHandler(async (req, res) => {
     'stock',
     'highlights',
     'detailSections',
+    'relatedProducts',
   ]
   fields.forEach((field) => {
     if (req.body[field] !== undefined) {
@@ -319,6 +337,8 @@ router.put('/:id', protect, adminOnly, asyncHandler(async (req, res) => {
         product[field] = normalizeHighlights(req.body[field])
       } else if (field === 'detailSections') {
         product[field] = normalizeDetailSections(req.body[field])
+      } else if (field === 'relatedProducts') {
+        product[field] = normalizeRelatedProducts(req.body[field], product._id)
       } else {
         product[field] = req.body[field]
       }

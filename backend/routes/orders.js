@@ -4,6 +4,7 @@ const Order = require('../models/Order')
 const Product = require('../models/Product')
 const { protect, optionalProtect, adminOnly } = require('../middleware/auth')
 const asyncHandler = require('../utils/asyncHandler')
+const { orderCreateLimiter, orderTrackLimiter, orderMutationLimiter } = require('../utils/rateLimit')
 
 const router = express.Router()
 const TRACK_ORDER_SELECT =
@@ -138,6 +139,7 @@ const reserveOrderStock = async (order, session = null) => {
 // Create order
 router.post(
   '/',
+  orderCreateLimiter,
   optionalProtect,
   asyncHandler(async (req, res) => {
     if (req.user?.isAdmin === true) {
@@ -285,6 +287,7 @@ router.post(
 // Public: track order using short tracking ID + phone/WhatsApp
 router.get(
   '/track/:publicOrderId',
+  orderTrackLimiter,
   asyncHandler(async (req, res) => {
     const publicOrderId = String(req.params.publicOrderId || '').trim().toUpperCase()
     const contactValue = normalizePhone(req.query.whatsapp || req.query.phone || '')
@@ -314,6 +317,7 @@ router.get(
 // Public: cancel order from track-order flow before admin confirmation
 router.put(
   '/track/:publicOrderId/cancel',
+  orderMutationLimiter,
   asyncHandler(async (req, res) => {
     const publicOrderId = String(req.params.publicOrderId || '').trim().toUpperCase()
     const contactValue = normalizePhone(req.body?.whatsapp || req.body?.phone || req.query.whatsapp || req.query.phone || '')
@@ -408,6 +412,7 @@ router.get(
 // Mark order as paid
 router.put(
   '/:id/pay',
+  orderMutationLimiter,
   protect,
   asyncHandler(async (req, res) => {
     const order = await Order.findById(req.params.id)
@@ -438,6 +443,7 @@ router.put(
 // Admin: update status
 router.put(
   '/:id/status',
+  orderMutationLimiter,
   protect,
   adminOnly,
   asyncHandler(async (req, res) => {
@@ -484,6 +490,7 @@ router.put(
 // Admin: delete order
 router.delete(
   '/:id',
+  orderMutationLimiter,
   protect,
   adminOnly,
   asyncHandler(async (req, res) => {
@@ -503,6 +510,7 @@ router.delete(
 // User: cancel own order (only before shipping)
 router.put(
   '/:id/cancel',
+  orderMutationLimiter,
   protect,
   asyncHandler(async (req, res) => {
     const order = await Order.findById(req.params.id)

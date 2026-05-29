@@ -9,7 +9,7 @@ const slugifyTerm = (value) =>
 
 const DEFAULT_TAXONOMY_TERMS = [
   { group: 'purpose', slug: 'daily_wear', label: 'For Daily Wear', sortOrder: 10 },
-  { group: 'purpose', slug: 'weddings', label: 'For Weddings', sortOrder: 20 },
+  { group: 'purpose', slug: 'weddings', label: 'For Weddings or Parties', sortOrder: 20 },
   { group: 'purpose', slug: 'meditation_spiritual', label: 'For Meditation & Spiritual', sortOrder: 30 },
   { group: 'purpose', slug: 'luxury_gifting', label: 'For Luxury Gifting', sortOrder: 40 },
   { group: 'purpose', slug: 'skin_hair', label: 'For Skin & Hair', sortOrder: 50 },

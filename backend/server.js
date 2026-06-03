@@ -47,21 +47,13 @@ const app = express()
 app.set('trust proxy', 1)
 app.disable('x-powered-by')
 
-const resolveFrontendDistPath = () => {
-  const configuredDist = String(process.env.FRONTEND_DIST_DIR || '').trim()
-  const candidates = [
-    configuredDist ? path.resolve(configuredDist) : '',
-    path.join(__dirname, '..', 'frontend', 'dist'),
-    path.join(__dirname, '..', 'client', 'dist'),
-    path.join(__dirname, 'dist'),
-  ].filter(Boolean)
-
-  return (
-    candidates.find((candidate) => fs.existsSync(path.join(candidate, 'index.html'))) || ''
-  )
-}
-
-const acceptsHtml = (req) => String(req.headers.accept || '').includes('text/html')
+const frontendDist = process.env.FRONTEND_DIST_DIR
+  ? path.resolve(process.env.FRONTEND_DIST_DIR)
+  : fs.existsSync(path.resolve(__dirname, '..', 'frontend', 'dist'))
+    ? path.resolve(__dirname, '..', 'frontend', 'dist')
+    : path.resolve(__dirname, '..', 'client', 'dist')
+const frontendAssetsDist = path.join(frontendDist, 'assets')
+const frontendIndexHtml = path.join(frontendDist, 'index.html')
 app.use(express.json({ limit: '1mb' }))
 app.use(express.urlencoded({ extended: false, limit: '1mb' }))
 app.use(requestMonitor())
@@ -176,6 +168,31 @@ app.use(
   })
 )
 
+if (process.env.NODE_ENV === 'production') {
+  console.log('[startup] frontendDist =', frontendDist)
+  console.log('[startup] exists =', fs.existsSync(frontendDist))
+  console.log('[startup] assetsExists =', fs.existsSync(frontendAssetsDist))
+
+  const staticOptions = {
+    etag: true,
+    index: false,
+    maxAge: '7d',
+    setHeaders(res, filePath) {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache')
+        return
+      }
+
+      if (/\.(js|css|woff2?|png|jpe?g|webp|svg|gif|mp4|webm)$/i.test(filePath)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+      }
+    },
+  }
+
+  app.use('/assets', express.static(frontendAssetsDist, staticOptions))
+  app.use(express.static(frontendDist, staticOptions))
+}
+
 app.get('/api/health', (req, res) => {
   res.set('Cache-Control', 'no-store')
   const uploads = getUploadRuntimeStatus()
@@ -219,51 +236,36 @@ app.use(
   })
 )
 
-// Serve the React app in production (single deploy).
 if (process.env.NODE_ENV === 'production') {
-  const distPath = resolveFrontendDistPath()
-  if (!distPath) {
-    throw new Error(
-      'Frontend build output not found. Expected index.html in one of: ../frontend/dist, ../client/dist, backend/dist, or FRONTEND_DIST_DIR.'
-    )
-  }
-
-  const indexHtmlPath = path.join(distPath, 'index.html')
-  console.log(`[startup] serving frontend from ${distPath}`)
-
-  const staticOptions = {
-    etag: true,
-    index: false,
-    maxAge: '7d',
-    setHeaders(res, filePath) {
-      if (filePath.endsWith('.html')) {
-        res.setHeader('Cache-Control', 'no-cache')
-        return
-      }
-
-      if (/\.(js|css|woff2?|png|jpe?g|webp|svg|gif|mp4|webm)$/i.test(filePath)) {
-        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
-      }
-    },
-  }
-
-  app.use('/assets', express.static(path.join(distPath, 'assets'), staticOptions))
-  app.use(express.static(distPath, staticOptions))
+  app.get('/asset-test', (_req, res) => {
+    res.json({
+      frontendDist,
+      exists: fs.existsSync(frontendDist),
+      assetsExists: fs.existsSync(frontendAssetsDist),
+      files: fs.existsSync(frontendAssetsDist)
+        ? fs.readdirSync(frontendAssetsDist).slice(0, 10)
+        : [],
+    })
+  })
 
   app.get('/assets/*', (_req, res) => {
     res.status(404).type('text/plain').send('Asset not found')
   })
 
   app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads') || req.path.startsWith('/assets')) {
       return next()
     }
 
-    if (path.extname(req.path) || !acceptsHtml(req)) {
-      return res.status(404).type('text/plain').send('Not found')
+    if (!req.accepts('html')) {
+      return next()
     }
 
-    return res.sendFile(indexHtmlPath)
+    if (!fs.existsSync(frontendIndexHtml)) {
+      return res.status(503).type('text/plain').send('Frontend build not found')
+    }
+
+    return res.sendFile(frontendIndexHtml)
   })
 }
 
@@ -274,6 +276,10 @@ app.use('/api', (req, res) => {
 
 app.use((err, req, res, next) => {
   console.error(err)
+
+  if (req.path.startsWith('/assets')) {
+    return res.status(err?.statusCode || 500).type('text/plain').send(err?.message || 'Static asset error')
+  }
 
   if (err?.name === 'ValidationError') {
     return res.status(400).json({ message: err.message || 'Validation failed' })

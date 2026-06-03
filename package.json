@@ -3,8 +3,8 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "clean": "rm -rf frontend/dist",
-    "build:render": "npm run clean && npm --prefix frontend install && npm --prefix frontend run build && node -e \"require('fs').existsSync('frontend/dist/index.html') || process.exit(1)\"",
+    "clean": "node -e \"require('fs').rmSync('frontend/dist', { recursive: true, force: true })\"",
+    "build:render": "npm run clean && npm --prefix frontend install --include=dev && npm --prefix frontend run build && node -e \"require('fs').existsSync('frontend/dist/index.html') || process.exit(1)\"",
     "postinstall": "npm --prefix backend install",
     "start": "node backend/server.js"
   },

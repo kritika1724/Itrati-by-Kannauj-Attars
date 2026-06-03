@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import AdminAssetImage from '../components/AdminAssetImage'
 import { useSiteContent } from '../components/SiteContentProvider'
 import {
   LEGAL_PAGE_ROUTES,
@@ -7,6 +8,7 @@ import {
   getDefaultSiteContentValue,
   mergeContactPageContent,
   mergeContactProfile,
+  mergePopupBannerContent,
   mergeLegalPageContent,
 } from '../config/siteContent'
 
@@ -47,7 +49,7 @@ const normalizeContactProfileDraft = (draft) =>
   })
 
 const createContactPageDraft = (value) => mergeContactPageContent(value)
-
+const createPopupBannerDraft = (value) => mergePopupBannerContent(value)
 const createLegalPagesDraft = (contents = {}) =>
   LEGAL_EDITORS.reduce((acc, item) => {
     acc[item.key] = mergeLegalPageContent(item.key, contents[item.key])
@@ -61,6 +63,9 @@ function AdminSiteContent() {
   )
   const [contactPageDraft, setContactPageDraft] = useState(() =>
     createContactPageDraft(getDefaultSiteContentValue(SITE_CONTENT_KEYS.contactPage))
+  )
+  const [popupBannerDraft, setPopupBannerDraft] = useState(() =>
+    createPopupBannerDraft(getDefaultSiteContentValue(SITE_CONTENT_KEYS.popupBanner))
   )
   const [legalPagesDraft, setLegalPagesDraft] = useState(() => createLegalPagesDraft())
   const [message, setMessage] = useState('')
@@ -82,6 +87,7 @@ function AdminSiteContent() {
   useEffect(() => {
     setContactProfileDraft(createContactProfileDraft(contents[SITE_CONTENT_KEYS.contactProfile]))
     setContactPageDraft(createContactPageDraft(contents[SITE_CONTENT_KEYS.contactPage]))
+    setPopupBannerDraft(createPopupBannerDraft(contents[SITE_CONTENT_KEYS.popupBanner]))
     setLegalPagesDraft(createLegalPagesDraft(contents))
   }, [contents])
 
@@ -137,6 +143,7 @@ function AdminSiteContent() {
     try {
       const contactProfilePayload = normalizeContactProfileDraft(contactProfileDraft)
       const contactPagePayload = mergeContactPageContent(contactPageDraft)
+      const popupBannerPayload = mergePopupBannerContent(popupBannerDraft)
       const legalPayloads = LEGAL_EDITORS.map((item) => ({
         key: item.key,
         value: mergeLegalPageContent(item.key, legalPagesDraft[item.key]),
@@ -145,6 +152,7 @@ function AdminSiteContent() {
       await Promise.all([
         setContentValue(SITE_CONTENT_KEYS.contactProfile, contactProfilePayload),
         setContentValue(SITE_CONTENT_KEYS.contactPage, contactPagePayload),
+        setContentValue(SITE_CONTENT_KEYS.popupBanner, popupBannerPayload),
         ...legalPayloads.map((item) => setContentValue(item.key, item.value)),
       ])
 
@@ -311,6 +319,152 @@ function AdminSiteContent() {
                   value={contactPageDraft.heroDescription}
                   onChange={(e) => setContactPageDraft((prev) => ({ ...prev, heroDescription: e.target.value }))}
                   className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-lg shadow-black/10">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-muted">Popup banner</p>
+                <h2 className="mt-2 text-xl font-semibold text-ink">Public website popup card</h2>
+                <p className="mt-2 max-w-3xl text-sm text-muted">
+                  Use this for launches, festive offers, limited-time campaigns, or any message you want visitors to see in a small dismissible popup.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  to="/"
+                  className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-emberDark transition hover:border-gold/40"
+                >
+                  Preview on site
+                </Link>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => resetKeyToDefault(SITE_CONTENT_KEYS.popupBanner)}
+                  className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-emberDark transition hover:border-gold/40 disabled:opacity-60"
+                >
+                  Reset to default
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+              <div className="space-y-5">
+                <label className="flex cursor-pointer items-start justify-between gap-4 rounded-2xl border border-slate-200/80 bg-clay/40 px-5 py-4">
+                  <div>
+                    <p className="text-sm font-semibold text-ink">Enable popup banner</p>
+                    <p className="mt-1 text-xs text-muted">Show the popup on the public website. Admin and checkout pages stay unaffected.</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={popupBannerDraft.enabled === true}
+                    onChange={(e) =>
+                      setPopupBannerDraft((prev) => ({ ...prev, enabled: e.target.checked }))
+                    }
+                    className="mt-1 h-5 w-5 accent-ember"
+                  />
+                </label>
+
+                <label className="flex cursor-pointer items-start justify-between gap-4 rounded-2xl border border-slate-200/80 bg-clay/20 px-5 py-4">
+                  <div>
+                    <p className="text-sm font-semibold text-ink">Show only once per session</p>
+                    <p className="mt-1 text-xs text-muted">Recommended so visitors do not keep seeing the same popup repeatedly in one session.</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={popupBannerDraft.showOncePerSession === true}
+                    onChange={(e) =>
+                      setPopupBannerDraft((prev) => ({ ...prev, showOncePerSession: e.target.checked }))
+                    }
+                    className="mt-1 h-5 w-5 accent-ember"
+                  />
+                </label>
+
+                <div>
+                  <label className="text-sm font-semibold text-ink">Kicker</label>
+                  <input
+                    value={popupBannerDraft.kicker}
+                    onChange={(e) =>
+                      setPopupBannerDraft((prev) => ({ ...prev, kicker: e.target.value }))
+                    }
+                    placeholder="Popup banner"
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-ink">Heading</label>
+                  <input
+                    value={popupBannerDraft.title}
+                    onChange={(e) =>
+                      setPopupBannerDraft((prev) => ({ ...prev, title: e.target.value }))
+                    }
+                    placeholder="Discover our latest fragrance highlights"
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-ink">Description</label>
+                  <textarea
+                    rows="4"
+                    value={popupBannerDraft.description}
+                    onChange={(e) =>
+                      setPopupBannerDraft((prev) => ({ ...prev, description: e.target.value }))
+                    }
+                    placeholder="Describe the popup message."
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
+                  />
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="text-sm font-semibold text-ink">CTA label</label>
+                    <input
+                      value={popupBannerDraft.ctaLabel}
+                      onChange={(e) =>
+                        setPopupBannerDraft((prev) => ({ ...prev, ctaLabel: e.target.value }))
+                      }
+                      placeholder="Explore products"
+                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-ink">CTA link</label>
+                    <input
+                      value={popupBannerDraft.ctaHref}
+                      onChange={(e) =>
+                        setPopupBannerDraft((prev) => ({ ...prev, ctaHref: e.target.value }))
+                      }
+                      placeholder="/products or https://..."
+                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-semibold text-ink">Dismiss button label</label>
+                  <input
+                    value={popupBannerDraft.dismissLabel}
+                    onChange={(e) =>
+                      setPopupBannerDraft((prev) => ({ ...prev, dismissLabel: e.target.value }))
+                    }
+                    placeholder="Maybe later"
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-ink">Popup image</p>
+                <p className="text-xs text-muted">Upload an optional image for the popup card.</p>
+                <AdminAssetImage
+                  assetKey="banner.popup.image"
+                  className="w-full rounded-[1.6rem] border border-slate-200/80 bg-[linear-gradient(135deg,rgba(243,235,223,0.72),rgba(255,255,255,0.96),rgba(17,27,58,0.06))]"
+                  imgClassName="p-2"
+                  defaultAspect="5 / 4"
+                  fit="cover"
                 />
               </div>
             </div>

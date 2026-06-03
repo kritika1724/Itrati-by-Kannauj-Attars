@@ -9,7 +9,7 @@ const SiteContentContext = createContext({
   deleteContentKey: async () => {},
 })
 
-const SITE_CONTENT_CACHE_KEY = 'ka:site-content:v1'
+const SITE_CONTENT_CACHE_KEY = 'ka:site-content:v2'
 
 const readCachedContent = () => {
   if (typeof window === 'undefined') return {}
@@ -52,12 +52,6 @@ export function SiteContentProvider({ children }) {
     refresh()
   }, [refresh])
 
-  useEffect(() => {
-    const onChange = () => refresh()
-    window.addEventListener('sitecontentchange', onChange)
-    return () => window.removeEventListener('sitecontentchange', onChange)
-  }, [refresh])
-
   const setContentValue = useCallback(
     async (key, value) => {
       await api.setSiteContent(key, value)
@@ -66,7 +60,6 @@ export function SiteContentProvider({ children }) {
         persist(next)
         return next
       })
-      if (typeof window !== 'undefined') window.dispatchEvent(new Event('sitecontentchange'))
     },
     [persist]
   )
@@ -80,7 +73,6 @@ export function SiteContentProvider({ children }) {
         persist(next)
         return next
       })
-      if (typeof window !== 'undefined') window.dispatchEvent(new Event('sitecontentchange'))
     },
     [persist]
   )

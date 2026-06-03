@@ -16,6 +16,8 @@ const productSchema = new mongoose.Schema(
     // Smart discovery tags (store ids/slugs, e.g. "daily_wear", "floral")
     purposeTags: { type: [String], default: [] },
     familyTags: { type: [String], default: [] },
+    seasonTags: { type: [String], default: [] },
+    genderTags: { type: [String], default: [] },
     featuredCollections: { type: [String], default: [] },
     // Curated on Explore/Home by admin (manual best-seller list)
     isBestSeller: { type: Boolean, default: false },
@@ -71,6 +73,8 @@ productSchema.index({ price: 1 })
 productSchema.index({ rating: -1 })
 productSchema.index({ purposeTags: 1 })
 productSchema.index({ familyTags: 1 })
+productSchema.index({ seasonTags: 1 })
+productSchema.index({ genderTags: 1 })
 productSchema.index({ featuredCollections: 1 })
 productSchema.index({ relatedProducts: 1 })
 

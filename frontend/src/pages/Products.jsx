@@ -15,6 +15,7 @@ import { getPurposeCollectionMeta } from '../config/collections'
 import { fadeUp } from '../lib/motion'
 import { api, auth } from '../services/api'
 import { getSearchSuggestions } from '../components/product/productPresentation'
+import { SEASON_TAGS, GENDER_TAGS } from '../config/taxonomy'
 
 const SORT_MAP = {
   popular: 'rating_desc',
@@ -45,6 +46,8 @@ const OCCASION_DEFAULTS = [
   { id: 'luxury_gifting', label: 'Gifting' },
   { id: 'festive', label: 'Festive' },
 ]
+const SEASON_DEFAULTS = SEASON_TAGS
+const GENDER_DEFAULTS = GENDER_TAGS
 
 const COLLECTION_MAP = {
   signature: {
@@ -78,9 +81,13 @@ function Products() {
   const {
     purposes: taxonomyPurposes,
     families: taxonomyFamilies,
+    seasons: taxonomySeasons,
+    genders: taxonomyGenders,
     collections: taxonomyCollections,
     purposeMap,
     familyMap,
+    seasonMap,
+    genderMap,
     collectionMap,
     loading: taxonomyLoading,
   } = useTaxonomy()
@@ -107,6 +114,8 @@ function Products() {
   const [sort, setSort] = useState('popular')
   const [selectedOccasions, setSelectedOccasions] = useState([])
   const [selectedFamilies, setSelectedFamilies] = useState([])
+  const [selectedSeasons, setSelectedSeasons] = useState([])
+  const [selectedGenders, setSelectedGenders] = useState([])
   const [bestSellerOnly, setBestSellerOnly] = useState(false)
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
@@ -133,6 +142,26 @@ function Products() {
     })
   }, [taxonomyFamilies])
 
+  const seasonChoices = useMemo(() => {
+    const merged = [...SEASON_DEFAULTS, ...taxonomySeasons.map((item) => ({ id: item.id, label: item.label }))]
+    const seen = new Set()
+    return merged.filter((item) => {
+      if (!item?.id || seen.has(item.id)) return false
+      seen.add(item.id)
+      return true
+    })
+  }, [taxonomySeasons])
+
+  const genderChoices = useMemo(() => {
+    const merged = [...GENDER_DEFAULTS, ...taxonomyGenders.map((item) => ({ id: item.id, label: item.label }))]
+    const seen = new Set()
+    return merged.filter((item) => {
+      if (!item?.id || seen.has(item.id)) return false
+      seen.add(item.id)
+      return true
+    })
+  }, [taxonomyGenders])
+
   const occasionChoices = useMemo(() => {
     const merged = [
       ...OCCASION_DEFAULTS,
@@ -148,11 +177,15 @@ function Products() {
 
   const purposeValues = new Set(occasionChoices.map((item) => item.id))
   const familyValues = new Set(familyChoices.map((item) => item.id))
+  const seasonValues = new Set(seasonChoices.map((item) => item.id))
+  const genderValues = new Set(genderChoices.map((item) => item.id))
   const activeFilterCount =
     Number(Boolean(selectedCategory)) +
     Number(Boolean(minPrice)) +
     Number(Boolean(maxPrice)) +
     selectedFamilies.length +
+    selectedSeasons.length +
+    selectedGenders.length +
     selectedOccasions.length +
     Number(bestSellerOnly)
 
@@ -169,6 +202,8 @@ function Products() {
     const qpSort = (searchParams.get('sort') || '').trim()
     const qpPurpose = (searchParams.get('purpose') || '').trim()
     const qpFamily = (searchParams.get('family') || '').trim()
+    const qpSeason = (searchParams.get('season') || '').trim()
+    const qpGender = (searchParams.get('gender') || '').trim()
     const qpCategory = (searchParams.get('category') || '').trim()
     const qpMinPrice = (searchParams.get('minPrice') || '').trim()
     const qpMaxPrice = (searchParams.get('maxPrice') || '').trim()
@@ -198,8 +233,24 @@ function Products() {
             .filter((id) => familyValues.has(id))
         : []
     )
+    setSelectedSeasons(
+      qpSeason
+        ? qpSeason
+            .split(',')
+            .map((item) => item.trim())
+            .filter((id) => seasonValues.has(id))
+        : []
+    )
+    setSelectedGenders(
+      qpGender
+        ? qpGender
+            .split(',')
+            .map((item) => item.trim())
+            .filter((id) => genderValues.has(id))
+        : []
+    )
     setPage(Number.isFinite(nextPage) && nextPage > 0 ? nextPage : 1)
-  }, [searchKey, taxonomyLoading, purposeValues.size, familyValues.size])
+  }, [searchKey, taxonomyLoading, purposeValues.size, familyValues.size, seasonValues.size, genderValues.size])
 
   useEffect(() => {
     const load = async () => {
@@ -214,6 +265,8 @@ function Products() {
           category: selectedCategory,
           purpose: selectedOccasions.join(','),
           family: selectedFamilies.join(','),
+          season: selectedSeasons.join(','),
+          gender: selectedGenders.join(','),
           bestSeller: bestSellerOnly ? 1 : '',
           minPrice,
           maxPrice,
@@ -231,7 +284,7 @@ function Products() {
     }
 
     load()
-  }, [page, keyword, sort, selectedCategory, selectedOccasions, selectedFamilies, bestSellerOnly, minPrice, maxPrice, activeCollection])
+  }, [page, keyword, sort, selectedCategory, selectedOccasions, selectedFamilies, selectedSeasons, selectedGenders, bestSellerOnly, minPrice, maxPrice, activeCollection])
 
   useEffect(() => {
     if (!filtersOpen) return undefined
@@ -269,6 +322,8 @@ function Products() {
     setSelectedCategory('')
     setSelectedOccasions([])
     setSelectedFamilies([])
+    setSelectedSeasons([])
+    setSelectedGenders([])
     setBestSellerOnly(false)
     setMinPrice('')
     setMaxPrice('')
@@ -445,6 +500,18 @@ function Products() {
                     setPage(1)
                     setSelectedFamilies((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
                   }}
+                  seasons={seasonChoices}
+                  selectedSeasons={selectedSeasons}
+                  onToggleSeason={(id) => {
+                    setPage(1)
+                    setSelectedSeasons((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
+                  }}
+                  genders={genderChoices}
+                  selectedGenders={selectedGenders}
+                  onToggleGender={(id) => {
+                    setPage(1)
+                    setSelectedGenders((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
+                  }}
                   occasions={occasionChoices}
                   selectedOccasions={selectedOccasions}
                   onToggleOccasion={(id) => {
@@ -470,6 +537,12 @@ function Products() {
                     {selectedFamilies.map((id) => (
                       <FilterChip key={id}>{familyMap[id] || id}</FilterChip>
                     ))}
+                    {selectedSeasons.map((id) => (
+                      <FilterChip key={id}>{seasonMap[id] || id}</FilterChip>
+                    ))}
+                    {selectedGenders.map((id) => (
+                      <FilterChip key={id}>{genderMap[id] || id}</FilterChip>
+                    ))}
                     {selectedOccasions.map((id) => (
                       <FilterChip key={id}>{purposeMap[id] || id}</FilterChip>
                     ))}
@@ -477,7 +550,7 @@ function Products() {
                     {maxPrice ? <FilterChip>Up to ₹{maxPrice}</FilterChip> : null}
                   </>
                 ) : (
-                  <p className="text-sm text-[#6B6F7A]">Use filters to narrow by fragrance family, category, occasion, or price.</p>
+                  <p className="text-sm text-[#6B6F7A]">Use filters to narrow by fragrance family, category, season, gender, occasion, or price.</p>
                 )}
               </div>
               <p className="text-sm font-medium text-[#5F6475]">

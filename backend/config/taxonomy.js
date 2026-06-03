@@ -26,6 +26,15 @@ const DEFAULT_TAXONOMY_TERMS = [
   { group: 'family', slug: 'spicy', label: 'Spicy', sortOrder: 70 },
   { group: 'family', slug: 'gourmand', label: 'Gourmand', sortOrder: 80 },
 
+  { group: 'season', slug: 'summer', label: 'Summer', sortOrder: 10 },
+  { group: 'season', slug: 'winter', label: 'Winter', sortOrder: 20 },
+  { group: 'season', slug: 'monsoon', label: 'Monsoon', sortOrder: 30 },
+  { group: 'season', slug: 'all_season', label: 'All Season', sortOrder: 40 },
+
+  { group: 'gender', slug: 'men', label: 'Men', sortOrder: 10 },
+  { group: 'gender', slug: 'women', label: 'Women', sortOrder: 20 },
+  { group: 'gender', slug: 'unisex', label: 'Unisex', sortOrder: 30 },
+
   { group: 'collection', slug: 'signature', label: 'Signature Attars', sortOrder: 10 },
   { group: 'collection', slug: 'heritage', label: 'Heritage Collection', sortOrder: 20 },
 ]

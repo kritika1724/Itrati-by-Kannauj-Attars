@@ -503,7 +503,7 @@ function Home() {
             >
               <div className="flex items-center gap-3">
                 <FiUser className="text-ruby" size={22} />
-                <p className="ka-kicker">Founder & Leadership</p>
+                <p className="ka-kicker">Founder</p>
               </div>
 
               <div className="mt-5 rounded-[1.6rem] border border-gold/18 bg-[linear-gradient(135deg,rgba(249,243,234,0.84),rgba(255,255,255,0.95))] p-3 sm:mt-6 sm:rounded-[2rem]">
@@ -544,7 +544,7 @@ function Home() {
               <motion.div variants={revealCard} className="rounded-[1.9rem] border border-white/75 bg-[linear-gradient(135deg,rgba(255,252,246,0.94),rgba(246,236,220,0.84))] p-6 shadow-[0_28px_90px_rgba(28,19,13,0.07)] sm:rounded-[2.2rem] sm:p-8">
                 <div className="flex items-center gap-3">
                   <FiAward className="text-ruby" size={22} />
-                  <p className="ka-kicker">Association leadership</p>
+                  <p className="ka-kicker">Association</p>
                 </div>
                 <div className="mt-6 grid gap-3">
                   {BUSINESS.associations.map((association) => (
@@ -553,9 +553,11 @@ function Home() {
                       className="flex flex-wrap items-center justify-between gap-3 rounded-[1.4rem] border border-white/80 bg-white/76 px-5 py-4"
                     >
                       <p className="text-sm font-semibold text-ink">{association.name}</p>
-                      <span className="rounded-full border border-gold/25 bg-gold/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-ruby">
-                        {association.location}
-                      </span>
+                      {association.location ? (
+                        <span className="rounded-full border border-gold/25 bg-gold/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-ruby">
+                          {association.location}
+                        </span>
+                      ) : null}
                     </div>
                   ))}
                 </div>

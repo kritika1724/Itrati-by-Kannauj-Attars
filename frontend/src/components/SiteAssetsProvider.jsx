@@ -11,7 +11,7 @@ const SiteAssetsContext = createContext({
   uploadAndSetAsset: async () => {},
 })
 
-const ASSETS_CACHE_KEY = 'ka:site-assets:v1'
+const ASSETS_CACHE_KEY = 'ka:site-assets:v2'
 
 const readCachedAssets = () => {
   if (typeof window === 'undefined') return {}
@@ -63,13 +63,6 @@ export function SiteAssetsProvider({ children }) {
     favicon.setAttribute('href', logoUrl)
   }, [assets])
 
-  // Keep admin-media page and inline upload overlays in sync.
-  useEffect(() => {
-    const onAssetsChange = () => refresh()
-    window.addEventListener('assetschange', onAssetsChange)
-    return () => window.removeEventListener('assetschange', onAssetsChange)
-  }, [refresh])
-
   const setAssetUrl = useCallback(async (key, url) => {
     await api.setAsset(key, url)
     setAssets((prev) => {
@@ -79,7 +72,6 @@ export function SiteAssetsProvider({ children }) {
       }
       return next
     })
-    if (typeof window !== 'undefined') window.dispatchEvent(new Event('assetschange'))
   }, [])
 
   const deleteAssetKey = useCallback(async (key) => {
@@ -92,7 +84,6 @@ export function SiteAssetsProvider({ children }) {
       }
       return next
     })
-    if (typeof window !== 'undefined') window.dispatchEvent(new Event('assetschange'))
   }, [])
 
   const uploadAndSetAsset = useCallback(async (key, file) => {

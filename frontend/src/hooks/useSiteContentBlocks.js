@@ -5,6 +5,7 @@ import {
   SITE_CONTENT_KEYS,
   mergeContactPageContent,
   mergeContactProfile,
+  mergePopupBannerContent,
   mergeLegalPageContent,
 } from '../config/siteContent'
 
@@ -20,6 +21,14 @@ export const useContactPageContent = () => {
   const { contents } = useSiteContent()
   return useMemo(
     () => mergeContactPageContent(contents[SITE_CONTENT_KEYS.contactPage]),
+    [contents]
+  )
+}
+
+export const usePopupBannerContent = () => {
+  const { contents } = useSiteContent()
+  return useMemo(
+    () => mergePopupBannerContent(contents[SITE_CONTENT_KEYS.popupBanner]),
     [contents]
   )
 }

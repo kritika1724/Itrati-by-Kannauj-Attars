@@ -3,10 +3,17 @@ const SiteAsset = require('../models/SiteAsset')
 const { protect, adminOnly } = require('../middleware/auth')
 const asyncHandler = require('../utils/asyncHandler')
 const { getCache, setCache, deleteCache } = require('../utils/appCache')
+const { getPublicCacheProfile, setPublicCache } = require('../utils/cacheControl')
 
 const router = express.Router()
 const ASSETS_CACHE_KEY = 'assets:all'
 const ASSETS_TTL_MS = Number(process.env.ASSETS_CACHE_TTL_MS || 5 * 60 * 1000)
+const ASSETS_CACHE_PROFILE = getPublicCacheProfile('ASSETS', {
+  browserMaxAge: 300,
+  edgeMaxAge: 1800,
+  staleWhileRevalidate: 21600,
+  staleIfError: 86400,
+})
 
 // Public: list all assets
 router.get(
@@ -14,13 +21,13 @@ router.get(
   asyncHandler(async (req, res) => {
     const cached = getCache(ASSETS_CACHE_KEY)
     if (cached) {
-      res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=600')
+      setPublicCache(res, ASSETS_CACHE_PROFILE)
       return res.json(cached)
     }
 
     const assets = await SiteAsset.find({}).select('key url updatedAt createdAt').sort({ key: 1 }).lean()
     setCache(ASSETS_CACHE_KEY, assets, ASSETS_TTL_MS)
-    res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=600')
+    setPublicCache(res, ASSETS_CACHE_PROFILE)
     res.json(assets)
   })
 )

@@ -62,6 +62,8 @@ function AdminProductForm() {
   const [detailSections, setDetailSections] = useState(createDefaultDetailSections)
   const [purposeTags, setPurposeTags] = useState([])
   const [familyTags, setFamilyTags] = useState([])
+  const [seasonTags, setSeasonTags] = useState([])
+  const [genderTags, setGenderTags] = useState([])
   const [featuredCollections, setFeaturedCollections] = useState([])
   const [relatedProductIds, setRelatedProductIds] = useState([])
   const [relatedProductSearch, setRelatedProductSearch] = useState('')
@@ -69,7 +71,14 @@ function AdminProductForm() {
   const [relatedProductCatalog, setRelatedProductCatalog] = useState([])
   const [loadingRelatedProductOptions, setLoadingRelatedProductOptions] = useState(false)
   const [message, setMessage] = useState('')
-  const { buyerTypes, purposes: purposeOptions, families: familyOptions, collections: collectionOptions } = useTaxonomy()
+  const {
+    buyerTypes,
+    purposes: purposeOptions,
+    families: familyOptions,
+    seasons: seasonOptions,
+    genders: genderOptions,
+    collections: collectionOptions,
+  } = useTaxonomy()
 
   const hasPacks = useMemo(() => packs.some((p) => (p.label || '').trim() && p.price !== ''), [packs])
   const relatedProductCatalogById = useMemo(() => {
@@ -153,6 +162,8 @@ function AdminProductForm() {
       setImageZoom(clampImageZoom(product.imageZoom))
       setPurposeTags(Array.isArray(product.purposeTags) ? product.purposeTags : [])
       setFamilyTags(Array.isArray(product.familyTags) ? product.familyTags : [])
+      setSeasonTags(Array.isArray(product.seasonTags) ? product.seasonTags : [])
+      setGenderTags(Array.isArray(product.genderTags) ? product.genderTags : [])
       setFeaturedCollections(Array.isArray(product.featuredCollections) ? product.featuredCollections : [])
       setRelatedProductIds(
         Array.isArray(product.relatedProducts)
@@ -321,6 +332,8 @@ function AdminProductForm() {
       packs: normalizedPacks,
       purposeTags,
       familyTags,
+      seasonTags,
+      genderTags,
       featuredCollections,
       sample: data.sampleEnabled
         ? { enabled: true, label: String(data.sampleLabel || '').trim(), price: Number(data.samplePrice) }
@@ -579,9 +592,9 @@ function AdminProductForm() {
 
             <div className="rounded-3xl border border-slate-200/80 bg-clay/50 p-6">
               <p className="text-xs uppercase tracking-[0.35em] text-muted">Discovery</p>
-              <h3 className="mt-2 text-lg font-semibold text-ink">Shop by purpose & fragrance family</h3>
+              <h3 className="mt-2 text-lg font-semibold text-ink">Shop by purpose, family, season & gender</h3>
               <p className="mt-2 text-sm text-muted">
-                These tags help customers browse faster (B2C) and also help bulk buyers find relevant materials (B2B).
+                These tags help customers browse faster and let the storefront filter fragrances by use case, scent family, season, and audience.
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <button
@@ -673,8 +686,62 @@ function AdminProductForm() {
                     </div>
                   </div>
 
+                  <div className="mt-6">
+                    <label className="text-sm font-semibold text-ink">Season</label>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {seasonOptions.map((tag) => {
+                        const active = seasonTags.includes(tag.id)
+                        return (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            onClick={() =>
+                              setSeasonTags((prev) =>
+                                prev.includes(tag.id) ? prev.filter((x) => x !== tag.id) : [...prev, tag.id]
+                              )
+                            }
+                            className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
+                              active
+                                ? 'bg-ember text-white'
+                                : 'border border-slate-200 bg-white text-emberDark hover:border-gold/50'
+                            }`}
+                          >
+                            {tag.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <label className="text-sm font-semibold text-ink">Gender</label>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {genderOptions.map((tag) => {
+                        const active = genderTags.includes(tag.id)
+                        return (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            onClick={() =>
+                              setGenderTags((prev) =>
+                                prev.includes(tag.id) ? prev.filter((x) => x !== tag.id) : [...prev, tag.id]
+                              )
+                            }
+                            className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
+                              active
+                                ? 'bg-ember text-white'
+                                : 'border border-slate-200 bg-white text-emberDark hover:border-gold/50'
+                            }`}
+                          >
+                            {tag.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
                   <p className="mt-3 text-xs text-muted">
-                    You can select multiple purposes/families (example: “Luxury gifting” + “Woody”).
+                    You can select multiple tags here too, for example “Luxury gifting” + “Woody” + “Winter” + “Unisex”.
                   </p>
                 </div>
               </div>

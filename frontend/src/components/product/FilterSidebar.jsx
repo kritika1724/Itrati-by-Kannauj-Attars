@@ -14,6 +14,12 @@ function FilterSidebar({
   families = [],
   selectedFamilies = [],
   onToggleFamily,
+  seasons = [],
+  selectedSeasons = [],
+  onToggleSeason,
+  genders = [],
+  selectedGenders = [],
+  onToggleGender,
   occasions = [],
   selectedOccasions = [],
   onToggleOccasion,
@@ -150,6 +156,52 @@ function FilterSidebar({
                 >
                   <span className="text-sm font-semibold text-[#19213C]">{item.label}</span>
                   <span className={`h-4 w-4 rounded-full ${active ? 'bg-[#C9A24A]' : 'bg-[rgba(25,33,60,0.12)]'}`} />
+                </button>
+              )
+            })}
+          </div>
+        </section>
+
+        <section>
+          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8D7667]">Season</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {seasons.map((item) => {
+              const active = selectedSeasons.includes(item.id)
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => onToggleSeason(item.id)}
+                  className={`rounded-[1.4rem] border px-4 py-3 text-left text-sm font-semibold transition ${
+                    active
+                      ? 'border-[rgba(200,169,106,0.44)] bg-[rgba(200,169,106,0.10)] text-[#C9A24A]'
+                      : 'border-[rgba(25,33,60,0.08)] bg-white text-[#19213C] hover:border-[rgba(200,169,106,0.3)]'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              )
+            })}
+          </div>
+        </section>
+
+        <section>
+          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8D7667]">Gender</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {genders.map((item) => {
+              const active = selectedGenders.includes(item.id)
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => onToggleGender(item.id)}
+                  className={`rounded-[1.4rem] border px-4 py-3 text-left text-sm font-semibold transition ${
+                    active
+                      ? 'border-[rgba(200,169,106,0.44)] bg-[rgba(200,169,106,0.10)] text-[#C9A24A]'
+                      : 'border-[rgba(25,33,60,0.08)] bg-white text-[#19213C] hover:border-[rgba(200,169,106,0.3)]'
+                  }`}
+                >
+                  {item.label}
                 </button>
               )
             })}

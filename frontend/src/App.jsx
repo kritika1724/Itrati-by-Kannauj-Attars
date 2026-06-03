@@ -10,6 +10,7 @@ import LogoMark from './components/LogoMark'
 import BrandWordmark from './components/BrandWordmark'
 import CursorGlow from './components/CursorGlow'
 import SiteFooter from './components/SiteFooter'
+import SitePopupBanner from './components/banners/SitePopupBanner'
 import { BUSINESS } from './config/business'
 import { pageShell } from './lib/motion'
 import { wishlistStorage } from './components/product/wishlist'
@@ -272,6 +273,7 @@ function AppShell() {
         style={{ scaleX: progressScaleX }}
       />
       <CursorGlow />
+      {!inAdminArea ? <SitePopupBanner /> : null}
       {inAdminArea ? (
         <header className="sticky top-0 z-20 border-b border-gold/20 bg-[linear-gradient(135deg,#070B18,#111B3A)] shadow-[0_18px_40px_rgba(7,11,24,0.35)]">
           <div className="ka-container flex flex-wrap items-center justify-between gap-4 py-4">

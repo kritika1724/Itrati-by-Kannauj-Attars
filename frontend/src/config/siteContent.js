@@ -3,6 +3,7 @@ import { BUSINESS } from './business'
 export const SITE_CONTENT_KEYS = {
   contactProfile: 'contact.profile',
   contactPage: 'contact.page',
+  popupBanner: 'banner.popup',
   legalTerms: 'legal.terms',
   legalRefund: 'legal.refund',
   legalPrivacy: 'legal.privacy',
@@ -32,6 +33,18 @@ export const DEFAULT_CONTACT_PAGE_CONTENT = {
   heroTitle: 'Talk to us about attars and aromatics.',
   heroDescription:
     'Reach out for wholesale inquiries, private labeling, custom blends, or gifting options tailored for special occasions.',
+}
+
+export const DEFAULT_POPUP_BANNER_CONTENT = {
+  enabled: false,
+  kicker: 'Popup banner',
+  title: 'Discover our latest fragrance highlights',
+  description:
+    'Use this popup for launches, festive offers, gifting campaigns, or important website announcements.',
+  ctaLabel: 'Explore products',
+  ctaHref: '/products',
+  dismissLabel: 'Maybe later',
+  showOncePerSession: true,
 }
 
 export const DEFAULT_LEGAL_CONTENT = {
@@ -135,6 +148,7 @@ export const LEGAL_PAGE_ROUTES = {
 export const DEFAULT_SITE_CONTENT = {
   [SITE_CONTENT_KEYS.contactProfile]: DEFAULT_CONTACT_PROFILE,
   [SITE_CONTENT_KEYS.contactPage]: DEFAULT_CONTACT_PAGE_CONTENT,
+  [SITE_CONTENT_KEYS.popupBanner]: DEFAULT_POPUP_BANNER_CONTENT,
   ...DEFAULT_LEGAL_CONTENT,
 }
 
@@ -144,6 +158,16 @@ const normalizeStringList = (value, fallback = []) => {
   const list = Array.isArray(value) ? value : []
   const normalized = list.map((item) => trimString(item)).filter(Boolean)
   return normalized.length ? normalized : fallback
+}
+
+const normalizeBoolean = (value, fallback = false) => {
+  if (value === undefined || value === null) return fallback
+  return value === true
+}
+
+const readOptionalString = (raw, key, fallback = '') => {
+  if (!raw || typeof raw !== 'object' || !(key in raw)) return fallback
+  return trimString(raw[key])
 }
 
 export const mergeContactProfile = (value) => {
@@ -174,6 +198,22 @@ export const mergeContactPageContent = (value) => {
     heroKicker: trimString(raw.heroKicker) || fallback.heroKicker,
     heroTitle: trimString(raw.heroTitle) || fallback.heroTitle,
     heroDescription: trimString(raw.heroDescription) || fallback.heroDescription,
+  }
+}
+
+export const mergePopupBannerContent = (value) => {
+  const fallback = getDefaultSiteContentValue(SITE_CONTENT_KEYS.popupBanner)
+  const raw = value && typeof value === 'object' ? value : {}
+
+  return {
+    enabled: normalizeBoolean(raw.enabled, fallback.enabled),
+    kicker: readOptionalString(raw, 'kicker', fallback.kicker),
+    title: readOptionalString(raw, 'title', fallback.title),
+    description: readOptionalString(raw, 'description', fallback.description),
+    ctaLabel: readOptionalString(raw, 'ctaLabel', fallback.ctaLabel),
+    ctaHref: readOptionalString(raw, 'ctaHref', fallback.ctaHref),
+    dismissLabel: readOptionalString(raw, 'dismissLabel', fallback.dismissLabel),
+    showOncePerSession: normalizeBoolean(raw.showOncePerSession, fallback.showOncePerSession),
   }
 }
 

@@ -60,6 +60,7 @@ function ProductDetail() {
   const [packLabel, setPackLabel] = useState('')
   const [reviewOpen, setReviewOpen] = useState(false)
   const [reviewMessage, setReviewMessage] = useState('')
+  const [reviewBusyId, setReviewBusyId] = useState('')
   const [toast, setToast] = useState({ open: false, message: '' })
 
   const {
@@ -205,6 +206,28 @@ function ProductDetail() {
     }
   }
 
+  const handleDeleteReview = async (reviewId) => {
+    if (!isAdmin || !reviewId) return
+    const confirmed =
+      typeof window === 'undefined'
+        ? true
+        : window.confirm('Delete this review? This will remove it from the product page for everyone.')
+    if (!confirmed) return
+
+    try {
+      setReviewBusyId(reviewId)
+      setReviewMessage('')
+      await api.deleteReview(id, reviewId)
+      const updated = await api.getProduct(id)
+      setProduct(updated)
+      setReviewMessage('Review deleted.')
+    } catch (err) {
+      setReviewMessage(err.message || 'Could not delete review.')
+    } finally {
+      setReviewBusyId('')
+    }
+  }
+
   if (error) {
     return (
       <div className="min-h-screen bg-[linear-gradient(180deg,#FFFFFF_0%,#F7F2EA_52%,#FFFDF8_100%)] px-4 py-16 sm:px-6 lg:px-8">
@@ -335,6 +358,9 @@ function ProductDetail() {
               </div>
             ) : null}
 
+          </div>
+
+          <div className="space-y-6">
             <ReviewSection
               product={product}
               isAdmin={isAdmin}
@@ -348,12 +374,13 @@ function ProductDetail() {
               setValue={setValue}
               handleSubmit={handleSubmit}
               onSubmit={onSubmit}
+              onDeleteReview={handleDeleteReview}
+              reviewBusyId={reviewBusyId}
             />
-          </div>
-
-          <div className="space-y-6 xl:sticky xl:top-[calc(var(--ka-nav-height,88px)+1.5rem)] xl:self-start">
-            {accordionItems.length ? <ProductAccordion items={accordionItems} defaultOpen={0} /> : null}
-            <RelatedProducts products={relatedProducts} familyMap={familyMap} />
+            <div className="space-y-6 xl:sticky xl:top-[calc(var(--ka-nav-height,88px)+1.5rem)] xl:self-start">
+              {accordionItems.length ? <ProductAccordion items={accordionItems} defaultOpen={0} /> : null}
+              <RelatedProducts products={relatedProducts} familyMap={familyMap} />
+            </div>
           </div>
         </div>
       </section>

@@ -5,6 +5,7 @@ const helmet = require('helmet')
 const morgan = require('morgan')
 const rateLimit = require('express-rate-limit')
 const mongoose = require('mongoose')
+const fs = require('fs')
 let cookieParser
 try {
   cookieParser = require('cookie-parser')
@@ -45,6 +46,22 @@ dotenv.config({ path: path.join(__dirname, '.env') })
 const app = express()
 app.set('trust proxy', 1)
 app.disable('x-powered-by')
+
+const resolveFrontendDistPath = () => {
+  const configuredDist = String(process.env.FRONTEND_DIST_DIR || '').trim()
+  const candidates = [
+    configuredDist ? path.resolve(configuredDist) : '',
+    path.join(__dirname, '..', 'frontend', 'dist'),
+    path.join(__dirname, '..', 'client', 'dist'),
+    path.join(__dirname, 'dist'),
+  ].filter(Boolean)
+
+  return (
+    candidates.find((candidate) => fs.existsSync(path.join(candidate, 'index.html'))) || ''
+  )
+}
+
+const acceptsHtml = (req) => String(req.headers.accept || '').includes('text/html')
 app.use(express.json({ limit: '1mb' }))
 app.use(express.urlencoded({ extended: false, limit: '1mb' }))
 app.use(requestMonitor())
@@ -204,30 +221,49 @@ app.use(
 
 // Serve the React app in production (single deploy).
 if (process.env.NODE_ENV === 'production') {
-  const distPath = path.join(__dirname, '..', 'frontend', 'dist')
-  app.use(
-    express.static(distPath, {
-      etag: true,
-      index: false,
-      maxAge: '7d',
-      setHeaders(res, filePath) {
-        if (filePath.endsWith('.html')) {
-          res.setHeader('Cache-Control', 'no-cache')
-          return
-        }
+  const distPath = resolveFrontendDistPath()
+  if (!distPath) {
+    throw new Error(
+      'Frontend build output not found. Expected index.html in one of: ../frontend/dist, ../client/dist, backend/dist, or FRONTEND_DIST_DIR.'
+    )
+  }
 
-        if (/\.(js|css|woff2?|png|jpe?g|webp|svg|gif|mp4|webm)$/i.test(filePath)) {
-          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
-        }
-      },
-    })
-  )
-  app.get('*', (req, res) => {
-    // Don’t hijack API or uploads routes
+  const indexHtmlPath = path.join(distPath, 'index.html')
+  console.log(`[startup] serving frontend from ${distPath}`)
+
+  const staticOptions = {
+    etag: true,
+    index: false,
+    maxAge: '7d',
+    setHeaders(res, filePath) {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache')
+        return
+      }
+
+      if (/\.(js|css|woff2?|png|jpe?g|webp|svg|gif|mp4|webm)$/i.test(filePath)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+      }
+    },
+  }
+
+  app.use('/assets', express.static(path.join(distPath, 'assets'), staticOptions))
+  app.use(express.static(distPath, staticOptions))
+
+  app.get('/assets/*', (_req, res) => {
+    res.status(404).type('text/plain').send('Asset not found')
+  })
+
+  app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
-      return res.status(404).json({ message: 'Not found' })
+      return next()
     }
-    return res.sendFile(path.join(distPath, 'index.html'))
+
+    if (path.extname(req.path) || !acceptsHtml(req)) {
+      return res.status(404).type('text/plain').send('Not found')
+    }
+
+    return res.sendFile(indexHtmlPath)
   })
 }
 

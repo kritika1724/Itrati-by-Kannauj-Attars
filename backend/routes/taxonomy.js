@@ -6,18 +6,25 @@ const asyncHandler = require('../utils/asyncHandler')
 const { slugifyTerm } = require('../config/taxonomy')
 const { getTaxonomyPayload, clearTaxonomyPayloadCache } = require('../utils/taxonomy')
 const { clearCacheByPrefix } = require('../utils/appCache')
+const { getPublicCacheProfile, setPublicCache } = require('../utils/cacheControl')
 
 const router = express.Router()
-const ALLOWED_GROUPS = new Set(['purpose', 'family', 'collection'])
+const ALLOWED_GROUPS = new Set(['purpose', 'family', 'season', 'gender', 'collection'])
 const RESERVED_COLLECTIONS = new Set(['signature', 'heritage'])
 const PRODUCTS_LIST_CACHE_PREFIX = 'products:list:'
 const PRODUCT_DETAIL_CACHE_PREFIX = 'products:detail:'
+const TAXONOMY_CACHE_PROFILE = getPublicCacheProfile('TAXONOMY', {
+  browserMaxAge: 300,
+  edgeMaxAge: 1800,
+  staleWhileRevalidate: 21600,
+  staleIfError: 86400,
+})
 
 router.get(
   '/',
   asyncHandler(async (_req, res) => {
     const payload = await getTaxonomyPayload()
-    res.set('Cache-Control', 'no-store')
+    setPublicCache(res, TAXONOMY_CACHE_PROFILE)
     res.json(payload)
   })
 )
@@ -148,6 +155,10 @@ router.delete(
       await Product.updateMany({ purposeTags: slug }, { $pull: { purposeTags: slug } })
     } else if (group === 'family') {
       await Product.updateMany({ familyTags: slug }, { $pull: { familyTags: slug } })
+    } else if (group === 'season') {
+      await Product.updateMany({ seasonTags: slug }, { $pull: { seasonTags: slug } })
+    } else if (group === 'gender') {
+      await Product.updateMany({ genderTags: slug }, { $pull: { genderTags: slug } })
     }
 
     await term.deleteOne()

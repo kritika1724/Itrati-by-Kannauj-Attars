@@ -1,5 +1,10 @@
 const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 
+const withCacheBust = (path) => {
+  const separator = path.includes('?') ? '&' : '?'
+  return `${path}${separator}_=${Date.now()}`
+}
+
 let memoryToken = null
 const getToken = () => memoryToken || localStorage.getItem('token')
 const setToken = (token) => {
@@ -134,6 +139,8 @@ export const api = {
   deleteProduct: (id) => request(`/products/${id}`, { method: 'DELETE' }),
   addReview: (id, payload) =>
     request(`/products/${id}/reviews`, { method: 'POST', body: JSON.stringify(payload) }),
+  deleteReview: (id, reviewId) =>
+    request(`/products/${id}/reviews/${encodeURIComponent(reviewId)}`, { method: 'DELETE' }),
   createOrder: (payload) => request('/orders', { method: 'POST', body: JSON.stringify(payload) }),
   getMyOrders: () => request('/orders/mine'),
   getOrder: (id) => request(`/orders/${id}`),
@@ -191,13 +198,22 @@ export const api = {
   },
 
   // Site media (admin)
-  getAssets: () => request('/assets'),
+  getAssets: () =>
+    request(withCacheBust('/assets'), {
+      cache: 'no-store',
+    }),
   setAsset: (key, url) => request(`/assets/${encodeURIComponent(key)}`, { method: 'PUT', body: JSON.stringify({ url }) }),
   deleteAsset: (key) => request(`/assets/${encodeURIComponent(key)}`, { method: 'DELETE' }),
 
   // Site content (admin-editable important text blocks)
-  getSiteContent: () => request('/site-content'),
-  getSiteContentItem: (key) => request(`/site-content/${encodeURIComponent(key)}`),
+  getSiteContent: () =>
+    request(withCacheBust('/site-content'), {
+      cache: 'no-store',
+    }),
+  getSiteContentItem: (key) =>
+    request(withCacheBust(`/site-content/${encodeURIComponent(key)}`), {
+      cache: 'no-store',
+    }),
   setSiteContent: (key, value) =>
     request(`/site-content/${encodeURIComponent(key)}`, {
       method: 'PUT',

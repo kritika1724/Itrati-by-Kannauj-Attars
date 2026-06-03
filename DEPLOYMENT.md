@@ -12,11 +12,11 @@ This project is already prepared for a same-origin Node deploy where the backend
 ## What is already handled in code
 
 - Frontend production build is served by the backend
-- Product and asset caching is enabled
-- Route-wise rate limiting is enabled for login, session refresh, contact, uploads, orders, and payment actions
+- Public `/api/products`, `/api/assets`, and `/api/taxonomy` now send CDN-friendly cache headers
+- Route-wise rate limiting is enabled for customer auth, admin auth, session refresh, contact, uploads, orders, and payment actions
 - Response compression is enabled
 - Uploads are Cloudinary-first in production
-- Health monitoring returns uptime, response time summary, DB state, upload readiness, and recent 4xx/5xx alerts
+- Health monitoring returns uptime, response time summary, DB state, upload readiness, rolling alert counts, and recent 4xx/5xx alerts
 
 ## What you still need to do in hosting
 
@@ -49,6 +49,12 @@ Healthy result should show:
 - `database.connected: true`
 - `uploads.provider: cloudinary`
 
+The `monitoring` block should also ideally show:
+
+- `state: ok`
+- `responseTimeMs.average` and `responseTimeMs.p95` within your target
+- `activeAlerts: []`
+
 ## Cloudinary
 
 Production uploads now expect Cloudinary by default.
@@ -59,6 +65,44 @@ If Cloudinary is missing in production:
 - upload API will return `503`
 
 Only use `ALLOW_LOCAL_UPLOADS=true` as a short-term emergency fallback.
+
+## Monitoring checklist
+
+Point your uptime monitor at `/api/health` and alert on:
+
+- non-`200` responses
+- `monitoring.state !== "ok"`
+- sustained `monitoring.activeAlerts` for 5xx bursts
+- unusually high `monitoring.responseTimeMs.p95`
+
+This gives you the launch-ready baseline for uptime, latency, and 4xx/5xx visibility without adding extra vendors into the request path.
+
+## Phased rollout
+
+### Launch-ready hardening
+
+Already covered in repo:
+
+- Cloudinary-first production uploads
+- stricter per-surface rate limits for auth, session refresh, contact, uploads, orders, and payments
+- response compression
+- health, latency, and rolling alert visibility
+
+### Growth phase
+
+Recommended next:
+
+- move `appCache` and rate-limit storage to Redis or Upstash so cache and throttle state survive horizontal scaling
+- serve frontend static assets from CDN or edge storage while keeping API on the app origin
+- keep cacheable public reads flowing through CDN, especially `/api/products`, `/api/assets`, and `/api/taxonomy`
+
+### High-traffic or campaign phase
+
+Recommended when traffic starts spiking:
+
+- enable API autoscaling at the host layer
+- move payments, mails, and heavy admin workflows into queues or background jobs
+- switch catalog search to text indexes or Algolia/Meilisearch if product count and query volume grow materially
 
 ## Admin user
 

@@ -5,11 +5,11 @@ const { isAdminEmail } = require('../config/admin')
 const { signAccessToken, signRefreshToken, hashToken, refreshExpiryDate } = require('../config/tokens')
 const { setCookie, userPayload } = require('./session')
 const asyncHandler = require('../utils/asyncHandler')
-const { loginLimiter } = require('../utils/rateLimit')
+const { registerLimiter, userLoginLimiter } = require('../utils/rateLimit')
 
 const router = express.Router()
 
-router.post('/register', asyncHandler(async (req, res) => {
+router.post('/register', registerLimiter, asyncHandler(async (_req, res) => {
     return res.status(403).json({
       message: 'New account registration is currently closed. Please contact Itrati by Kannauj Attars directly.',
     })
@@ -17,7 +17,7 @@ router.post('/register', asyncHandler(async (req, res) => {
 
 router.post(
   '/login',
-  loginLimiter,
+  userLoginLimiter,
   asyncHandler(async (req, res) => {
     const { email, password } = req.body
 

@@ -56,9 +56,8 @@ export const BUSINESS = {
   giNote:
     "Our products are GI-tagged, reinforcing authenticity, purity, and a genuine connection to India's perfume heritage.",
   associations: [
-    { name: 'Essential Association of India', location: 'Noida' },
-    { name: 'President, The Attars & Perfumers Association Kannauj', location: 'Kannauj' },
-    { name: 'Fragrance and Flower Association of India', location: 'Mumbai' },
+    { name: 'Member, Essential Association of India', location: '' },
+    { name: 'Member, Fragrance and Flower Association of India', location: '' },
   ],
   productRange: [
     {

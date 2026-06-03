@@ -6,16 +6,23 @@ const { protect, optionalProtect, adminOnly } = require('../middleware/auth')
 const asyncHandler = require('../utils/asyncHandler')
 const escapeRegex = require('../utils/escapeRegex')
 const { getCache, setCache, clearCacheByPrefix } = require('../utils/appCache')
+const { getPublicCacheProfile, setPublicCache } = require('../utils/cacheControl')
 
 const router = express.Router()
 const PRODUCTS_LIST_CACHE_PREFIX = 'products:list:'
 const PRODUCT_DETAIL_CACHE_PREFIX = 'products:detail:'
 const PRODUCTS_CACHE_TTL_MS = Number(process.env.PRODUCTS_CACHE_TTL_MS || 30 * 1000)
+const PRODUCTS_CACHE_PROFILE = getPublicCacheProfile('PRODUCTS', {
+  browserMaxAge: 60,
+  edgeMaxAge: 300,
+  staleWhileRevalidate: 1800,
+  staleIfError: 21600,
+})
 const PUBLIC_PRODUCT_LIST_SELECT =
-  'name description category purposeTags familyTags featuredCollections isBestSeller isNewArrival sample availableSizesText price packs images imageZoom highlights rating numReviews createdAt'
+  'name description category purposeTags familyTags seasonTags genderTags featuredCollections isBestSeller isNewArrival sample availableSizesText price packs images imageZoom highlights rating numReviews createdAt'
 const ADMIN_PRODUCT_LIST_SELECT = `${PUBLIC_PRODUCT_LIST_SELECT} stock`
 const RELATED_PRODUCTS_POPULATE_SELECT =
-  'name description category purposeTags familyTags featuredCollections isBestSeller isNewArrival sample availableSizesText price packs.label packs.price packs.salePrice images imageZoom highlights rating numReviews createdAt'
+  'name description category purposeTags familyTags seasonTags genderTags featuredCollections isBestSeller isNewArrival sample availableSizesText price packs.label packs.price packs.salePrice images imageZoom highlights rating numReviews createdAt'
 
 const normalizeCollections = (value) => {
   if (!Array.isArray(value)) return []
@@ -99,7 +106,7 @@ router.get(
     if (cacheKey) {
       const cached = getCache(cacheKey)
       if (cached) {
-        res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=120')
+        setPublicCache(res, PRODUCTS_CACHE_PROFILE)
         return res.json(cached)
       }
     }
@@ -113,6 +120,8 @@ router.get(
     const buyer = (req.query.buyer || '').trim()
     const purposeRaw = (req.query.purpose || '').trim()
     const familyRaw = (req.query.family || '').trim()
+    const seasonRaw = (req.query.season || '').trim()
+    const genderRaw = (req.query.gender || '').trim()
     const collectionRaw = (req.query.collection || '').trim()
     const bestSeller = (req.query.bestSeller || '').toString().trim()
     const minPrice = req.query.minPrice !== undefined ? Number(req.query.minPrice) : undefined
@@ -148,6 +157,18 @@ router.get(
           .map((s) => s.trim())
           .filter(Boolean)
       : []
+    const seasons = seasonRaw
+      ? seasonRaw
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : []
+    const genders = genderRaw
+      ? genderRaw
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : []
     const collections = collectionRaw
       ? collectionRaw
           .split(',')
@@ -157,6 +178,8 @@ router.get(
 
     if (purposes.length) filter.purposeTags = { $in: purposes }
     if (families.length) filter.familyTags = { $in: families }
+    if (seasons.length) filter.seasonTags = { $in: seasons }
+    if (genders.length) filter.genderTags = { $in: genders }
     if (collections.length) filter.featuredCollections = { $in: collections }
     if (bestSeller && ['1', 'true', 'yes', 'on'].includes(bestSeller.toLowerCase())) {
       filter.isBestSeller = true
@@ -196,7 +219,7 @@ router.get(
 
     if (cacheKey) {
       setCache(cacheKey, payload, PRODUCTS_CACHE_TTL_MS)
-      res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=120')
+      setPublicCache(res, PRODUCTS_CACHE_PROFILE)
     }
 
     res.json(payload)
@@ -212,7 +235,7 @@ router.get(
     if (cacheKey) {
       const cached = getCache(cacheKey)
       if (cached) {
-        res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=120')
+        setPublicCache(res, PRODUCTS_CACHE_PROFILE)
         return res.json(cached)
       }
     }
@@ -231,7 +254,7 @@ router.get(
 
     if (cacheKey) {
       setCache(cacheKey, product, PRODUCTS_CACHE_TTL_MS)
-      res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=120')
+      setPublicCache(res, PRODUCTS_CACHE_PROFILE)
     }
 
     res.json(product)
@@ -246,6 +269,8 @@ router.post('/', protect, adminOnly, asyncHandler(async (req, res) => {
     buyerType,
     purposeTags,
     familyTags,
+    seasonTags,
+    genderTags,
     featuredCollections,
     isBestSeller,
     isNewArrival,
@@ -272,6 +297,8 @@ router.post('/', protect, adminOnly, asyncHandler(async (req, res) => {
     buyerType,
     purposeTags: Array.isArray(purposeTags) ? purposeTags : [],
     familyTags: Array.isArray(familyTags) ? familyTags : [],
+    seasonTags: Array.isArray(seasonTags) ? seasonTags : [],
+    genderTags: Array.isArray(genderTags) ? genderTags : [],
     featuredCollections: normalizeCollections(featuredCollections),
     isBestSeller: isBestSeller === true,
     isNewArrival: isNewArrival === true,
@@ -305,6 +332,8 @@ router.put('/:id', protect, adminOnly, asyncHandler(async (req, res) => {
     'buyerType',
     'purposeTags',
     'familyTags',
+    'seasonTags',
+    'genderTags',
     'featuredCollections',
     'isBestSeller',
     'isNewArrival',
@@ -321,7 +350,7 @@ router.put('/:id', protect, adminOnly, asyncHandler(async (req, res) => {
   ]
   fields.forEach((field) => {
     if (req.body[field] !== undefined) {
-      if (field === 'purposeTags' || field === 'familyTags') {
+      if (field === 'purposeTags' || field === 'familyTags' || field === 'seasonTags' || field === 'genderTags') {
         product[field] = Array.isArray(req.body[field]) ? req.body[field] : []
       } else if (field === 'featuredCollections') {
         product[field] = normalizeCollections(req.body[field])

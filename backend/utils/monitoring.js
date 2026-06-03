@@ -1,5 +1,9 @@
 const MAX_LATENCY_SAMPLES = 400
 const MAX_ALERTS = 80
+const ALERT_WINDOW_MS = Math.max(60 * 1000, Number(process.env.MONITOR_ALERT_WINDOW_MS || 5 * 60 * 1000))
+const HTTP_4XX_ALERT_THRESHOLD = Math.max(1, Number(process.env.MONITOR_4XX_ALERT_THRESHOLD || 25))
+const HTTP_5XX_ALERT_THRESHOLD = Math.max(1, Number(process.env.MONITOR_5XX_ALERT_THRESHOLD || 5))
+const SLOW_REQUEST_ALERT_THRESHOLD = Math.max(1, Number(process.env.MONITOR_SLOW_ALERT_THRESHOLD || 10))
 
 const metrics = {
   startedAt: Date.now(),
@@ -31,6 +35,8 @@ const statusBucket = (statusCode) => {
   if (statusCode >= 500 && statusCode < 600) return '5xx'
   return 'other'
 }
+
+const formatWindowMinutes = (windowMs) => Number((windowMs / (60 * 1000)).toFixed(windowMs % (60 * 1000) === 0 ? 0 : 1))
 
 const percentile = (values, p) => {
   if (!values.length) return 0
@@ -117,10 +123,57 @@ const getMonitoringSnapshot = () => {
   const samples = metrics.latencySamplesMs
   const average =
     samples.length > 0 ? Number((samples.reduce((sum, value) => sum + value, 0) / samples.length).toFixed(1)) : 0
+  const windowStart = Date.now() - ALERT_WINDOW_MS
+  const rollingCounts = {
+    http4xx: 0,
+    http5xx: 0,
+    slowRequests: 0,
+  }
+
+  metrics.recentAlerts.forEach((alert) => {
+    const time = Date.parse(alert.time)
+    if (!Number.isFinite(time) || time < windowStart) return
+    if (alert.type === 'http_4xx') rollingCounts.http4xx += 1
+    if (alert.type === 'http_5xx') rollingCounts.http5xx += 1
+    if (alert.type === 'slow_request') rollingCounts.slowRequests += 1
+  })
+
+  const activeAlerts = []
+  if (rollingCounts.http5xx >= HTTP_5XX_ALERT_THRESHOLD) {
+    activeAlerts.push({
+      severity: 'error',
+      type: 'http_5xx_burst',
+      count: rollingCounts.http5xx,
+      threshold: HTTP_5XX_ALERT_THRESHOLD,
+      windowMs: ALERT_WINDOW_MS,
+      message: `${rollingCounts.http5xx} server errors in the last ${formatWindowMinutes(ALERT_WINDOW_MS)} minute(s)`,
+    })
+  }
+  if (rollingCounts.http4xx >= HTTP_4XX_ALERT_THRESHOLD) {
+    activeAlerts.push({
+      severity: 'warn',
+      type: 'http_4xx_burst',
+      count: rollingCounts.http4xx,
+      threshold: HTTP_4XX_ALERT_THRESHOLD,
+      windowMs: ALERT_WINDOW_MS,
+      message: `${rollingCounts.http4xx} client errors in the last ${formatWindowMinutes(ALERT_WINDOW_MS)} minute(s)`,
+    })
+  }
+  if (rollingCounts.slowRequests >= SLOW_REQUEST_ALERT_THRESHOLD) {
+    activeAlerts.push({
+      severity: 'warn',
+      type: 'slow_request_burst',
+      count: rollingCounts.slowRequests,
+      threshold: SLOW_REQUEST_ALERT_THRESHOLD,
+      windowMs: ALERT_WINDOW_MS,
+      message: `${rollingCounts.slowRequests} slow requests in the last ${formatWindowMinutes(ALERT_WINDOW_MS)} minute(s)`,
+    })
+  }
 
   return {
     startedAt: new Date(metrics.startedAt).toISOString(),
     uptimeSeconds: Math.floor((Date.now() - metrics.startedAt) / 1000),
+    state: activeAlerts.some((alert) => alert.severity === 'error') ? 'alert' : activeAlerts.length ? 'warn' : 'ok',
     inFlight: metrics.inFlight,
     requestsTotal: metrics.requestsTotal,
     responseTimeMs: {
@@ -129,6 +182,14 @@ const getMonitoringSnapshot = () => {
       thresholdForSlowAlert: SLOW_REQUEST_MS,
     },
     statusCounts: metrics.statusCounts,
+    alertThresholds: {
+      windowMs: ALERT_WINDOW_MS,
+      http4xx: HTTP_4XX_ALERT_THRESHOLD,
+      http5xx: HTTP_5XX_ALERT_THRESHOLD,
+      slowRequests: SLOW_REQUEST_ALERT_THRESHOLD,
+    },
+    rollingWindow: rollingCounts,
+    activeAlerts,
     topRoutes: [...metrics.routeCounts.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 8)

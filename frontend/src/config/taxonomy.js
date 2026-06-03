@@ -25,3 +25,16 @@ export const FAMILY_TAGS = [
   { id: 'spicy', label: 'Spicy' },
   { id: 'gourmand', label: 'Gourmand' },
 ]
+
+export const SEASON_TAGS = [
+  { id: 'summer', label: 'Summer' },
+  { id: 'winter', label: 'Winter' },
+  { id: 'monsoon', label: 'Monsoon' },
+  { id: 'all_season', label: 'All Season' },
+]
+
+export const GENDER_TAGS = [
+  { id: 'men', label: 'Men' },
+  { id: 'women', label: 'Women' },
+  { id: 'unisex', label: 'Unisex' },
+]

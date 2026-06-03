@@ -15,6 +15,16 @@ const FILTER_GROUPS = [
     description: 'Add new scent families whenever your catalog grows into new profiles.',
   },
   {
+    id: 'season',
+    title: 'Season',
+    description: 'Add seasonal browse filters like Summer, Winter, Monsoon, or campaign-specific weather edits.',
+  },
+  {
+    id: 'gender',
+    title: 'Gender',
+    description: 'Add Men, Women, Unisex, or any custom audience-focused fragrance filter.',
+  },
+  {
     id: 'collection',
     title: 'Collections',
     description: 'Add, edit, delete, and manage custom collections.',
@@ -22,8 +32,8 @@ const FILTER_GROUPS = [
 ]
 
 function AdminFilters() {
-  const { purposes, families, collections, refresh, loading } = useTaxonomy()
-  const [drafts, setDrafts] = useState({ purpose: '', family: '', collection: '' })
+  const { purposes, families, seasons, genders, collections, refresh, loading } = useTaxonomy()
+  const [drafts, setDrafts] = useState({ purpose: '', family: '', season: '', gender: '', collection: '' })
   const [savingGroup, setSavingGroup] = useState('')
   const [editing, setEditing] = useState({ group: '', id: '', label: '' })
   const [busyAction, setBusyAction] = useState({ group: '', id: '', type: '' })
@@ -34,9 +44,11 @@ function AdminFilters() {
     () => ({
       purpose: purposes,
       family: families,
+      season: seasons,
+      gender: genders,
       collection: collections,
     }),
-    [purposes, families, collections]
+    [purposes, families, seasons, genders, collections]
   )
 
   const createFilter = async (group) => {
@@ -135,7 +147,7 @@ function AdminFilters() {
           <p className="text-xs uppercase tracking-[0.35em] text-muted">Admin</p>
           <h1 className="mt-3 font-display text-4xl text-ink md:text-5xl">Filters & collections</h1>
           <p className="mt-3 max-w-3xl text-sm text-muted">
-            Add new purpose filters, fragrance families, and featured collections here. Collections you create can then receive products directly from the admin side.
+            Add new purpose, family, season, gender, and collection filters here. Collections you create can then receive products directly from the admin side.
           </p>
         </div>
       </header>

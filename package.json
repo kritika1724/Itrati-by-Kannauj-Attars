@@ -3,8 +3,8 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "build:render": "cd frontend && npm ci --include=dev && npm run build && cd ../backend && npm ci",
-    "start": "cd backend && npm start"
+    "build:render": "npm --prefix frontend ci --include=dev && npm --prefix frontend run build && node -e \"const fs=require('fs'); if(!fs.existsSync('frontend/dist/index.html')) { console.error('frontend/dist/index.html missing after build'); process.exit(1); } console.log('frontend/dist verified');\" && npm --prefix backend ci",
+    "start": "npm --prefix backend start"
   },
   "engines": {
     "node": ">=20"

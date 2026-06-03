@@ -2,7 +2,7 @@ services:
   - type: web
     name: kannauj-attars
     runtime: node
-    buildCommand: npm run build:render
+    buildCommand: npm install && npm run build:render
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:

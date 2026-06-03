@@ -47,13 +47,14 @@ const app = express()
 app.set('trust proxy', 1)
 app.disable('x-powered-by')
 
-const frontendDist = process.env.FRONTEND_DIST_DIR
-  ? path.resolve(process.env.FRONTEND_DIST_DIR)
-  : fs.existsSync(path.resolve(__dirname, '..', 'frontend', 'dist'))
-    ? path.resolve(__dirname, '..', 'frontend', 'dist')
-    : path.resolve(__dirname, '..', 'client', 'dist')
+const frontendDist = path.resolve(__dirname, '..', 'frontend', 'dist')
 const frontendAssetsDist = path.join(frontendDist, 'assets')
 const frontendIndexHtml = path.join(frontendDist, 'index.html')
+const getIndexHtmlAssetRefs = () => {
+  if (!fs.existsSync(frontendIndexHtml)) return []
+  const html = fs.readFileSync(frontendIndexHtml, 'utf8')
+  return [...new Set([...html.matchAll(/\/assets\/([^"'?#\s>]+)/g)].map((match) => match[1]))]
+}
 app.use(express.json({ limit: '1mb' }))
 app.use(express.urlencoded({ extended: false, limit: '1mb' }))
 app.use(requestMonitor())
@@ -169,9 +170,22 @@ app.use(
 )
 
 if (process.env.NODE_ENV === 'production') {
+  console.log('[startup] cwd =', process.cwd())
+  console.log('[startup] __dirname =', __dirname)
   console.log('[startup] frontendDist =', frontendDist)
   console.log('[startup] exists =', fs.existsSync(frontendDist))
   console.log('[startup] assetsExists =', fs.existsSync(frontendAssetsDist))
+  console.log('[startup] index exists =', fs.existsSync(frontendIndexHtml))
+  console.log(
+    '[startup] assets =',
+    fs.existsSync(frontendAssetsDist)
+      ? fs.readdirSync(frontendAssetsDist).slice(0, 30)
+      : []
+  )
+
+  if (!fs.existsSync(frontendIndexHtml) || !fs.existsSync(frontendAssetsDist)) {
+    throw new Error('frontend/dist build output is incomplete. Clear Render build cache and rebuild the frontend.')
+  }
 
   const staticOptions = {
     etag: true,
@@ -242,8 +256,9 @@ if (process.env.NODE_ENV === 'production') {
       frontendDist,
       exists: fs.existsSync(frontendDist),
       assetsExists: fs.existsSync(frontendAssetsDist),
+      indexHtmlAssetRefs: getIndexHtmlAssetRefs(),
       files: fs.existsSync(frontendAssetsDist)
-        ? fs.readdirSync(frontendAssetsDist).slice(0, 10)
+        ? fs.readdirSync(frontendAssetsDist)
         : [],
     })
   })

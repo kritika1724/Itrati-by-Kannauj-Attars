@@ -55,6 +55,15 @@ const getIndexHtmlAssetRefs = () => {
   const html = fs.readFileSync(frontendIndexHtml, 'utf8')
   return [...new Set([...html.matchAll(/\/assets\/([^"'?#\s>]+)/g)].map((match) => match[1]))]
 }
+
+app.get('/assets/:file', (req, res) => {
+  const filePath = path.join(frontendDist, 'assets', req.params.file)
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).type('text/plain').send('Asset not found')
+  }
+  return res.sendFile(filePath)
+})
+
 app.use(express.json({ limit: '1mb' }))
 app.use(express.urlencoded({ extended: false, limit: '1mb' }))
 app.use(requestMonitor())

@@ -36,3 +36,24 @@ export const toAssetUrl = (rawUrl, assetBase) => {
 
   return url
 }
+
+const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.m4v', '.ogg']
+
+const cleanAssetPath = (value) => String(value || '').split('#')[0].split('?')[0].toLowerCase()
+
+export const isVideoAssetUrl = (rawUrl) => {
+  const path = cleanAssetPath(rawUrl)
+  return VIDEO_EXTENSIONS.some((ext) => path.endsWith(ext))
+}
+
+export const getMediaAccept = (mode = 'media') => {
+  if (mode === 'video') {
+    return 'video/mp4,video/webm,video/quicktime,video/ogg,video/x-m4v,.mp4,.webm,.mov,.m4v,.ogg'
+  }
+
+  if (mode === 'image') {
+    return 'image/*'
+  }
+
+  return `${getMediaAccept('image')},${getMediaAccept('video')}`
+}

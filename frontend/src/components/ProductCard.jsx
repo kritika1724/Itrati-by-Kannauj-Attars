@@ -1,19 +1,15 @@
 import { memo } from 'react'
 import { Link } from 'react-router-dom'
-import { FiEye, FiStar } from 'react-icons/fi'
+import { FiEye } from 'react-icons/fi'
 import { toAssetUrl } from '../utils/media'
-import { useTaxonomy } from './TaxonomyProvider'
 import { BUSINESS } from '../config/business'
 import WishlistButton from './product/WishlistButton'
-import { getBadgeList, getMinPack, getNoteLine, getRatingMeta } from './product/productPresentation'
+import { getBadgeList, getMinPack } from './product/productPresentation'
 
 function ProductCard({ product, onView, onAdd, onQuickView, isAdmin = false, showActions = true }) {
-  const { familyMap } = useTaxonomy()
   const minPack = getMinPack(Array.isArray(product?.packs) ? product.packs : [])
   const price = minPack ? minPack.effectivePrice : Number(product?.price || 0)
   const badges = getBadgeList(product)
-  const rating = getRatingMeta(product)
-  const noteLine = getNoteLine(product, familyMap)
   const sample = product?.sample || {}
   const sampleEnabled = sample.enabled === true && sample.label && Number(sample.price) > 0
 
@@ -82,25 +78,6 @@ function ProductCard({ product, onView, onAdd, onQuickView, isAdmin = false, sho
               </h3>
             </Link>
           </div>
-        </div>
-
-        <p className="mt-2.5 text-[11px] font-medium leading-5 text-[#C9A24A] sm:mt-3 sm:text-sm">{noteLine}</p>
-
-        <div className="mt-3.5 flex items-center justify-between gap-2 sm:mt-4 sm:gap-3">
-          <div className="flex items-center gap-1 text-[#C9A24A]">
-            {Array.from({ length: 5 }).map((_, index) => {
-              const filled = index < Math.round(rating.value || 0)
-              return <FiStar key={index} className={filled ? 'fill-current' : 'text-[#D8DCE4]'} size={12} />
-            })}
-            {rating.count > 0 ? (
-              <span className="ml-1.5 text-xs font-semibold text-[#19213C] sm:ml-2 sm:text-sm">
-                {rating.value.toFixed(1)}
-              </span>
-            ) : null}
-          </div>
-          <span className="hidden text-xs text-[#6B6F7A] sm:inline">
-            {rating.count > 0 ? `${rating.count} reviews` : '0 reviews'}
-          </span>
         </div>
 
         <div className="mt-4 flex flex-wrap items-end justify-between gap-2.5 sm:mt-5 sm:gap-3">

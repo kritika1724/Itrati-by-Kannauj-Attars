@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { toAssetUrl } from '../utils/media'
+import { getMediaAccept, isVideoAssetUrl, toAssetUrl } from '../utils/media'
 import { useSiteAssets } from '../components/SiteAssetsProvider'
 import { SITE_ASSET_KEYS } from '../config/siteAssets'
 
@@ -14,6 +14,10 @@ function AdminMedia() {
   const [message, setMessage] = useState('')
   const [busyKey, setBusyKey] = useState('')
   const [zoomDrafts, setZoomDrafts] = useState({})
+  const imageOnlyKeys = useMemo(
+    () => new Set(['site.logo', 'site.favicon', 'site.wordmark', 'about.ceo.photo']),
+    []
+  )
 
   const rows = useMemo(
     () =>
@@ -30,7 +34,7 @@ function AdminMedia() {
 
   useEffect(() => {
     const next = SITE_ASSET_KEYS.reduce((acc, row) => {
-      if (row.type !== 'video') {
+      if (row.type !== 'video' && !isVideoAssetUrl(assets[row.key])) {
         acc[row.key] = clampZoom(assets[`${row.key}.zoom`])
       }
       return acc
@@ -51,7 +55,8 @@ function AdminMedia() {
     }
   }
 
-  const isVideoRow = (row) => row.type === 'video'
+  const allowsVideo = (row) => row.type === 'video' || !imageOnlyKeys.has(row.key)
+  const isVideoRow = (row) => allowsVideo(row) && (row.type === 'video' || isVideoAssetUrl(row.url))
   const getRowZoom = (key) => clampZoom(zoomDrafts[key])
 
   const saveImageZoom = async (key) => {
@@ -73,12 +78,12 @@ function AdminMedia() {
   }
 
   const clear = async (key) => {
-    if (!window.confirm('Remove this image?')) return
+    if (!window.confirm('Remove this media?')) return
     setBusyKey(key)
     setMessage('')
     try {
       await deleteAssetKey(key)
-      setMessage('Image removed.')
+      setMessage('Media removed.')
     } catch (e) {
       setMessage(e.message)
     } finally {
@@ -127,7 +132,7 @@ function AdminMedia() {
                     )
                   ) : (
                     <div className="flex h-44 w-full items-center justify-center text-xs font-semibold text-muted">
-                      No {isVideoRow(row) ? 'video' : 'image'}
+                      No {allowsVideo(row) ? 'media' : 'image'}
                     </div>
                   )}
                 </div>
@@ -137,15 +142,11 @@ function AdminMedia() {
                   <p className="mt-1 text-xs text-muted">{row.key}</p>
                   <div className="mt-4">
                     <label className="text-xs font-semibold text-muted">
-                      Upload new {isVideoRow(row) ? 'video' : 'image'}
+                      Upload new {allowsVideo(row) ? 'image or video' : 'image'}
                     </label>
                     <input
                       type="file"
-                      accept={
-                        isVideoRow(row)
-                          ? 'video/mp4,video/webm,video/quicktime,video/ogg,video/x-m4v,.mp4,.webm,.mov,.m4v,.ogg'
-                          : 'image/*'
-                      }
+                      accept={getMediaAccept(allowsVideo(row) ? 'media' : 'image')}
                       disabled={busyKey === row.key}
                       onChange={(e) => {
                         const file = e.target.files?.[0]
@@ -156,7 +157,9 @@ function AdminMedia() {
                     <p className="mt-2 text-[11px] text-muted">
                       {isVideoRow(row)
                         ? 'Tip: MP4 works best for broad browser support.'
-                        : 'Tip: JPG/PNG works best. HEIC may not display in browsers.'}
+                        : allowsVideo(row)
+                          ? 'Tip: JPG/PNG for images, MP4 for videos. HEIC may not display in browsers.'
+                          : 'Tip: JPG/PNG works best. HEIC may not display in browsers.'}
                     </p>
                   </div>
                   {!isVideoRow(row) ? (

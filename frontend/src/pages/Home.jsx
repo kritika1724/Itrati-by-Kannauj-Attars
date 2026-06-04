@@ -14,6 +14,7 @@ import { BUSINESS } from '../config/business'
 import { useSiteContactProfile } from '../hooks/useSiteContentBlocks'
 import { fadeLeft, fadeUp, heroStagger, revealCard, staggerGrid, viewportOnce } from '../lib/motion'
 import { auth } from '../services/api'
+import { applySeo, resetSeo } from '../utils/seo'
 import { toAssetUrl } from '../utils/media'
 
 const collectionCards = [
@@ -86,6 +87,11 @@ const clientVoices = [
 ]
 
 function Home() {
+  useEffect(() => {
+    applySeo()
+    return () => resetSeo()
+  }, [])
+
   const { assets, uploadAndSetAsset } = useSiteAssets()
   const contactProfile = useSiteContactProfile()
   const [user, setUser] = useState(auth.getUser())
@@ -290,6 +296,22 @@ function Home() {
                 <span>Essential oils</span>
               </div>
             </div>
+            <div className="relative mt-4 overflow-hidden rounded-[1.7rem] border border-[#F6D27A]/32 bg-transparent px-5 py-5 text-center shadow-[0_24px_60px_rgba(0,0,0,0.2)] backdrop-blur-2xl">
+              <div className="relative">
+                <div className="flex justify-center">
+                  <span className="inline-flex items-center rounded-full border border-[#F6D27A]/55 bg-[rgba(246,210,122,0.12)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.32em] text-[#FFF0C5] shadow-[0_10px_24px_rgba(246,210,122,0.12)] backdrop-blur-md sm:text-xs">
+                    GI Tagged
+                  </span>
+                </div>
+                <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.36em] text-[#F7DE9A]/82 sm:text-[11px]">
+                  Invaluable Treasures of Incredible India
+                </p>
+                <div className="mx-auto mt-4 h-px w-24 bg-[linear-gradient(90deg,transparent,rgba(246,210,122,0.86),transparent)]" />
+                <p className="mt-4 font-display text-lg leading-tight text-[#FFF6E4] drop-shadow-[0_8px_18px_rgba(0,0,0,0.24)] sm:text-2xl">
+                  अतुल्य भारत की अमूल्य निधि
+                </p>
+              </div>
+            </div>
           </motion.div>
         </div>
       </section>
@@ -379,6 +401,7 @@ function Home() {
                     imgClassName="p-2"
                     defaultAspect="16 / 10"
                     fit="cover"
+                    allowVideo
                   />
                 </div>
 
@@ -552,7 +575,11 @@ function Home() {
                       key={`${association.name}-${association.location}`}
                       className="flex flex-wrap items-center justify-between gap-3 rounded-[1.4rem] border border-white/80 bg-white/76 px-5 py-4"
                     >
-                      <p className="text-sm font-semibold text-ink">{association.name}</p>
+                      <div className="rounded-[1rem] border border-gold/25 bg-[linear-gradient(135deg,rgba(201,162,74,0.16),rgba(255,255,255,0.98))] px-4 py-3 shadow-[0_12px_32px_rgba(201,162,74,0.10)]">
+                        <p className="text-sm font-semibold uppercase leading-6 tracking-[0.12em] text-[#0F1E46]">
+                          {association.name}
+                        </p>
+                      </div>
                       {association.location ? (
                         <span className="rounded-full border border-gold/25 bg-gold/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-ruby">
                           {association.location}
@@ -597,6 +624,7 @@ function Home() {
                   imgClassName="p-2"
                   defaultAspect="4 / 3"
                   fit="cover"
+                  allowVideo
                 />
               </motion.div>
             </motion.div>

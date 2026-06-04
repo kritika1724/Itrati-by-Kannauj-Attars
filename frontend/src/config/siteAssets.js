@@ -4,16 +4,18 @@ import { PURPOSE_TAGS, FAMILY_TAGS } from './taxonomy'
 
 export const SITE_ASSET_KEYS = [
   { key: 'site.logo', label: 'Site: Logo (Navbar / Branding)' },
+  { key: 'site.favicon', label: 'Site: Favicon (Browser Icon)' },
   { key: 'site.wordmark', label: 'Site: Wordmark (Navbar Text)' },
   { key: 'banner.popup.image', label: 'Banner: Popup Image' },
   { key: 'home.top.video', label: 'Home: Top Horizontal Video', type: 'video' },
   { key: 'home.hero.card', label: 'Home: Hero Card Image' },
   { key: 'home.hero.strip', label: 'Home: Hero Strip Image' },
+  { key: 'home.story.distillation', label: 'Home: The Slow Craft Behind Every Drop Media' },
   { key: 'home.culture.glimpse', label: 'Home: Culture Section Image' },
   { key: 'home.house.photo', label: 'Home: Our House Photo' },
   { key: 'home.explore.signature', label: 'Home: Explore (Signature) Image' },
   { key: 'home.explore.heritage', label: 'Home: Explore (Heritage) Image' },
-  { key: 'home.credibility.photo', label: 'Home: Founder / Leadership Side Photo' },
+  { key: 'home.credibility.photo', label: 'Home: Business Details Below Media' },
   { key: 'about.ceo.photo', label: 'About: Founder/CEO Photo' },
 
   ...PURPOSE_TAGS.map((t) => ({

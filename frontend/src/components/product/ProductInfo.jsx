@@ -1,12 +1,10 @@
-import { FiGift, FiShield, FiStar, FiTruck } from 'react-icons/fi'
+import { FiGift, FiShield, FiTruck } from 'react-icons/fi'
 import WishlistButton from './WishlistButton'
 import {
   getBadgeList,
   getDisplayCategory,
   getFragranceNotes,
-  getNoteLine,
   getOccasionHighlights,
-  getRatingMeta,
   getShortDescription,
   getTrustBadges,
 } from './productPresentation'
@@ -26,8 +24,6 @@ function ProductInfo({
   onBuyNow,
   onContactBulk,
 }) {
-  const rating = getRatingMeta(product)
-  const noteLine = getNoteLine(product, familyMap)
   const notes = getFragranceNotes(product, familyMap)
   const trustBadges = getTrustBadges(product)
   const occasionHighlights = getOccasionHighlights(product, purposeMap)
@@ -59,21 +55,8 @@ function ProductInfo({
             <h1 className="font-display text-3xl leading-tight tracking-[-0.04em] text-[#19213C] sm:text-4xl xl:text-[3.3rem]">
               {product?.name}
             </h1>
-            <p className="mt-3 text-sm font-medium tracking-[0.08em] text-[#C9A24A] sm:text-base">{noteLine}</p>
           </div>
           {!isAdmin ? <WishlistButton productId={product?._id} className="shrink-0" /> : null}
-        </div>
-
-        <div className="mt-5 flex flex-wrap items-center gap-4 text-sm text-[#5F6475]">
-          <div className="inline-flex items-center gap-1.5 text-[#19213C]">
-            {Array.from({ length: 5 }).map((_, index) => {
-              const filled = index < Math.round(rating.value || 0)
-              return <FiStar key={index} className={filled ? 'fill-current text-[#C9A24A]' : 'text-[#D3D7E0]'} size={15} />
-            })}
-            {rating.count > 0 ? <span className="ml-2 font-semibold text-[#19213C]">{rating.value.toFixed(1)}</span> : null}
-          </div>
-          <span>{rating.count > 0 ? `${rating.count} review${rating.count > 1 ? 's' : ''}` : '0 reviews'}</span>
-          <span>{BUSINESS_NOTE}</span>
         </div>
 
         <div className="mt-6 flex flex-wrap items-end gap-4">
@@ -249,7 +232,5 @@ function DetailPill({ title, items }) {
     </div>
   )
 }
-
-const BUSINESS_NOTE = 'Heritage-crafted in Kannauj'
 
 export default ProductInfo

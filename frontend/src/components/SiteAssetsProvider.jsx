@@ -56,9 +56,10 @@ export function SiteAssetsProvider({ children }) {
     const favicon = document.getElementById('app-favicon')
     if (!favicon) return
 
-    const logoUrl = assets?.['site.logo']
-      ? toAssetUrl(assets['site.logo'], import.meta.env.VITE_API_ASSET)
-      : '/favicon.svg?v=ka-mark'
+    const faviconAsset = assets?.['site.favicon'] || assets?.['site.logo'] || ''
+    const logoUrl = faviconAsset
+      ? toAssetUrl(faviconAsset, import.meta.env.VITE_API_ASSET)
+      : '/favicon.svg?v=ka-mark-circle'
 
     favicon.setAttribute('href', logoUrl)
   }, [assets])

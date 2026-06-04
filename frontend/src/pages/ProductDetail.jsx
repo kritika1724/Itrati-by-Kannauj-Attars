@@ -18,10 +18,12 @@ import ProductToast from '../components/product/ProductToast'
 import ReviewSection from '../components/product/ReviewSection'
 import RelatedProducts from '../components/product/RelatedProducts'
 import MobileStickyCart from '../components/product/MobileStickyCart'
+import { applySeo, resetSeo } from '../utils/seo'
 import {
   getExperienceCopy,
   getMinPack,
   getPriceMeta,
+  getShortDescription,
 } from '../components/product/productPresentation'
 
 const schema = yup.object({
@@ -152,6 +154,20 @@ function ProductDetail() {
   const sample = product?.sample || {}
   const sampleEnabled = sample.enabled === true && sample.label && Number(sample.price) > 0
   const bulkPackSelected = isBulkPack(packLabel)
+
+  useEffect(() => {
+    if (!product) return undefined
+
+    const title = `${product.name} | ITRATI by Kannauj Attars`
+    const shortDescription = getShortDescription(product.description, 155)
+    const category = String(product.category || 'attar').trim().toLowerCase()
+    const description = shortDescription
+      ? `${shortDescription} Shop this ${category} from ITRATI by Kannauj Attars.`
+      : `Shop ${product.name} from ITRATI by Kannauj Attars. Explore pure attars, rose water, and essential oils crafted in Kannauj.`
+
+    applySeo({ title, description })
+    return () => resetSeo()
+  }, [product])
 
   const addCurrentSelectionToCart = ({ buyNow = false, sampleMode = false } = {}) => {
     if (!product) return

@@ -1,6 +1,6 @@
 <svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="128" height="128" rx="32" fill="#111B3A"/>
-  <circle cx="64" cy="64" r="45" fill="#FFFFFF"/>
-  <circle cx="64" cy="64" r="41" stroke="#C9A24A" stroke-opacity="0.7" stroke-width="1.5"/>
-  <text x="64" y="76" text-anchor="middle" font-size="34" font-weight="700" font-family="Georgia, Times New Roman, serif" fill="#111B3A">K<tspan fill="#C9A24A">/</tspan>A</text>
+  <circle cx="64" cy="64" r="60" fill="#111B3A"/>
+  <circle cx="64" cy="64" r="46" fill="#FFFFFF"/>
+  <circle cx="64" cy="64" r="42" stroke="#C9A24A" stroke-opacity="0.78" stroke-width="2"/>
+  <text x="64" y="75" text-anchor="middle" font-size="33" font-weight="700" font-family="Georgia, Times New Roman, serif" fill="#111B3A">K<tspan fill="#C9A24A">/</tspan>A</text>
 </svg>

@@ -39,7 +39,7 @@ function AuthBootstrap() {
           localStorage.setItem('user', JSON.stringify(next))
           window.dispatchEvent(new Event('authchange'))
         }
-      } catch (e) {
+      } catch {
         // Token invalid or backend unreachable: don't keep stale sessions around.
         if (cancelled) return
         auth.clearSession()

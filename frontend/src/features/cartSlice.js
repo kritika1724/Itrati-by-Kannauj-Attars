@@ -1,5 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit'
 import { saveCartForUser } from '../utils/cartStorage'
+import { WELCOME_COUPON_CODE, WELCOME_COUPON_PERCENT } from '../utils/cartOffers'
 
 export const DEFAULT_SHIPPING = {
   fullName: '',
@@ -19,6 +20,12 @@ export const DEFAULT_CART_STATE = {
   items: [],
   shippingAddress: DEFAULT_SHIPPING,
   paymentMethod: 'COD',
+  coupon: {
+    code: '',
+    discountPercent: 0,
+    applied: false,
+    source: '',
+  },
 }
 
 const saveCart = (state) => {
@@ -26,6 +33,7 @@ const saveCart = (state) => {
     items: state.items,
     shippingAddress: state.shippingAddress,
     paymentMethod: state.paymentMethod,
+    coupon: state.coupon,
   })
 }
 
@@ -41,11 +49,12 @@ const cartSlice = createSlice({
   initialState: initial,
   reducers: {
     hydrateCart(state, action) {
-      const { ownerId, items, shippingAddress, paymentMethod } = action.payload || {}
+      const { ownerId, items, shippingAddress, paymentMethod, coupon } = action.payload || {}
       state.ownerId = ownerId || 'guest'
       state.items = Array.isArray(items) ? items : []
       state.shippingAddress = { ...DEFAULT_SHIPPING, ...(shippingAddress || {}) }
       state.paymentMethod = paymentMethod || 'COD'
+      state.coupon = { ...DEFAULT_CART_STATE.coupon, ...(coupon || {}) }
       // Don’t save on hydrate; it’s a read path.
     },
     addToCart(state, action) {
@@ -90,6 +99,7 @@ const cartSlice = createSlice({
     },
     clearCart(state) {
       state.items = []
+      state.coupon = { ...DEFAULT_CART_STATE.coupon }
       saveCart(state)
     },
     saveShippingAddress(state, action) {
@@ -98,6 +108,27 @@ const cartSlice = createSlice({
     },
     savePaymentMethod(state, action) {
       state.paymentMethod = action.payload || 'COD'
+      saveCart(state)
+    },
+    unlockLeadCoupon(state, action) {
+      const payload = action.payload || {}
+      const phone = String(payload.phone || '').trim()
+      state.shippingAddress = {
+        ...state.shippingAddress,
+        fullName: String(payload.fullName || state.shippingAddress.fullName || '').trim(),
+        email: String(payload.email || state.shippingAddress.email || '').trim(),
+        phone: phone || state.shippingAddress.phone,
+        whatsapp: phone || state.shippingAddress.whatsapp,
+        addressLine1: String(payload.addressLine1 || state.shippingAddress.addressLine1 || '').trim(),
+        city: String(payload.city || state.shippingAddress.city || '').trim(),
+        state: String(payload.state || state.shippingAddress.state || '').trim(),
+      }
+      state.coupon = {
+        code: WELCOME_COUPON_CODE,
+        discountPercent: WELCOME_COUPON_PERCENT,
+        applied: true,
+        source: 'lead-capture',
+      }
       saveCart(state)
     },
   },
@@ -111,6 +142,7 @@ export const {
   saveShippingAddress,
   savePaymentMethod,
   hydrateCart,
+  unlockLeadCoupon,
 } = cartSlice.actions
 
 export default cartSlice.reducer

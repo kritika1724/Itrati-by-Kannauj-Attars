@@ -7,12 +7,11 @@ const { slugifyTerm } = require('../config/taxonomy')
 const { getTaxonomyPayload, clearTaxonomyPayloadCache } = require('../utils/taxonomy')
 const { clearCacheByPrefix } = require('../utils/appCache')
 const { getPublicCacheProfile, setPublicCache } = require('../utils/cacheControl')
+const { PRODUCTS_CACHE_KEY_PREFIX } = require('../utils/cacheKeys')
 
 const router = express.Router()
-const ALLOWED_GROUPS = new Set(['purpose', 'family', 'season', 'gender', 'collection'])
+const ALLOWED_GROUPS = new Set(['purpose', 'family', 'season', 'gender', 'direction', 'collection'])
 const RESERVED_COLLECTIONS = new Set(['signature', 'heritage'])
-const PRODUCTS_LIST_CACHE_PREFIX = 'products:list:'
-const PRODUCT_DETAIL_CACHE_PREFIX = 'products:detail:'
 const TAXONOMY_CACHE_PROFILE = getPublicCacheProfile('TAXONOMY', {
   browserMaxAge: 300,
   edgeMaxAge: 1800,
@@ -70,7 +69,7 @@ router.post(
       isActive: true,
     })
 
-    clearTaxonomyPayloadCache()
+    await Promise.all([clearTaxonomyPayloadCache(), clearCacheByPrefix(PRODUCTS_CACHE_KEY_PREFIX)])
 
     res.status(201).json({
       message: 'Filter created',
@@ -111,7 +110,7 @@ router.put(
 
     term.label = label
     await term.save()
-    clearTaxonomyPayloadCache()
+    await Promise.all([clearTaxonomyPayloadCache(), clearCacheByPrefix(PRODUCTS_CACHE_KEY_PREFIX)])
 
     res.json({
       message: group === 'collection' ? 'Collection updated' : 'Filter updated',
@@ -159,12 +158,12 @@ router.delete(
       await Product.updateMany({ seasonTags: slug }, { $pull: { seasonTags: slug } })
     } else if (group === 'gender') {
       await Product.updateMany({ genderTags: slug }, { $pull: { genderTags: slug } })
+    } else if (group === 'direction') {
+      await Product.updateMany({ directionTags: slug }, { $pull: { directionTags: slug } })
     }
 
     await term.deleteOne()
-    clearTaxonomyPayloadCache()
-    clearCacheByPrefix(PRODUCTS_LIST_CACHE_PREFIX)
-    clearCacheByPrefix(PRODUCT_DETAIL_CACHE_PREFIX)
+    await Promise.all([clearTaxonomyPayloadCache(), clearCacheByPrefix(PRODUCTS_CACHE_KEY_PREFIX)])
 
     res.json({
       message: group === 'collection' ? 'Collection deleted' : 'Filter deleted',

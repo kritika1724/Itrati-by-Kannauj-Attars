@@ -10,6 +10,7 @@ import { useTaxonomy } from '../components/TaxonomyProvider'
 const schema = yup.object({
   name: yup.string().required('Name is required.'),
   description: yup.string().required('Description is required.'),
+  shortDescription: yup.string().max(280).default(''),
   category: yup.string().required('Category is required.'),
   buyerType: yup.string().oneOf(['personal', 'industrial', 'both']).default('personal'),
   stock: yup
@@ -24,6 +25,9 @@ const schema = yup.object({
   sampleEnabled: yup.boolean().default(false),
   availableSizesText: yup.string().default(''),
   highlights: yup.string(),
+  topNotes: yup.string().default(''),
+  heartNotes: yup.string().default(''),
+  baseNotes: yup.string().default(''),
 })
 
 const clampImageZoom = (value) => {
@@ -39,6 +43,8 @@ const DEFAULT_DETAIL_SECTIONS = [
 ]
 
 const createDefaultDetailSections = () => DEFAULT_DETAIL_SECTIONS.map((section) => ({ ...section }))
+const parseFragranceNoteInput = (value) =>
+  [...new Set(String(value || '').split(/\r?\n|,/).map((item) => item.trim()).filter(Boolean))].slice(0, 4)
 const mergeProductsById = (current = [], incoming = []) => {
   const map = new Map()
 
@@ -64,6 +70,7 @@ function AdminProductForm() {
   const [familyTags, setFamilyTags] = useState([])
   const [seasonTags, setSeasonTags] = useState([])
   const [genderTags, setGenderTags] = useState([])
+  const [directionTags, setDirectionTags] = useState([])
   const [featuredCollections, setFeaturedCollections] = useState([])
   const [relatedProductIds, setRelatedProductIds] = useState([])
   const [relatedProductSearch, setRelatedProductSearch] = useState('')
@@ -77,6 +84,7 @@ function AdminProductForm() {
     families: familyOptions,
     seasons: seasonOptions,
     genders: genderOptions,
+    directions: directionOptions,
     collections: collectionOptions,
   } = useTaxonomy()
 
@@ -140,6 +148,7 @@ function AdminProductForm() {
       const product = await api.getProduct(id)
       setValue('name', product.name)
       setValue('description', product.description)
+      setValue('shortDescription', product.shortDescription || '')
       setValue('category', product.category)
       setValue('buyerType', product.buyerType || 'personal')
       setValue('stock', product.stock ?? 0)
@@ -150,6 +159,9 @@ function AdminProductForm() {
       setValue('samplePrice', product.sample?.price ?? '')
       setValue('availableSizesText', product.availableSizesText || '')
       setValue('highlights', product.highlights?.join(', ') || '')
+      setValue('topNotes', Array.isArray(product.fragranceNotes?.top) ? product.fragranceNotes.top.join(', ') : '')
+      setValue('heartNotes', Array.isArray(product.fragranceNotes?.heart) ? product.fragranceNotes.heart.join(', ') : '')
+      setValue('baseNotes', Array.isArray(product.fragranceNotes?.base) ? product.fragranceNotes.base.join(', ') : '')
       setDetailSections(
         Array.isArray(product.detailSections) && product.detailSections.length
           ? product.detailSections.map((section) => ({
@@ -164,6 +176,7 @@ function AdminProductForm() {
       setFamilyTags(Array.isArray(product.familyTags) ? product.familyTags : [])
       setSeasonTags(Array.isArray(product.seasonTags) ? product.seasonTags : [])
       setGenderTags(Array.isArray(product.genderTags) ? product.genderTags : [])
+      setDirectionTags(Array.isArray(product.directionTags) ? product.directionTags : [])
       setFeaturedCollections(Array.isArray(product.featuredCollections) ? product.featuredCollections : [])
       setRelatedProductIds(
         Array.isArray(product.relatedProducts)
@@ -320,6 +333,11 @@ function AdminProductForm() {
       stock: Math.max(0, Number(data.stock || 0)),
       price: Number(basePrice),
       highlights: data.highlights ? data.highlights.split(',').map((item) => item.trim()).filter(Boolean) : [],
+      fragranceNotes: {
+        top: parseFragranceNoteInput(data.topNotes),
+        heart: parseFragranceNoteInput(data.heartNotes),
+        base: parseFragranceNoteInput(data.baseNotes),
+      },
       detailSections: detailSections
         .map((section) => ({
           title: String(section.title || '').trim(),
@@ -334,6 +352,7 @@ function AdminProductForm() {
       familyTags,
       seasonTags,
       genderTags,
+      directionTags,
       featuredCollections,
       sample: data.sampleEnabled
         ? { enabled: true, label: String(data.sampleLabel || '').trim(), price: Number(data.samplePrice) }
@@ -412,6 +431,22 @@ function AdminProductForm() {
               {errors.description && (
                 <p className="mt-2 text-xs text-red-600">{errors.description.message}</p>
               )}
+            </div>
+
+            <div>
+              <label className="text-sm font-semibold text-ink">Short one-liner</label>
+              <textarea
+                {...register('shortDescription')}
+                rows="3"
+                placeholder="A quick one-line product intro for the top section of the product page."
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/20"
+              />
+              <p className="mt-2 text-xs text-muted">
+                Yeh top product intro ke liye hai. Full details neeche description me hi rahengi.
+              </p>
+              {errors.shortDescription ? (
+                <p className="mt-2 text-xs text-red-600">{errors.shortDescription.message}</p>
+              ) : null}
             </div>
 
             <div className="rounded-3xl border border-slate-200/80 bg-clay/50 p-6">
@@ -510,6 +545,46 @@ function AdminProductForm() {
             </div>
 
             <div className="rounded-3xl border border-slate-200/80 bg-clay/50 p-6">
+              <p className="text-xs uppercase tracking-[0.35em] text-muted">Fragrance notes</p>
+              <h3 className="mt-2 text-lg font-semibold text-ink">Top, heart & base</h3>
+              <p className="mt-2 text-sm text-muted">
+                Add the actual notes you want customers to see on the product page. If you leave any layer blank, the storefront can still fall back to its existing smart note suggestions.
+              </p>
+
+              <div className="mt-5 grid gap-4 md:grid-cols-3">
+                <div>
+                  <label className="text-sm font-semibold text-ink">Top notes</label>
+                  <textarea
+                    {...register('topNotes')}
+                    rows="3"
+                    placeholder="Bergamot, Saffron"
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/20"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-ink">Heart notes</label>
+                  <textarea
+                    {...register('heartNotes')}
+                    rows="3"
+                    placeholder="Rose, Jasmine"
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/20"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-ink">Base notes</label>
+                  <textarea
+                    {...register('baseNotes')}
+                    rows="3"
+                    placeholder="Amber, Sandalwood"
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/20"
+                  />
+                </div>
+              </div>
+
+              <p className="mt-3 text-xs text-muted">Use commas or new lines between notes. Up to 4 notes per layer will be saved.</p>
+            </div>
+
+            <div className="rounded-3xl border border-slate-200/80 bg-clay/50 p-6">
               <p className="text-xs uppercase tracking-[0.35em] text-muted">Inventory</p>
               <h3 className="mt-2 text-lg font-semibold text-ink">Available stock</h3>
               <p className="mt-2 text-sm text-muted">
@@ -592,9 +667,9 @@ function AdminProductForm() {
 
             <div className="rounded-3xl border border-slate-200/80 bg-clay/50 p-6">
               <p className="text-xs uppercase tracking-[0.35em] text-muted">Discovery</p>
-              <h3 className="mt-2 text-lg font-semibold text-ink">Shop by purpose, family, season & gender</h3>
+              <h3 className="mt-2 text-lg font-semibold text-ink">Shop by purpose, family, direction, season & gender</h3>
               <p className="mt-2 text-sm text-muted">
-                These tags help customers browse faster and let the storefront filter fragrances by use case, scent family, season, and audience.
+                These tags help customers browse faster and let the storefront filter fragrances by use case, scent family, fragrance direction, season, and audience.
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <button
@@ -605,7 +680,7 @@ function AdminProductForm() {
                   Manage filters
                 </button>
                 <p className="text-xs text-muted">
-                  Add a new purpose or fragrance family whenever you need a custom filter.
+                  Add a new purpose, fragrance family, or fragrance direction whenever you need a custom filter.
                 </p>
               </div>
 
@@ -687,6 +762,33 @@ function AdminProductForm() {
                   </div>
 
                   <div className="mt-6">
+                    <label className="text-sm font-semibold text-ink">Fragrance direction</label>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {directionOptions.map((tag) => {
+                        const active = directionTags.includes(tag.id)
+                        return (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            onClick={() =>
+                              setDirectionTags((prev) =>
+                                prev.includes(tag.id) ? prev.filter((x) => x !== tag.id) : [...prev, tag.id]
+                              )
+                            }
+                            className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
+                              active
+                                ? 'bg-ember text-white'
+                                : 'border border-slate-200 bg-white text-emberDark hover:border-gold/50'
+                            }`}
+                          >
+                            {tag.label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
                     <label className="text-sm font-semibold text-ink">Season</label>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {seasonOptions.map((tag) => {
@@ -741,7 +843,7 @@ function AdminProductForm() {
                   </div>
 
                   <p className="mt-3 text-xs text-muted">
-                    You can select multiple tags here too, for example “Luxury gifting” + “Woody” + “Winter” + “Unisex”.
+                    You can select multiple tags here too, for example “Luxury gifting” + “Woody” + “Smoky” + “Winter” + “Unisex”.
                   </p>
                 </div>
               </div>

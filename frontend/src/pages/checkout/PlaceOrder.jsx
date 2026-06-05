@@ -7,19 +7,21 @@ import { useEffect, useMemo } from 'react'
 import { openRazorpayCheckout } from '../../utils/razorpay'
 import { saveLastOrder } from '../../utils/orderStorage'
 import { BUSINESS } from '../../config/business'
+import { getCartTotals, isWelcomeCouponActive, WELCOME_COUPON_CODE } from '../../utils/cartOffers'
 
 function PlaceOrder() {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const user = auth.getUser()
 
-  const { items, shippingAddress, paymentMethod } = useSelector((state) => state.cart)
+  const { items, shippingAddress, paymentMethod, coupon } = useSelector((state) => state.cart)
 
   const COD_LIMIT = 2000
   const itemsPrice = useMemo(() => items.reduce((sum, item) => sum + item.qty * item.price, 0), [items])
   const shippingPrice = 0
   const taxPrice = 0
-  const totalPrice = itemsPrice + shippingPrice + taxPrice
+  const { discountAmount, totalPrice } = getCartTotals({ itemsPrice, shippingPrice, taxPrice, coupon })
+  const rewardActive = isWelcomeCouponActive(coupon)
 
   useEffect(() => {
     if ((paymentMethod || 'COD').toUpperCase() === 'COD' && totalPrice > COD_LIMIT) {
@@ -69,7 +71,7 @@ function PlaceOrder() {
           saveLastOrder(updated)
           dispatch(clearCart())
           navigate(`/checkout/success/${updated._id}`)
-        } catch (e) {
+        } catch {
           navigate(`/checkout/failure/${order._id}`)
         }
       },
@@ -89,6 +91,7 @@ function PlaceOrder() {
       })),
       shippingAddress,
       paymentMethod,
+      couponCode: rewardActive ? WELCOME_COUPON_CODE : '',
     }
 
     const method = String(paymentMethod || 'COD').toUpperCase()
@@ -188,6 +191,12 @@ function PlaceOrder() {
                 <span className="text-muted">Tax</span>
                 <span className="font-semibold text-ink">₹{taxPrice}</span>
               </div>
+              {rewardActive ? (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted">Discount ({WELCOME_COUPON_CODE})</span>
+                  <span className="font-semibold text-[#1F7A45]">-₹{discountAmount}</span>
+                </div>
+              ) : null}
               <div className="mt-2 flex items-center justify-between border-t border-slate-200/80 pt-3">
                 <span className="text-muted">Total</span>
                 <span className="text-lg font-semibold text-ink">₹{totalPrice}</span>

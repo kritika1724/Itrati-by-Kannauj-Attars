@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { api } from '../services/api'
-import { BUYER_TYPES, PURPOSE_TAGS, FAMILY_TAGS, SEASON_TAGS, GENDER_TAGS } from '../config/taxonomy'
+import { BUYER_TYPES, PURPOSE_TAGS, FAMILY_TAGS, SEASON_TAGS, GENDER_TAGS, DIRECTION_TAGS } from '../config/taxonomy'
 
 const TaxonomyContext = createContext({
   buyerTypes: BUYER_TYPES,
@@ -8,18 +8,20 @@ const TaxonomyContext = createContext({
   families: FAMILY_TAGS,
   seasons: SEASON_TAGS,
   genders: GENDER_TAGS,
+  directions: DIRECTION_TAGS,
   collections: [],
   purposeMap: {},
   familyMap: {},
   seasonMap: {},
   genderMap: {},
+  directionMap: {},
   collectionMap: {},
   loading: true,
   error: '',
   refresh: async () => {},
 })
 
-const TAXONOMY_CACHE_KEY = 'ka:taxonomy:v2'
+const TAXONOMY_CACHE_KEY = 'ka:taxonomy:v3'
 
 const readCachedTaxonomy = () => {
   if (typeof window === 'undefined') return null
@@ -46,6 +48,7 @@ export function TaxonomyProvider({ children }) {
   const [families, setFamilies] = useState(cachedTaxonomy?.families?.length ? cachedTaxonomy.families : FAMILY_TAGS)
   const [seasons, setSeasons] = useState(cachedTaxonomy?.seasons?.length ? cachedTaxonomy.seasons : SEASON_TAGS)
   const [genders, setGenders] = useState(cachedTaxonomy?.genders?.length ? cachedTaxonomy.genders : GENDER_TAGS)
+  const [directions, setDirections] = useState(cachedTaxonomy?.directions?.length ? cachedTaxonomy.directions : DIRECTION_TAGS)
   const [collections, setCollections] = useState(cachedTaxonomy?.collections?.length ? cachedTaxonomy.collections : [])
   const [loading, setLoading] = useState(!cachedTaxonomy)
   const [error, setError] = useState('')
@@ -58,11 +61,13 @@ export function TaxonomyProvider({ children }) {
       const nextFamilies = Array.isArray(data?.families) && data.families.length ? data.families : FAMILY_TAGS
       const nextSeasons = Array.isArray(data?.seasons) && data.seasons.length ? data.seasons : SEASON_TAGS
       const nextGenders = Array.isArray(data?.genders) && data.genders.length ? data.genders : GENDER_TAGS
+      const nextDirections = Array.isArray(data?.directions) && data.directions.length ? data.directions : DIRECTION_TAGS
       const nextCollections = Array.isArray(data?.collections) ? data.collections : []
       setPurposes(nextPurposes)
       setFamilies(nextFamilies)
       setSeasons(nextSeasons)
       setGenders(nextGenders)
+      setDirections(nextDirections)
       setCollections(nextCollections)
       if (typeof window !== 'undefined') {
         window.sessionStorage.setItem(
@@ -72,6 +77,7 @@ export function TaxonomyProvider({ children }) {
             families: nextFamilies,
             seasons: nextSeasons,
             genders: nextGenders,
+            directions: nextDirections,
             collections: nextCollections,
           })
         )
@@ -82,6 +88,7 @@ export function TaxonomyProvider({ children }) {
       setFamilies(FAMILY_TAGS)
       setSeasons(SEASON_TAGS)
       setGenders(GENDER_TAGS)
+      setDirections(DIRECTION_TAGS)
       setCollections([])
     } finally {
       setLoading(false)
@@ -99,17 +106,19 @@ export function TaxonomyProvider({ children }) {
       families,
       seasons,
       genders,
+      directions,
       collections,
       purposeMap: makeLookupMap(purposes),
       familyMap: makeLookupMap(families),
       seasonMap: makeLookupMap(seasons),
       genderMap: makeLookupMap(genders),
+      directionMap: makeLookupMap(directions),
       collectionMap: makeLookupMap(collections),
       loading,
       error,
       refresh,
     }),
-    [purposes, families, seasons, genders, collections, loading, error, refresh]
+    [purposes, families, seasons, genders, directions, collections, loading, error, refresh]
   )
 
   return <TaxonomyContext.Provider value={value}>{children}</TaxonomyContext.Provider>

@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "clean": "node -e \"require('fs').rmSync('frontend/dist', { recursive: true, force: true })\"",
-    "build:render": "npm run clean && npm --prefix frontend install --include=dev && npm --prefix frontend run build && npm --prefix backend install && node -e \"const fs=require('fs'); if(!fs.existsSync('frontend/dist/index.html')) process.exit(1); if(!fs.existsSync('backend/node_modules/express')) process.exit(1);\"",
+    "build:render": "npm run clean && npm --prefix frontend install --include=dev && npm --prefix frontend run build && npm --prefix backend install && npm --prefix backend run check:env:prod && node -e \"const fs=require('fs'); if(!fs.existsSync('frontend/dist/index.html')) process.exit(1); if(!fs.existsSync('backend/node_modules/express')) process.exit(1);\"",
     "start": "node backend/server.js"
   },
   "engines": {

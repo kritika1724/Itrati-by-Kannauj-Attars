@@ -35,6 +35,22 @@ const DEFAULT_TAXONOMY_TERMS = [
   { group: 'gender', slug: 'women', label: 'Women', sortOrder: 20 },
   { group: 'gender', slug: 'unisex', label: 'Unisex', sortOrder: 30 },
 
+  { group: 'direction', slug: 'arabic_oriental', label: 'Arabic (Oriental)', sortOrder: 10 },
+  { group: 'direction', slug: 'fresh_and_aquatics', label: 'Fresh & Aquatics', sortOrder: 20 },
+  { group: 'direction', slug: 'fruity', label: 'Fruity', sortOrder: 30 },
+  { group: 'direction', slug: 'leathery', label: 'Leathery', sortOrder: 40 },
+  { group: 'direction', slug: 'musky', label: 'Musky', sortOrder: 50 },
+  { group: 'direction', slug: 'oud', label: 'Oud', sortOrder: 60 },
+  { group: 'direction', slug: 'floral', label: 'Floral', sortOrder: 70 },
+  { group: 'direction', slug: 'spicy', label: 'Spicy', sortOrder: 80 },
+  { group: 'direction', slug: 'sweet_and_gourmand', label: 'Sweet & Gourmand', sortOrder: 90 },
+  { group: 'direction', slug: 'powdery', label: 'Powdery', sortOrder: 100 },
+  { group: 'direction', slug: 'traditional', label: 'Traditional', sortOrder: 110 },
+  { group: 'direction', slug: 'patchouli', label: 'Patchouli', sortOrder: 120 },
+  { group: 'direction', slug: 'smoky', label: 'Smoky', sortOrder: 130 },
+  { group: 'direction', slug: 'vanilla', label: 'Vanilla', sortOrder: 140 },
+  { group: 'direction', slug: 'woody', label: 'Woody', sortOrder: 150 },
+
   { group: 'collection', slug: 'signature', label: 'Signature Attars', sortOrder: 10 },
   { group: 'collection', slug: 'heritage', label: 'Heritage Collection', sortOrder: 20 },
 ]

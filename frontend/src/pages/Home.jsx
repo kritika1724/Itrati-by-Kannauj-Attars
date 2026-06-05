@@ -11,7 +11,8 @@ import AdminAssetImage from '../components/AdminAssetImage'
 import RecentlyViewedStrip from '../components/RecentlyViewedStrip'
 import { useSiteAssets } from '../components/SiteAssetsProvider'
 import { BUSINESS } from '../config/business'
-import { useSiteContactProfile } from '../hooks/useSiteContentBlocks'
+import { KNOWLEDGE_PAGE_LIST } from '../config/knowledge'
+import { useHomeYoutubeContent, useSiteContactProfile } from '../hooks/useSiteContentBlocks'
 import { fadeLeft, fadeUp, heroStagger, revealCard, staggerGrid, viewportOnce } from '../lib/motion'
 import { auth } from '../services/api'
 import { applySeo, resetSeo } from '../utils/seo'
@@ -86,6 +87,41 @@ const clientVoices = [
   },
 ]
 
+const getYoutubeEmbedUrl = (value) => {
+  const raw = String(value || '').trim()
+  if (!raw) return ''
+
+  if (/^https:\/\/www\.youtube\.com\/embed\//i.test(raw) || /^https:\/\/player\.youtube\.com\//i.test(raw)) {
+    return raw
+  }
+
+  try {
+    const url = new URL(raw)
+    const host = url.hostname.replace(/^www\./i, '').toLowerCase()
+
+    if (host === 'youtu.be') {
+      const id = url.pathname.split('/').filter(Boolean)[0]
+      return id ? `https://www.youtube.com/embed/${id}` : ''
+    }
+
+    if (host === 'youtube.com' || host === 'm.youtube.com') {
+      if (url.pathname === '/watch') {
+        const id = url.searchParams.get('v')
+        return id ? `https://www.youtube.com/embed/${id}` : ''
+      }
+
+      const parts = url.pathname.split('/').filter(Boolean)
+      if (parts[0] === 'shorts' || parts[0] === 'embed') {
+        return parts[1] ? `https://www.youtube.com/embed/${parts[1]}` : ''
+      }
+    }
+  } catch {
+    return ''
+  }
+
+  return ''
+}
+
 function Home() {
   useEffect(() => {
     applySeo()
@@ -94,6 +130,7 @@ function Home() {
 
   const { assets, uploadAndSetAsset } = useSiteAssets()
   const contactProfile = useSiteContactProfile()
+  const homeYoutube = useHomeYoutubeContent()
   const [user, setUser] = useState(auth.getUser())
   const heroVideoRef = useRef(null)
   const [videoBusy, setVideoBusy] = useState(false)
@@ -103,6 +140,7 @@ function Home() {
   const homeVideo = assets?.['home.top.video']
     ? toAssetUrl(assets['home.top.video'], import.meta.env.VITE_API_ASSET)
     : ''
+  const homeYoutubeEmbedUrl = getYoutubeEmbedUrl(homeYoutube.youtubeUrl)
 
   useEffect(() => {
     const onAuth = () => setUser(auth.getUser())
@@ -698,6 +736,73 @@ function Home() {
             </div>
           </div>
         </motion.section>
+
+        {homeYoutube.enabled && homeYoutubeEmbedUrl ? (
+          <motion.section
+            initial="hidden"
+            whileInView="show"
+            viewport={viewportOnce}
+            variants={fadeUp}
+            className="px-4 pb-8 sm:px-6 sm:pb-10"
+          >
+            <div className="mx-auto w-full max-w-7xl rounded-[2.3rem] border border-white/75 bg-[linear-gradient(145deg,rgba(255,255,255,0.92),rgba(252,247,241,0.9),rgba(233,220,202,0.58))] p-5 shadow-[0_28px_90px_rgba(26,18,11,0.10)] backdrop-blur-xl sm:p-7 lg:p-8">
+              <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr] lg:items-stretch">
+                <div className="flex h-full min-h-[420px] flex-col justify-between rounded-[1.8rem] border border-white/70 bg-white/58 p-6 shadow-[0_18px_55px_rgba(17,20,35,0.06)] backdrop-blur-md sm:p-7">
+                  <div>
+                    <p className="ka-kicker !text-[#4E638A]">Fragrance knowledge</p>
+                    <h2 className="mt-4 font-display text-3xl leading-tight text-[#0F1E46] sm:text-4xl">
+                      Explore Kannauj heritage and the timeless language of attars.
+                    </h2>
+                    <p className="mt-4 max-w-2xl text-sm leading-8 text-[#2C446A] sm:text-base">
+                      Open a dedicated page to learn more about the perfume city of Kannauj and the enduring craft traditions behind attars.
+                    </p>
+                  </div>
+
+                  <div className="mt-6 grid gap-4">
+                    {KNOWLEDGE_PAGE_LIST.map((item) => (
+                      <article
+                        key={item.slug}
+                        className="rounded-[1.45rem] border border-[#e3d4bf]/70 bg-[rgba(255,252,247,0.9)] p-4 shadow-[0_14px_34px_rgba(44,30,18,0.05)] sm:p-5"
+                      >
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#8E6C3A]">{item.eyebrow}</p>
+                        <h3 className="mt-3 font-display text-2xl leading-tight text-[#0F1E46]">{item.navLabel}</h3>
+                        <p className="mt-3 text-sm leading-7 text-[#53627E]">{item.homeSummary}</p>
+                        <Link
+                          to={`/knowledge/${item.slug}`}
+                          className="mt-4 inline-flex rounded-full border border-[#d9c2a0]/55 bg-white px-5 py-3 text-sm font-semibold text-[#0F1E46] transition hover:border-[#c7a86c] hover:bg-[#fff9f1]"
+                        >
+                          {item.navLabel}
+                        </Link>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex h-full min-h-[420px] flex-col overflow-hidden rounded-[1.9rem] border border-[#d9c2a0]/40 bg-[#fbf6ef] shadow-[0_30px_95px_rgba(17,12,8,0.16)]">
+                  <div className="border-b border-[#dcc6a7]/55 bg-[linear-gradient(180deg,rgba(255,251,245,0.96),rgba(247,238,226,0.9))] px-5 py-4 sm:px-6">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-[#8E6C3A]">Story Film</p>
+                    <h3 className="mt-2 font-display text-2xl text-[#0F1E46]">Watch the heritage in motion</h3>
+                    <p className="mt-2 text-sm leading-7 text-[#53627E]">
+                      A visual introduction to Kannauj, attars, and the craft traditions that shape this fragrance world.
+                    </p>
+                  </div>
+
+                  <div className="min-h-[300px] flex-1 bg-[#f3eadf] lg:min-h-0">
+                    <iframe
+                      src={homeYoutubeEmbedUrl}
+                      title="ITRATI fragrance heritage video"
+                      className="h-full w-full"
+                      loading="lazy"
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.section>
+        ) : null}
 
         <div className="bg-white/50 backdrop-blur-sm">
           <RecentlyViewedStrip />

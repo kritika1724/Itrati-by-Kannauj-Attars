@@ -15,7 +15,8 @@ import { getPurposeCollectionMeta } from '../config/collections'
 import { fadeUp } from '../lib/motion'
 import { api, auth } from '../services/api'
 import { getSearchSuggestions } from '../components/product/productPresentation'
-import { SEASON_TAGS, GENDER_TAGS } from '../config/taxonomy'
+import { SEASON_TAGS, GENDER_TAGS, DIRECTION_TAGS } from '../config/taxonomy'
+import { notifyCartItemAdded } from '../utils/cartLeadPrompt'
 
 const SORT_MAP = {
   popular: 'rating_desc',
@@ -48,6 +49,7 @@ const OCCASION_DEFAULTS = [
 ]
 const SEASON_DEFAULTS = SEASON_TAGS
 const GENDER_DEFAULTS = GENDER_TAGS
+const DIRECTION_DEFAULTS = DIRECTION_TAGS
 
 const COLLECTION_MAP = {
   signature: {
@@ -83,11 +85,13 @@ function Products() {
     families: taxonomyFamilies,
     seasons: taxonomySeasons,
     genders: taxonomyGenders,
+    directions: taxonomyDirections,
     collections: taxonomyCollections,
     purposeMap,
     familyMap,
     seasonMap,
     genderMap,
+    directionMap,
     collectionMap,
     loading: taxonomyLoading,
   } = useTaxonomy()
@@ -116,6 +120,7 @@ function Products() {
   const [selectedFamilies, setSelectedFamilies] = useState([])
   const [selectedSeasons, setSelectedSeasons] = useState([])
   const [selectedGenders, setSelectedGenders] = useState([])
+  const [selectedDirections, setSelectedDirections] = useState([])
   const [bestSellerOnly, setBestSellerOnly] = useState(false)
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
@@ -162,6 +167,16 @@ function Products() {
     })
   }, [taxonomyGenders])
 
+  const directionChoices = useMemo(() => {
+    const merged = [...DIRECTION_DEFAULTS, ...taxonomyDirections.map((item) => ({ id: item.id, label: item.label }))]
+    const seen = new Set()
+    return merged.filter((item) => {
+      if (!item?.id || seen.has(item.id)) return false
+      seen.add(item.id)
+      return true
+    })
+  }, [taxonomyDirections])
+
   const occasionChoices = useMemo(() => {
     const merged = [
       ...OCCASION_DEFAULTS,
@@ -175,10 +190,28 @@ function Products() {
     })
   }, [taxonomyPurposes])
 
-  const purposeValues = new Set(occasionChoices.map((item) => item.id))
-  const familyValues = new Set(familyChoices.map((item) => item.id))
-  const seasonValues = new Set(seasonChoices.map((item) => item.id))
-  const genderValues = new Set(genderChoices.map((item) => item.id))
+  const purposeValues = useMemo(() => new Set(occasionChoices.map((item) => item.id)), [occasionChoices])
+  const familyValues = useMemo(() => new Set(familyChoices.map((item) => item.id)), [familyChoices])
+  const seasonValues = useMemo(() => new Set(seasonChoices.map((item) => item.id)), [seasonChoices])
+  const genderValues = useMemo(() => new Set(genderChoices.map((item) => item.id)), [genderChoices])
+  const directionValues = useMemo(() => new Set(directionChoices.map((item) => item.id)), [directionChoices])
+  const querySnapshot = useMemo(() => {
+    const params = new URLSearchParams(searchKey)
+    return {
+      keyword: (params.get('keyword') || '').trim(),
+      sort: (params.get('sort') || '').trim(),
+      purpose: (params.get('purpose') || '').trim(),
+      family: (params.get('family') || '').trim(),
+      season: (params.get('season') || '').trim(),
+      gender: (params.get('gender') || '').trim(),
+      direction: (params.get('direction') || '').trim(),
+      category: (params.get('category') || '').trim(),
+      minPrice: (params.get('minPrice') || '').trim(),
+      maxPrice: (params.get('maxPrice') || '').trim(),
+      bestSeller: (params.get('bestSeller') || '').trim(),
+      page: (params.get('page') || '').trim(),
+    }
+  }, [searchKey])
   const activeFilterCount =
     Number(Boolean(selectedCategory)) +
     Number(Boolean(minPrice)) +
@@ -186,6 +219,7 @@ function Products() {
     selectedFamilies.length +
     selectedSeasons.length +
     selectedGenders.length +
+    selectedDirections.length +
     selectedOccasions.length +
     Number(bestSellerOnly)
 
@@ -198,59 +232,56 @@ function Products() {
   const suggestions = useMemo(() => getSearchSuggestions(products, keyword), [products, keyword])
 
   useEffect(() => {
-    const qpKeyword = (searchParams.get('keyword') || '').trim()
-    const qpSort = (searchParams.get('sort') || '').trim()
-    const qpPurpose = (searchParams.get('purpose') || '').trim()
-    const qpFamily = (searchParams.get('family') || '').trim()
-    const qpSeason = (searchParams.get('season') || '').trim()
-    const qpGender = (searchParams.get('gender') || '').trim()
-    const qpCategory = (searchParams.get('category') || '').trim()
-    const qpMinPrice = (searchParams.get('minPrice') || '').trim()
-    const qpMaxPrice = (searchParams.get('maxPrice') || '').trim()
-    const qpBestSeller = (searchParams.get('bestSeller') || '').trim()
-    const qpPageRaw = (searchParams.get('page') || '').trim()
-    const nextPage = Number(qpPageRaw || 1)
+    const nextPage = Number(querySnapshot.page || 1)
 
-    setKeyword(qpKeyword)
-    setSort(toUiSort(qpSort))
-    setSelectedCategory(qpCategory)
-    setMinPrice(qpMinPrice)
-    setMaxPrice(qpMaxPrice)
-    setBestSellerOnly(['1', 'true', 'yes', 'on'].includes(qpBestSeller.toLowerCase()))
+    setKeyword(querySnapshot.keyword)
+    setSort(toUiSort(querySnapshot.sort))
+    setSelectedCategory(querySnapshot.category)
+    setMinPrice(querySnapshot.minPrice)
+    setMaxPrice(querySnapshot.maxPrice)
+    setBestSellerOnly(['1', 'true', 'yes', 'on'].includes(querySnapshot.bestSeller.toLowerCase()))
     setSelectedOccasions(
-      qpPurpose
-        ? qpPurpose
+      querySnapshot.purpose
+        ? querySnapshot.purpose
             .split(',')
             .map((item) => item.trim())
             .filter((id) => purposeValues.has(id))
         : []
     )
     setSelectedFamilies(
-      qpFamily
-        ? qpFamily
+      querySnapshot.family
+        ? querySnapshot.family
             .split(',')
             .map((item) => item.trim())
             .filter((id) => familyValues.has(id))
         : []
     )
     setSelectedSeasons(
-      qpSeason
-        ? qpSeason
+      querySnapshot.season
+        ? querySnapshot.season
             .split(',')
             .map((item) => item.trim())
             .filter((id) => seasonValues.has(id))
         : []
     )
     setSelectedGenders(
-      qpGender
-        ? qpGender
+      querySnapshot.gender
+        ? querySnapshot.gender
             .split(',')
             .map((item) => item.trim())
             .filter((id) => genderValues.has(id))
         : []
     )
+    setSelectedDirections(
+      querySnapshot.direction
+        ? querySnapshot.direction
+            .split(',')
+            .map((item) => item.trim())
+            .filter((id) => directionValues.has(id))
+        : []
+    )
     setPage(Number.isFinite(nextPage) && nextPage > 0 ? nextPage : 1)
-  }, [searchKey, taxonomyLoading, purposeValues.size, familyValues.size, seasonValues.size, genderValues.size])
+  }, [querySnapshot, taxonomyLoading, purposeValues, familyValues, seasonValues, genderValues, directionValues])
 
   useEffect(() => {
     const load = async () => {
@@ -267,6 +298,7 @@ function Products() {
           family: selectedFamilies.join(','),
           season: selectedSeasons.join(','),
           gender: selectedGenders.join(','),
+          direction: selectedDirections.join(','),
           bestSeller: bestSellerOnly ? 1 : '',
           minPrice,
           maxPrice,
@@ -284,7 +316,7 @@ function Products() {
     }
 
     load()
-  }, [page, keyword, sort, selectedCategory, selectedOccasions, selectedFamilies, selectedSeasons, selectedGenders, bestSellerOnly, minPrice, maxPrice, activeCollection])
+  }, [page, keyword, sort, selectedCategory, selectedOccasions, selectedFamilies, selectedSeasons, selectedGenders, selectedDirections, bestSellerOnly, minPrice, maxPrice, activeCollection])
 
   useEffect(() => {
     if (!filtersOpen) return undefined
@@ -324,6 +356,7 @@ function Products() {
     setSelectedFamilies([])
     setSelectedSeasons([])
     setSelectedGenders([])
+    setSelectedDirections([])
     setBestSellerOnly(false)
     setMinPrice('')
     setMaxPrice('')
@@ -350,6 +383,7 @@ function Products() {
         isSample: selection.isSample === true,
       })
     )
+    notifyCartItemAdded({ productId: product._id, productName: product.name })
 
     setCartModal({ open: false, product: null })
     showToast(`${product.name} added to cart.`)
@@ -369,6 +403,7 @@ function Products() {
           qty: 1,
         })
       )
+      notifyCartItemAdded({ productId: product._id, productName: product.name })
       showToast(`Sample for ${product.name} added to cart.`)
       return
     }
@@ -512,6 +547,12 @@ function Products() {
                     setPage(1)
                     setSelectedGenders((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
                   }}
+                  directions={directionChoices}
+                  selectedDirections={selectedDirections}
+                  onToggleDirection={(id) => {
+                    setPage(1)
+                    setSelectedDirections((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
+                  }}
                   occasions={occasionChoices}
                   selectedOccasions={selectedOccasions}
                   onToggleOccasion={(id) => {
@@ -543,6 +584,9 @@ function Products() {
                     {selectedGenders.map((id) => (
                       <FilterChip key={id}>{genderMap[id] || id}</FilterChip>
                     ))}
+                    {selectedDirections.map((id) => (
+                      <FilterChip key={id}>{directionMap[id] || id}</FilterChip>
+                    ))}
                     {selectedOccasions.map((id) => (
                       <FilterChip key={id}>{purposeMap[id] || id}</FilterChip>
                     ))}
@@ -550,7 +594,7 @@ function Products() {
                     {maxPrice ? <FilterChip>Up to ₹{maxPrice}</FilterChip> : null}
                   </>
                 ) : (
-                  <p className="text-sm text-[#6B6F7A]">Use filters to narrow by fragrance family, category, season, gender, occasion, or price.</p>
+                  <p className="text-sm text-[#6B6F7A]">Use filters to narrow by fragrance family, direction, category, season, gender, occasion, or price.</p>
                 )}
               </div>
               <p className="text-sm font-medium text-[#5F6475]">

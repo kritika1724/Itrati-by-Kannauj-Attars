@@ -6,6 +6,7 @@ const productSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     description: { type: String, required: true },
+    shortDescription: { type: String, default: '' },
     category: { type: String, default: 'Attar' },
     // B2C / B2B segmentation (backward compatible: default personal)
     buyerType: {
@@ -18,6 +19,7 @@ const productSchema = new mongoose.Schema(
     familyTags: { type: [String], default: [] },
     seasonTags: { type: [String], default: [] },
     genderTags: { type: [String], default: [] },
+    directionTags: { type: [String], default: [] },
     featuredCollections: { type: [String], default: [] },
     // Curated on Explore/Home by admin (manual best-seller list)
     isBestSeller: { type: Boolean, default: false },
@@ -44,6 +46,11 @@ const productSchema = new mongoose.Schema(
     imageZoom: { type: Number, default: 1, min: 1, max: 2.5 },
     stock: { type: Number, default: 0 },
     highlights: { type: [String], default: [] },
+    fragranceNotes: {
+      top: { type: [String], default: [] },
+      heart: { type: [String], default: [] },
+      base: { type: [String], default: [] },
+    },
     detailSections: {
       type: [
         {
@@ -75,6 +82,7 @@ productSchema.index({ purposeTags: 1 })
 productSchema.index({ familyTags: 1 })
 productSchema.index({ seasonTags: 1 })
 productSchema.index({ genderTags: 1 })
+productSchema.index({ directionTags: 1 })
 productSchema.index({ featuredCollections: 1 })
 productSchema.index({ relatedProducts: 1 })
 

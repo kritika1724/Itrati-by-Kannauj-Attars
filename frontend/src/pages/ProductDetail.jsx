@@ -23,8 +23,9 @@ import {
   getExperienceCopy,
   getMinPack,
   getPriceMeta,
-  getShortDescription,
+  getProductShortDescription,
 } from '../components/product/productPresentation'
+import { notifyCartItemAdded } from '../utils/cartLeadPrompt'
 
 const schema = yup.object({
   orderId: yup.string().trim().required('Order ID is required.'),
@@ -159,7 +160,7 @@ function ProductDetail() {
     if (!product) return undefined
 
     const title = `${product.name} | ITRATI by Kannauj Attars`
-    const shortDescription = getShortDescription(product.description, 155)
+    const shortDescription = getProductShortDescription(product, 155)
     const category = String(product.category || 'attar').trim().toLowerCase()
     const description = shortDescription
       ? `${shortDescription} Shop this ${category} from ITRATI by Kannauj Attars.`
@@ -184,6 +185,7 @@ function ProductDetail() {
           qty,
         })
       )
+      if (!buyNow) notifyCartItemAdded({ productId: product._id, productName: product.name })
       if (buyNow) navigate('/checkout/shipping')
       else showToast(`Sample for ${product.name} added to cart.`)
       return
@@ -199,6 +201,7 @@ function ProductDetail() {
         qty,
       })
     )
+    if (!buyNow) notifyCartItemAdded({ productId: product._id, productName: product.name })
 
     if (buyNow) navigate('/checkout/shipping')
     else showToast(`${product.name} added to cart.`)

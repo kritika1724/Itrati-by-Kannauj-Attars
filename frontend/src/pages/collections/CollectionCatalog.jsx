@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import AdminAssetImage from '../../components/AdminAssetImage'
@@ -6,6 +6,7 @@ import AddToCartModal from '../../components/AddToCartModal'
 import ProductCard from '../../components/ProductCard'
 import { addToCart } from '../../features/cartSlice'
 import { api, auth } from '../../services/api'
+import { notifyCartItemAdded } from '../../utils/cartLeadPrompt'
 
 function CollectionCatalog({
   collectionKey,
@@ -28,7 +29,7 @@ function CollectionCatalog({
   const [busyId, setBusyId] = useState('')
   const [cartModal, setCartModal] = useState({ open: false, product: null })
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       setError('')
       setLoading(true)
@@ -47,11 +48,11 @@ function CollectionCatalog({
     } finally {
       setLoading(false)
     }
-  }
+  }, [collectionKey, isAdmin, queryParam])
 
   useEffect(() => {
     load()
-  }, [collectionKey, isAdmin, queryParam])
+  }, [load])
 
   const curatedIds = useMemo(() => new Set(products.map((product) => product._id)), [products])
   const availableProducts = useMemo(
@@ -137,6 +138,7 @@ function CollectionCatalog({
                                 qty: 1,
                               })
                             )
+                            notifyCartItemAdded({ productId: product._id, productName: product.name })
                             navigate('/cart')
                             return
                           }
@@ -287,6 +289,7 @@ function CollectionCatalog({
                 qty,
               })
             )
+            notifyCartItemAdded({ productId: product._id, productName: product.name })
             setCartModal({ open: false, product: null })
             navigate('/cart')
           }}

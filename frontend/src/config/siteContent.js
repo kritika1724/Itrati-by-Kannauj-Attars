@@ -4,6 +4,7 @@ export const SITE_CONTENT_KEYS = {
   contactProfile: 'contact.profile',
   contactPage: 'contact.page',
   popupBanner: 'banner.popup',
+  homeYoutube: 'home.youtube',
   legalTerms: 'legal.terms',
   legalRefund: 'legal.refund',
   legalPrivacy: 'legal.privacy',
@@ -45,6 +46,11 @@ export const DEFAULT_POPUP_BANNER_CONTENT = {
   ctaHref: '/products',
   dismissLabel: 'Maybe later',
   showOncePerSession: true,
+}
+
+export const DEFAULT_HOME_YOUTUBE_CONTENT = {
+  enabled: true,
+  youtubeUrl: 'https://www.youtube.com/watch?v=keUbMuQl8zI',
 }
 
 export const DEFAULT_LEGAL_CONTENT = {
@@ -149,6 +155,7 @@ export const DEFAULT_SITE_CONTENT = {
   [SITE_CONTENT_KEYS.contactProfile]: DEFAULT_CONTACT_PROFILE,
   [SITE_CONTENT_KEYS.contactPage]: DEFAULT_CONTACT_PAGE_CONTENT,
   [SITE_CONTENT_KEYS.popupBanner]: DEFAULT_POPUP_BANNER_CONTENT,
+  [SITE_CONTENT_KEYS.homeYoutube]: DEFAULT_HOME_YOUTUBE_CONTENT,
   ...DEFAULT_LEGAL_CONTENT,
 }
 
@@ -214,6 +221,16 @@ export const mergePopupBannerContent = (value) => {
     ctaHref: readOptionalString(raw, 'ctaHref', fallback.ctaHref),
     dismissLabel: readOptionalString(raw, 'dismissLabel', fallback.dismissLabel),
     showOncePerSession: normalizeBoolean(raw.showOncePerSession, fallback.showOncePerSession),
+  }
+}
+
+export const mergeHomeYoutubeContent = (value) => {
+  const fallback = getDefaultSiteContentValue(SITE_CONTENT_KEYS.homeYoutube)
+  const raw = value && typeof value === 'object' ? value : {}
+
+  return {
+    enabled: normalizeBoolean(raw.enabled, fallback.enabled),
+    youtubeUrl: readOptionalString(raw, 'youtubeUrl', fallback.youtubeUrl),
   }
 }
 

@@ -71,8 +71,10 @@ const request = async (path, options = {}, _retried = false) => {
   if (!response.ok) {
     // Try JSON first, then plain text (express 404 often returns text/html).
     let message = ''
+    let errorData = null
     try {
       const data = await response.json()
+      errorData = data
       message = data?.message || ''
     } catch {
       try {
@@ -89,7 +91,11 @@ const request = async (path, options = {}, _retried = false) => {
       (response.status === 404
         ? `API endpoint not found (${statusLine}). Restart backend and confirm VITE_API_BASE.`
         : `Request failed (${statusLine}).`)
-    throw new Error(finalMessage)
+    const error = new Error(finalMessage)
+    error.status = response.status
+    error.field = errorData?.field || ''
+    error.duplicateFields = Array.isArray(errorData?.duplicateFields) ? errorData.duplicateFields : []
+    throw error
   }
 
   if (response.status === 204) {
@@ -101,9 +107,7 @@ const request = async (path, options = {}, _retried = false) => {
 
 export const api = {
   login: (payload) => request('/users/login', { method: 'POST', body: JSON.stringify(payload) }),
-  register: (payload) => request('/users/register', { method: 'POST', body: JSON.stringify(payload) }),
   me: () => request('/users/me'),
-  adminLogin: (payload) => request('/auth/login', { method: 'POST', body: JSON.stringify(payload) }),
   sessionRefresh: () => sessionRefresh(),
   sessionLogout: async () => {
     const res = await fetch(`${API_BASE}/session/logout`, { method: 'POST', credentials: 'include' })
@@ -210,10 +214,6 @@ export const api = {
     request(withCacheBust('/site-content'), {
       cache: 'no-store',
     }),
-  getSiteContentItem: (key) =>
-    request(withCacheBust(`/site-content/${encodeURIComponent(key)}`), {
-      cache: 'no-store',
-    }),
   setSiteContent: (key, value) =>
     request(`/site-content/${encodeURIComponent(key)}`, {
       method: 'PUT',
@@ -223,6 +223,25 @@ export const api = {
 
   // Contact form
   submitContact: (payload) => request('/contact', { method: 'POST', body: JSON.stringify(payload) }),
+  joinFragranceClub: async (payload) => {
+    try {
+      return await request('/fragrance-club/join', { method: 'POST', body: JSON.stringify(payload) })
+    } catch (error) {
+      if (error?.status === 404) {
+        return request('/fragrance-club', { method: 'POST', body: JSON.stringify(payload) })
+      }
+      throw error
+    }
+  },
+  getFragranceClubMembers: () => request('/fragrance-club/members'),
+  getFragranceClubCampaigns: () => request('/fragrance-club/campaigns'),
+  createFragranceClubCampaign: (payload) =>
+    request('/fragrance-club/campaigns', { method: 'POST', body: JSON.stringify(payload) }),
+  updateFragranceClubCampaignStatus: (id, status) =>
+    request(`/fragrance-club/campaigns/${encodeURIComponent(id)}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    }),
   // Admin contact inbox
   getContactMessages: (params = {}) => {
     const qs = new URLSearchParams(
@@ -237,8 +256,6 @@ export const api = {
   getGallery: () => request('/gallery'),
   createGallerySection: (payload) =>
     request('/gallery/sections', { method: 'POST', body: JSON.stringify(payload) }),
-  updateGallerySection: (id, payload) =>
-    request(`/gallery/sections/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
   deleteGallerySection: (id) => request(`/gallery/sections/${id}`, { method: 'DELETE' }),
   addGalleryPhoto: (sectionId, payload) =>
     request(`/gallery/sections/${sectionId}/photos`, { method: 'POST', body: JSON.stringify(payload) }),
@@ -272,7 +289,6 @@ export const auth = {
     localStorage.removeItem('user')
     if (typeof window !== 'undefined') window.dispatchEvent(new Event('authchange'))
   },
-  getToken: () => getToken(),
   isBootstrapped: () => bootstrapped,
   markBootstrapped: () => {
     bootstrapped = true

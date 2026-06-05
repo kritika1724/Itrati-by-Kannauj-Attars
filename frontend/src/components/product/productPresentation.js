@@ -33,11 +33,6 @@ const NOTE_LIBRARY = {
     heart: ['Oudh wood', 'Smoked rose'],
     base: ['Dark amber', 'Sacred balsam'],
   },
-  oudh: {
-    top: ['Dry saffron', 'Resin spark'],
-    heart: ['Oudh wood', 'Smoked rose'],
-    base: ['Dark amber', 'Sacred balsam'],
-  },
   fresh: {
     top: ['Crisp green lift', 'Morning citrus'],
     heart: ['Soft petals', 'Cooling herbs'],
@@ -170,6 +165,15 @@ export const getShortDescription = (text, maxLength = 140) => {
   return `${value.slice(0, maxLength).trim()}...`
 }
 
+export const getProductShortDescription = (product, maxLength = 140) => {
+  const custom = getShortDescription(product?.shortDescription, maxLength)
+  if (custom) return custom
+  return getShortDescription(product?.description, maxLength)
+}
+
+export const getManualProductShortDescription = (product, maxLength = 140) =>
+  getShortDescription(product?.shortDescription, maxLength)
+
 export const getAvailableSizesText = (product) => {
   const custom = String(product?.availableSizesText || '').trim()
   if (custom) return custom
@@ -199,14 +203,7 @@ export const getBadgeList = (product) => {
   return badges.slice(0, 3)
 }
 
-export const getTrustBadges = (product) => {
-  const badges = ['Made in Kannauj', '100% Pure Essence']
-  const purposes = Array.isArray(product?.purposeTags) ? product.purposeTags : []
-  if (purposes.includes('luxury_gifting') || purposes.includes('weddings')) {
-    badges.push('Gift Packaging')
-  }
-  return badges
-}
+export const getTrustBadges = () => ['100% Vegan', '100% Natural', 'Toxic Free', 'Cruelty Free']
 
 export const getCategoryFallbackLine = (category) => {
   const key = String(category || 'attar').trim().toLowerCase()
@@ -232,7 +229,7 @@ export const getFragranceDescriptors = (product, familyMap = {}) => {
 
 export const getNoteLine = (product, familyMap = {}) => getFragranceDescriptors(product, familyMap).join(' • ')
 
-export const getFragranceNotes = (product, familyMap = {}) => {
+const getLibraryFragranceNotes = (product, familyMap = {}) => {
   const tags = getFragranceDescriptors(product, familyMap)
     .map((label) => String(label).toLowerCase())
     .map((label) => label.replace(/\s+/g, '_'))
@@ -257,9 +254,27 @@ export const getFragranceNotes = (product, familyMap = {}) => {
   }
 }
 
+const normalizeFragranceNoteItems = (items = []) =>
+  Array.isArray(items) ? items.map((item) => String(item || '').trim()).filter(Boolean).slice(0, 4) : []
+
+export const getFragranceNotes = (product, familyMap = {}) => {
+  const fallback = getLibraryFragranceNotes(product, familyMap)
+  const customTop = normalizeFragranceNoteItems(product?.fragranceNotes?.top)
+  const customHeart = normalizeFragranceNoteItems(product?.fragranceNotes?.heart)
+  const customBase = normalizeFragranceNoteItems(product?.fragranceNotes?.base)
+
+  if (!customTop.length && !customHeart.length && !customBase.length) return fallback
+
+  return {
+    top: customTop.length ? customTop : fallback.top,
+    heart: customHeart.length ? customHeart : fallback.heart,
+    base: customBase.length ? customBase : fallback.base,
+  }
+}
+
 export const getExperienceCopy = (product, familyMap = {}) => {
   const descriptors = getFragranceDescriptors(product, familyMap)
-  const shortDescription = getShortDescription(product?.description, 170)
+  const shortDescription = getProductShortDescription(product, 170)
   return shortDescription || `${product?.name || 'This fragrance'} opens with ${descriptors.join(', ').toLowerCase()}, then settles into a smooth trail that feels polished, calm, and unmistakably crafted.`
 }
 

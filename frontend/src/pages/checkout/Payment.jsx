@@ -2,15 +2,18 @@ import { useEffect, useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { savePaymentMethod } from '../../features/cartSlice'
+import { getCartTotals, isWelcomeCouponActive, WELCOME_COUPON_CODE } from '../../utils/cartOffers'
 
 function Payment() {
   const navigate = useNavigate()
   const dispatch = useDispatch()
-  const { paymentMethod, items } = useSelector((state) => state.cart)
+  const { paymentMethod, items, coupon } = useSelector((state) => state.cart)
 
   const COD_LIMIT = 2000
   const itemsPrice = useMemo(() => items.reduce((sum, item) => sum + item.qty * item.price, 0), [items])
-  const codAllowed = itemsPrice <= COD_LIMIT
+  const { discountAmount, totalPrice } = getCartTotals({ itemsPrice, coupon })
+  const rewardActive = isWelcomeCouponActive(coupon)
+  const codAllowed = totalPrice <= COD_LIMIT
 
   const [selected, setSelected] = useState(paymentMethod || 'COD')
 
@@ -86,6 +89,18 @@ function Payment() {
             <span className="text-muted">Cart total</span>
             <span className="font-semibold text-ink">₹{itemsPrice}</span>
           </div>
+          {rewardActive ? (
+            <div className="mt-4 rounded-2xl border border-gold/25 bg-[rgba(201,162,74,0.08)] px-5 py-4 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-semibold text-ink">Coupon applied: {WELCOME_COUPON_CODE}</span>
+                <span className="font-semibold text-[#1F7A45]">-₹{discountAmount}</span>
+              </div>
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-muted">Payable total</span>
+                <span className="font-semibold text-ink">₹{totalPrice}</span>
+              </div>
+            </div>
+          ) : null}
 
           <button
             onClick={onContinue}

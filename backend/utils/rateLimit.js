@@ -63,6 +63,12 @@ const contactSubmitLimiter = buildJsonLimiter({
   message: 'Too many contact submissions. Please try again later.',
 })
 
+const leadCaptureLimiter = buildJsonLimiter({
+  windowMs: 60 * 60 * 1000,
+  limit: toPositiveInt(process.env.RATE_LIMIT_LEAD_CAPTURES, 6),
+  message: 'Too many reward unlock attempts. Please try again later.',
+})
+
 const uploadWriteLimiter = buildJsonLimiter({
   windowMs: 15 * 60 * 1000,
   limit: toPositiveInt(process.env.RATE_LIMIT_UPLOADS, 12),
@@ -99,6 +105,7 @@ module.exports = {
   registerLimiter,
   sessionRefreshLimiter,
   contactSubmitLimiter,
+  leadCaptureLimiter,
   uploadWriteLimiter,
   orderCreateLimiter,
   orderTrackLimiter,

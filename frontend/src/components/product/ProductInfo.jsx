@@ -1,11 +1,11 @@
-import { FiGift, FiShield, FiTruck } from 'react-icons/fi'
+import { FiCheckCircle, FiHeart, FiShield, FiSmile } from 'react-icons/fi'
 import WishlistButton from './WishlistButton'
 import {
   getBadgeList,
   getDisplayCategory,
   getFragranceNotes,
+  getManualProductShortDescription,
   getOccasionHighlights,
-  getShortDescription,
   getTrustBadges,
 } from './productPresentation'
 
@@ -27,7 +27,7 @@ function ProductInfo({
   const notes = getFragranceNotes(product, familyMap)
   const trustBadges = getTrustBadges(product)
   const occasionHighlights = getOccasionHighlights(product, purposeMap)
-  const shortDescription = getShortDescription(product?.description, 190)
+  const shortDescription = getManualProductShortDescription(product, 190)
   const badges = getBadgeList(product)
   const sample = product?.sample || {}
   const sampleEnabled = sample.enabled === true && sample.label && Number(sample.price) > 0
@@ -72,7 +72,9 @@ function ProductInfo({
           </div>
         </div>
 
-        <p className="mt-6 max-w-2xl text-sm leading-7 text-[#5F6475] sm:text-base sm:leading-8">{shortDescription}</p>
+        {shortDescription ? (
+          <p className="mt-6 max-w-2xl text-sm leading-7 text-[#5F6475] sm:text-base sm:leading-8">{shortDescription}</p>
+        ) : null}
 
         {packs.length > 0 ? (
           <div className="mt-8">
@@ -196,9 +198,18 @@ function ProductInfo({
         ) : null}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {trustBadges.map((badge, index) => {
-          const icon = index === 0 ? <FiGift size={16} /> : index === 1 ? <FiShield size={16} /> : <FiTruck size={16} />
+          const icon =
+            index === 0 ? (
+              <FiHeart size={16} />
+            ) : index === 1 ? (
+              <FiCheckCircle size={16} />
+            ) : index === 2 ? (
+              <FiShield size={16} />
+            ) : (
+              <FiSmile size={16} />
+            )
           return (
             <div
               key={badge}

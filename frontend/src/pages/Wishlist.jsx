@@ -12,6 +12,7 @@ import ProductQuickViewModal from '../components/product/ProductQuickViewModal'
 import { wishlistStorage } from '../components/product/wishlist'
 import { useTaxonomy } from '../components/TaxonomyProvider'
 import { fadeUp, revealCard, staggerGrid } from '../lib/motion'
+import { notifyCartItemAdded } from '../utils/cartLeadPrompt'
 
 function Wishlist() {
   const dispatch = useDispatch()
@@ -120,6 +121,7 @@ function Wishlist() {
         isSample: selection.isSample === true,
       })
     )
+    notifyCartItemAdded({ productId: product._id, productName: product.name })
 
     setCartModal({ open: false, product: null })
     showToast(`${product.name} added to cart.`)

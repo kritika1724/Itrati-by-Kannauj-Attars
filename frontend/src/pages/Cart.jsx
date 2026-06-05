@@ -1,13 +1,16 @@
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import { removeFromCart, updateQty } from '../features/cartSlice'
+import { getCartTotals, isWelcomeCouponActive, WELCOME_COUPON_CODE } from '../utils/cartOffers'
 
 function Cart() {
   const navigate = useNavigate()
   const dispatch = useDispatch()
-  const items = useSelector((state) => state.cart.items)
+  const { items, coupon } = useSelector((state) => state.cart)
 
   const itemsPrice = items.reduce((sum, item) => sum + item.qty * item.price, 0)
+  const { discountAmount, totalPrice } = getCartTotals({ itemsPrice, coupon })
+  const rewardActive = isWelcomeCouponActive(coupon)
 
   return (
     <div className="bg-sand min-h-screen">
@@ -94,6 +97,22 @@ function Cart() {
               <span className="text-muted">Items total</span>
               <span className="font-semibold text-ink">₹{itemsPrice}</span>
             </div>
+            {rewardActive ? (
+              <>
+                <div className="mt-3 rounded-2xl border border-gold/25 bg-[rgba(201,162,74,0.08)] px-4 py-3 text-sm">
+                  <p className="font-semibold text-ink">Coupon applied: {WELCOME_COUPON_CODE}</p>
+                  <p className="mt-1 text-xs text-muted">Your 5% welcome discount is active on this cart.</p>
+                </div>
+                <div className="mt-4 flex items-center justify-between text-sm">
+                  <span className="text-muted">Discount</span>
+                  <span className="font-semibold text-[#1F7A45]">-₹{discountAmount}</span>
+                </div>
+                <div className="mt-4 flex items-center justify-between border-t border-slate-200/80 pt-3 text-sm">
+                  <span className="text-muted">Payable total</span>
+                  <span className="text-lg font-semibold text-ink">₹{totalPrice}</span>
+                </div>
+              </>
+            ) : null}
             <button
               disabled={items.length === 0}
               onClick={() => navigate('/checkout/shipping')}

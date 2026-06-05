@@ -11,6 +11,7 @@ import BrandWordmark from './components/BrandWordmark'
 import CursorGlow from './components/CursorGlow'
 import SiteFooter from './components/SiteFooter'
 import SitePopupBanner from './components/banners/SitePopupBanner'
+import LeadCouponModal from './components/LeadCouponModal'
 import { BUSINESS } from './config/business'
 import { pageShell } from './lib/motion'
 import { wishlistStorage } from './components/product/wishlist'
@@ -26,6 +27,7 @@ const Account = lazy(() => import('./pages/Account'))
 const OAuthCallback = lazy(() => import('./pages/OAuthCallback'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 const LegalPage = lazy(() => import('./pages/LegalPage'))
+const KnowledgePage = lazy(() => import('./pages/KnowledgePage'))
 const Signature = lazy(() => import('./pages/collections/Signature'))
 const Heritage = lazy(() => import('./pages/collections/Heritage'))
 const PurposeCollection = lazy(() => import('./pages/collections/PurposeCollection'))
@@ -138,7 +140,6 @@ function AppShell() {
   const [user, setUser] = useState(auth.getUser())
   const headerRef = useRef(null)
   const isAdmin = user?.isAdmin === true
-  const isLoggedIn = !!user
   const [mobileOpen, setMobileOpen] = useState(false)
   const [headerHeight, setHeaderHeight] = useState(88)
   const inAdminArea = isAdmin && location.pathname.startsWith('/admin')
@@ -274,6 +275,7 @@ function AppShell() {
       />
       <CursorGlow />
       {!inAdminArea ? <SitePopupBanner /> : null}
+      {!inAdminArea ? <LeadCouponModal /> : null}
       {inAdminArea ? (
         <header className="sticky top-0 z-20 border-b border-gold/20 bg-[linear-gradient(135deg,#070B18,#111B3A)] shadow-[0_18px_40px_rgba(7,11,24,0.35)]">
           <div className="ka-container flex flex-wrap items-center justify-between gap-4 py-4">
@@ -577,6 +579,7 @@ function AppShell() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/account" element={<Account />} />
         <Route path="/oauth/callback" element={<OAuthCallback />} />
+        <Route path="/knowledge/:slug" element={<KnowledgePage />} />
         <Route path="/terms-of-service" element={<LegalPage />} />
         <Route path="/refund-policy" element={<LegalPage />} />
         <Route path="/privacy-policy" element={<LegalPage />} />

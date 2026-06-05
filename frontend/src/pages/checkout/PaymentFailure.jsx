@@ -32,7 +32,7 @@ function PaymentFailure() {
         setMessage(e.message)
       }
     })()
-  }, [id])
+  }, [id, user])
 
   const retry = async () => {
     if (!order) return

@@ -162,6 +162,14 @@ function OrderDetail() {
                 <span className="text-muted">Tax</span>
                 <span className="font-semibold text-ink">₹{order.taxPrice}</span>
               </div>
+              {Number(order.discountAmount || 0) > 0 ? (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted">
+                    Discount{order.discountCode ? ` (${order.discountCode})` : ''}
+                  </span>
+                  <span className="font-semibold text-[#1F7A45]">-₹{order.discountAmount}</span>
+                </div>
+              ) : null}
               <div className="mt-2 flex items-center justify-between border-t border-slate-200/80 pt-3">
                 <span className="text-muted">Total</span>
                 <span className="text-lg font-semibold text-ink">₹{order.totalPrice}</span>
@@ -177,6 +185,11 @@ function OrderDetail() {
                 Status:{' '}
                 <span className="font-semibold text-ink">{order.isPaid ? 'Paid' : 'Not paid'}</span>
               </p>
+              {order.discountCode ? (
+                <p className="mt-1 text-sm text-muted">
+                  Coupon: <span className="font-semibold text-ink">{order.discountCode}</span>
+                </p>
+              ) : null}
               {order.paymentMethod === 'COD' && !order.isPaid && (
                 <p className="mt-2 text-xs text-muted">
                   Cash on Delivery: pay at the time of delivery.

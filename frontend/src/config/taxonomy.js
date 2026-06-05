@@ -38,3 +38,21 @@ export const GENDER_TAGS = [
   { id: 'women', label: 'Women' },
   { id: 'unisex', label: 'Unisex' },
 ]
+
+export const DIRECTION_TAGS = [
+  { id: 'arabic_oriental', label: 'Arabic (Oriental)' },
+  { id: 'fresh_and_aquatics', label: 'Fresh & Aquatics' },
+  { id: 'fruity', label: 'Fruity' },
+  { id: 'leathery', label: 'Leathery' },
+  { id: 'musky', label: 'Musky' },
+  { id: 'oud', label: 'Oud' },
+  { id: 'floral', label: 'Floral' },
+  { id: 'spicy', label: 'Spicy' },
+  { id: 'sweet_and_gourmand', label: 'Sweet & Gourmand' },
+  { id: 'powdery', label: 'Powdery' },
+  { id: 'traditional', label: 'Traditional' },
+  { id: 'patchouli', label: 'Patchouli' },
+  { id: 'smoky', label: 'Smoky' },
+  { id: 'vanilla', label: 'Vanilla' },
+  { id: 'woody', label: 'Woody' },
+]

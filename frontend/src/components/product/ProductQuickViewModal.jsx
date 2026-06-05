@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiX } from 'react-icons/fi'
 import { toAssetUrl } from '../../utils/media'
-import { getBadgeList, getMinPack, getNoteLine, getProductImages, getShortDescription } from './productPresentation'
+import { getBadgeList, getManualProductShortDescription, getMinPack, getNoteLine, getProductImages } from './productPresentation'
 import WishlistButton from './WishlistButton'
 
 function ProductQuickViewModal({ product, open, onClose, familyMap = {}, onAddToCart, isAdmin = false }) {
@@ -14,6 +14,7 @@ function ProductQuickViewModal({ product, open, onClose, familyMap = {}, onAddTo
   const minPack = getMinPack(Array.isArray(product?.packs) ? product.packs : [])
   const price = minPack ? minPack.effectivePrice : product?.price
   const badges = getBadgeList(product)
+  const shortDescription = getManualProductShortDescription(product, 220)
 
   return createPortal(
     <AnimatePresence>
@@ -71,7 +72,7 @@ function ProductQuickViewModal({ product, open, onClose, familyMap = {}, onAddTo
               <p className="mt-4 text-sm font-medium tracking-[0.08em] text-[#C9A24A]">{getNoteLine(product, familyMap)}</p>
               <p className="mt-4 text-3xl font-semibold text-[#19213C]">₹{Number(price || 0).toLocaleString('en-IN')}</p>
               {minPack?.label ? <p className="mt-1 text-sm text-[#6B6F7A]">Starting from {minPack.label}</p> : null}
-              <p className="mt-5 text-sm leading-7 text-[#5F6475]">{getShortDescription(product.description, 220)}</p>
+              {shortDescription ? <p className="mt-5 text-sm leading-7 text-[#5F6475]">{shortDescription}</p> : null}
 
               <div className="mt-6 flex flex-wrap gap-3">
                 {!isAdmin ? (

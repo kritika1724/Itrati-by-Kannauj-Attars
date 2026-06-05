@@ -4,10 +4,10 @@ const { protect, adminOnly } = require('../middleware/auth')
 const asyncHandler = require('../utils/asyncHandler')
 const { getCache, setCache, deleteCache } = require('../utils/appCache')
 const { getPublicCacheProfile, setPublicCache } = require('../utils/cacheControl')
+const { ASSETS_CACHE_KEY } = require('../utils/cacheKeys')
 
 const router = express.Router()
-const ASSETS_CACHE_KEY = 'assets:all'
-const ASSETS_TTL_MS = Number(process.env.ASSETS_CACHE_TTL_MS || 5 * 60 * 1000)
+const ASSETS_TTL_MS = Number(process.env.ASSETS_CACHE_TTL_MS || 60 * 60 * 1000)
 const ASSETS_CACHE_PROFILE = getPublicCacheProfile('ASSETS', {
   browserMaxAge: 300,
   edgeMaxAge: 1800,
@@ -19,14 +19,14 @@ const ASSETS_CACHE_PROFILE = getPublicCacheProfile('ASSETS', {
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const cached = getCache(ASSETS_CACHE_KEY)
+    const cached = await getCache(ASSETS_CACHE_KEY)
     if (cached) {
       setPublicCache(res, ASSETS_CACHE_PROFILE)
       return res.json(cached)
     }
 
     const assets = await SiteAsset.find({}).select('key url updatedAt createdAt').sort({ key: 1 }).lean()
-    setCache(ASSETS_CACHE_KEY, assets, ASSETS_TTL_MS)
+    await setCache(ASSETS_CACHE_KEY, assets, ASSETS_TTL_MS)
     setPublicCache(res, ASSETS_CACHE_PROFILE)
     res.json(assets)
   })
@@ -62,7 +62,7 @@ router.put(
       { new: true, upsert: true }
     ).lean()
 
-    deleteCache(ASSETS_CACHE_KEY)
+    await deleteCache(ASSETS_CACHE_KEY)
 
     res.json(asset)
   })
@@ -77,7 +77,7 @@ router.delete(
     const asset = await SiteAsset.findOne({ key: req.params.key })
     if (!asset) return res.status(404).json({ message: 'Asset not found' })
     await asset.deleteOne()
-    deleteCache(ASSETS_CACHE_KEY)
+    await deleteCache(ASSETS_CACHE_KEY)
     res.json({ message: 'Asset removed' })
   })
 )

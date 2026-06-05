@@ -14,6 +14,8 @@ try {
 }
 const { protect, adminOnly } = require('../middleware/auth')
 const { uploadWriteLimiter } = require('../utils/rateLimit')
+const { deleteCache } = require('../utils/appCache')
+const { ASSETS_CACHE_KEY } = require('../utils/cacheKeys')
 
 const router = express.Router()
 
@@ -185,6 +187,8 @@ router.post('/', protect, adminOnly, uploadWriteLimiter, (req, res) => {
           filename,
           mimeType: file.mimetype,
         })) || saveLocally({ buffer: outBuffer, filename, req })
+
+      await deleteCache(ASSETS_CACHE_KEY)
 
       return res.status(201).json({
         url: uploaded.url,

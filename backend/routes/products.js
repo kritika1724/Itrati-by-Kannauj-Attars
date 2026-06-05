@@ -7,11 +7,14 @@ const asyncHandler = require('../utils/asyncHandler')
 const escapeRegex = require('../utils/escapeRegex')
 const { getCache, setCache, clearCacheByPrefix } = require('../utils/appCache')
 const { getPublicCacheProfile, setPublicCache } = require('../utils/cacheControl')
+const {
+  PRODUCTS_CACHE_KEY_PREFIX,
+  PRODUCTS_LIST_CACHE_PREFIX,
+  PRODUCT_DETAIL_CACHE_PREFIX,
+} = require('../utils/cacheKeys')
 
 const router = express.Router()
-const PRODUCTS_LIST_CACHE_PREFIX = 'products:list:'
-const PRODUCT_DETAIL_CACHE_PREFIX = 'products:detail:'
-const PRODUCTS_CACHE_TTL_MS = Number(process.env.PRODUCTS_CACHE_TTL_MS || 30 * 1000)
+const PRODUCTS_CACHE_TTL_MS = Number(process.env.PRODUCTS_CACHE_TTL_MS || 60 * 60 * 1000)
 const PRODUCTS_CACHE_PROFILE = getPublicCacheProfile('PRODUCTS', {
   browserMaxAge: 60,
   edgeMaxAge: 300,
@@ -19,10 +22,10 @@ const PRODUCTS_CACHE_PROFILE = getPublicCacheProfile('PRODUCTS', {
   staleIfError: 21600,
 })
 const PUBLIC_PRODUCT_LIST_SELECT =
-  'name description category purposeTags familyTags seasonTags genderTags featuredCollections isBestSeller isNewArrival sample availableSizesText price packs images imageZoom highlights rating numReviews createdAt'
+  'name description shortDescription category purposeTags familyTags seasonTags genderTags directionTags featuredCollections isBestSeller isNewArrival sample availableSizesText price packs images imageZoom highlights fragranceNotes rating numReviews createdAt'
 const ADMIN_PRODUCT_LIST_SELECT = `${PUBLIC_PRODUCT_LIST_SELECT} stock`
 const RELATED_PRODUCTS_POPULATE_SELECT =
-  'name description category purposeTags familyTags seasonTags genderTags featuredCollections isBestSeller isNewArrival sample availableSizesText price packs.label packs.price packs.salePrice images imageZoom highlights rating numReviews createdAt'
+  'name description shortDescription category purposeTags familyTags seasonTags genderTags directionTags featuredCollections isBestSeller isNewArrival sample availableSizesText price packs.label packs.price packs.salePrice images imageZoom highlights fragranceNotes rating numReviews createdAt'
 
 const normalizeCollections = (value) => {
   if (!Array.isArray(value)) return []
@@ -57,8 +60,18 @@ const normalizeImageZoom = (value) => {
 }
 
 const normalizeAvailableSizesText = (value) => String(value || '').trim()
+const normalizeShortDescription = (value) => String(value || '').trim().slice(0, 280)
 const normalizeHighlights = (value) =>
   Array.isArray(value) ? value.map((item) => String(item || '').trim()).filter(Boolean).slice(0, 3) : []
+const normalizeFragranceNoteItems = (value) =>
+  Array.isArray(value)
+    ? [...new Set(value.map((item) => String(item || '').trim()).filter(Boolean))].slice(0, 4)
+    : []
+const normalizeFragranceNotes = (value) => ({
+  top: normalizeFragranceNoteItems(value?.top),
+  heart: normalizeFragranceNoteItems(value?.heart),
+  base: normalizeFragranceNoteItems(value?.base),
+})
 const normalizeDetailSections = (value) =>
   Array.isArray(value)
     ? value
@@ -104,7 +117,7 @@ router.get(
     const canUsePublicCache = req.user?.isAdmin !== true
     const cacheKey = canUsePublicCache ? `${PRODUCTS_LIST_CACHE_PREFIX}${req.originalUrl}` : ''
     if (cacheKey) {
-      const cached = getCache(cacheKey)
+      const cached = await getCache(cacheKey)
       if (cached) {
         setPublicCache(res, PRODUCTS_CACHE_PROFILE)
         return res.json(cached)
@@ -122,6 +135,7 @@ router.get(
     const familyRaw = (req.query.family || '').trim()
     const seasonRaw = (req.query.season || '').trim()
     const genderRaw = (req.query.gender || '').trim()
+    const directionRaw = (req.query.direction || '').trim()
     const collectionRaw = (req.query.collection || '').trim()
     const bestSeller = (req.query.bestSeller || '').toString().trim()
     const minPrice = req.query.minPrice !== undefined ? Number(req.query.minPrice) : undefined
@@ -133,6 +147,7 @@ router.get(
       const safeKeyword = escapeRegex(keyword)
       filter.$or = [
         { name: { $regex: safeKeyword, $options: 'i' } },
+        { shortDescription: { $regex: safeKeyword, $options: 'i' } },
         { description: { $regex: safeKeyword, $options: 'i' } },
       ]
     }
@@ -169,6 +184,12 @@ router.get(
           .map((s) => s.trim())
           .filter(Boolean)
       : []
+    const directions = directionRaw
+      ? directionRaw
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : []
     const collections = collectionRaw
       ? collectionRaw
           .split(',')
@@ -180,6 +201,7 @@ router.get(
     if (families.length) filter.familyTags = { $in: families }
     if (seasons.length) filter.seasonTags = { $in: seasons }
     if (genders.length) filter.genderTags = { $in: genders }
+    if (directions.length) filter.directionTags = { $in: directions }
     if (collections.length) filter.featuredCollections = { $in: collections }
     if (bestSeller && ['1', 'true', 'yes', 'on'].includes(bestSeller.toLowerCase())) {
       filter.isBestSeller = true
@@ -218,7 +240,7 @@ router.get(
     }
 
     if (cacheKey) {
-      setCache(cacheKey, payload, PRODUCTS_CACHE_TTL_MS)
+      await setCache(cacheKey, payload, PRODUCTS_CACHE_TTL_MS)
       setPublicCache(res, PRODUCTS_CACHE_PROFILE)
     }
 
@@ -233,7 +255,7 @@ router.get(
     const canUsePublicCache = req.user?.isAdmin !== true
     const cacheKey = canUsePublicCache ? `${PRODUCT_DETAIL_CACHE_PREFIX}${req.params.id}` : ''
     if (cacheKey) {
-      const cached = getCache(cacheKey)
+      const cached = await getCache(cacheKey)
       if (cached) {
         setPublicCache(res, PRODUCTS_CACHE_PROFILE)
         return res.json(cached)
@@ -253,7 +275,7 @@ router.get(
     }
 
     if (cacheKey) {
-      setCache(cacheKey, product, PRODUCTS_CACHE_TTL_MS)
+      await setCache(cacheKey, product, PRODUCTS_CACHE_TTL_MS)
       setPublicCache(res, PRODUCTS_CACHE_PROFILE)
     }
 
@@ -265,12 +287,14 @@ router.post('/', protect, adminOnly, asyncHandler(async (req, res) => {
   const {
     name,
     description,
+    shortDescription,
     category,
     buyerType,
     purposeTags,
     familyTags,
     seasonTags,
     genderTags,
+    directionTags,
     featuredCollections,
     isBestSeller,
     isNewArrival,
@@ -282,6 +306,7 @@ router.post('/', protect, adminOnly, asyncHandler(async (req, res) => {
     imageZoom,
     stock,
     highlights,
+    fragranceNotes,
     detailSections,
     relatedProducts,
   } = req.body
@@ -293,12 +318,14 @@ router.post('/', protect, adminOnly, asyncHandler(async (req, res) => {
   const product = await Product.create({
     name,
     description,
+    shortDescription: normalizeShortDescription(shortDescription),
     category,
     buyerType,
     purposeTags: Array.isArray(purposeTags) ? purposeTags : [],
     familyTags: Array.isArray(familyTags) ? familyTags : [],
     seasonTags: Array.isArray(seasonTags) ? seasonTags : [],
     genderTags: Array.isArray(genderTags) ? genderTags : [],
+    directionTags: Array.isArray(directionTags) ? directionTags : [],
     featuredCollections: normalizeCollections(featuredCollections),
     isBestSeller: isBestSeller === true,
     isNewArrival: isNewArrival === true,
@@ -310,12 +337,12 @@ router.post('/', protect, adminOnly, asyncHandler(async (req, res) => {
     imageZoom: normalizeImageZoom(imageZoom),
     stock: normalizeProductStock(stock),
     highlights: normalizeHighlights(highlights),
+    fragranceNotes: normalizeFragranceNotes(fragranceNotes),
     detailSections: normalizeDetailSections(detailSections),
     relatedProducts: normalizeRelatedProducts(relatedProducts),
   })
 
-  clearCacheByPrefix(PRODUCTS_LIST_CACHE_PREFIX)
-  clearCacheByPrefix(PRODUCT_DETAIL_CACHE_PREFIX)
+  await clearCacheByPrefix(PRODUCTS_CACHE_KEY_PREFIX)
   res.status(201).json(product)
 }))
 
@@ -328,12 +355,14 @@ router.put('/:id', protect, adminOnly, asyncHandler(async (req, res) => {
   const fields = [
     'name',
     'description',
+    'shortDescription',
     'category',
     'buyerType',
     'purposeTags',
     'familyTags',
     'seasonTags',
     'genderTags',
+    'directionTags',
     'featuredCollections',
     'isBestSeller',
     'isNewArrival',
@@ -345,12 +374,19 @@ router.put('/:id', protect, adminOnly, asyncHandler(async (req, res) => {
     'imageZoom',
     'stock',
     'highlights',
+    'fragranceNotes',
     'detailSections',
     'relatedProducts',
   ]
   fields.forEach((field) => {
     if (req.body[field] !== undefined) {
-      if (field === 'purposeTags' || field === 'familyTags' || field === 'seasonTags' || field === 'genderTags') {
+      if (
+        field === 'purposeTags' ||
+        field === 'familyTags' ||
+        field === 'seasonTags' ||
+        field === 'genderTags' ||
+        field === 'directionTags'
+      ) {
         product[field] = Array.isArray(req.body[field]) ? req.body[field] : []
       } else if (field === 'featuredCollections') {
         product[field] = normalizeCollections(req.body[field])
@@ -362,8 +398,12 @@ router.put('/:id', protect, adminOnly, asyncHandler(async (req, res) => {
         product[field] = normalizeImageZoom(req.body[field])
       } else if (field === 'availableSizesText') {
         product[field] = normalizeAvailableSizesText(req.body[field])
+      } else if (field === 'shortDescription') {
+        product[field] = normalizeShortDescription(req.body[field])
       } else if (field === 'highlights') {
         product[field] = normalizeHighlights(req.body[field])
+      } else if (field === 'fragranceNotes') {
+        product[field] = normalizeFragranceNotes(req.body[field])
       } else if (field === 'detailSections') {
         product[field] = normalizeDetailSections(req.body[field])
       } else if (field === 'relatedProducts') {
@@ -375,8 +415,7 @@ router.put('/:id', protect, adminOnly, asyncHandler(async (req, res) => {
   })
 
   const updated = await product.save()
-  clearCacheByPrefix(PRODUCTS_LIST_CACHE_PREFIX)
-  clearCacheByPrefix(PRODUCT_DETAIL_CACHE_PREFIX)
+  await clearCacheByPrefix(PRODUCTS_CACHE_KEY_PREFIX)
   res.json(updated)
 }))
 
@@ -386,8 +425,7 @@ router.delete('/:id', protect, adminOnly, asyncHandler(async (req, res) => {
     return res.status(404).json({ message: 'Product not found' })
   }
   await product.deleteOne()
-  clearCacheByPrefix(PRODUCTS_LIST_CACHE_PREFIX)
-  clearCacheByPrefix(PRODUCT_DETAIL_CACHE_PREFIX)
+  await clearCacheByPrefix(PRODUCTS_CACHE_KEY_PREFIX)
   res.json({ message: 'Product deleted' })
 }))
 
@@ -455,8 +493,7 @@ router.post('/:id/reviews', optionalProtect, asyncHandler(async (req, res) => {
     product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.numReviews
 
   await product.save()
-  clearCacheByPrefix(PRODUCTS_LIST_CACHE_PREFIX)
-  clearCacheByPrefix(PRODUCT_DETAIL_CACHE_PREFIX)
+  await clearCacheByPrefix(PRODUCTS_CACHE_KEY_PREFIX)
   res.status(201).json({ message: 'Review added' })
 }))
 
@@ -481,8 +518,7 @@ router.delete('/:id/reviews/:reviewId', protect, adminOnly, asyncHandler(async (
     : 0
 
   await product.save()
-  clearCacheByPrefix(PRODUCTS_LIST_CACHE_PREFIX)
-  clearCacheByPrefix(PRODUCT_DETAIL_CACHE_PREFIX)
+  await clearCacheByPrefix(PRODUCTS_CACHE_KEY_PREFIX)
   res.json({ message: 'Review removed' })
 }))
 

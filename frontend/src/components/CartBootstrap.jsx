@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux'
 import { addToCart, hydrateCart, DEFAULT_CART_STATE } from '../features/cartSlice'
 import { loadCartForUser } from '../utils/cartStorage'
 import { auth } from '../services/api'
+import { notifyCartItemAdded } from '../utils/cartLeadPrompt'
 
 const PENDING_KEY = 'pendingAddToCart'
 
@@ -38,6 +39,7 @@ function CartBootstrap() {
           items: snapshot.items || [],
           shippingAddress: snapshot.shippingAddress || {},
           paymentMethod: snapshot.paymentMethod || 'COD',
+          coupon: snapshot.coupon || {},
         })
       )
 
@@ -45,6 +47,7 @@ function CartBootstrap() {
       const pending = readPending()
       if (pending) {
         dispatch(addToCart(pending))
+        notifyCartItemAdded({ productId: pending.product, productName: pending.name })
         clearPending()
       }
     }

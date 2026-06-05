@@ -8,6 +8,7 @@ import {
   getDefaultSiteContentValue,
   mergeContactPageContent,
   mergeContactProfile,
+  mergeHomeYoutubeContent,
   mergePopupBannerContent,
   mergeLegalPageContent,
 } from '../config/siteContent'
@@ -50,6 +51,7 @@ const normalizeContactProfileDraft = (draft) =>
 
 const createContactPageDraft = (value) => mergeContactPageContent(value)
 const createPopupBannerDraft = (value) => mergePopupBannerContent(value)
+const createHomeYoutubeDraft = (value) => mergeHomeYoutubeContent(value)
 const createLegalPagesDraft = (contents = {}) =>
   LEGAL_EDITORS.reduce((acc, item) => {
     acc[item.key] = mergeLegalPageContent(item.key, contents[item.key])
@@ -66,6 +68,9 @@ function AdminSiteContent() {
   )
   const [popupBannerDraft, setPopupBannerDraft] = useState(() =>
     createPopupBannerDraft(getDefaultSiteContentValue(SITE_CONTENT_KEYS.popupBanner))
+  )
+  const [homeYoutubeDraft, setHomeYoutubeDraft] = useState(() =>
+    createHomeYoutubeDraft(getDefaultSiteContentValue(SITE_CONTENT_KEYS.homeYoutube))
   )
   const [legalPagesDraft, setLegalPagesDraft] = useState(() => createLegalPagesDraft())
   const [message, setMessage] = useState('')
@@ -88,6 +93,7 @@ function AdminSiteContent() {
     setContactProfileDraft(createContactProfileDraft(contents[SITE_CONTENT_KEYS.contactProfile]))
     setContactPageDraft(createContactPageDraft(contents[SITE_CONTENT_KEYS.contactPage]))
     setPopupBannerDraft(createPopupBannerDraft(contents[SITE_CONTENT_KEYS.popupBanner]))
+    setHomeYoutubeDraft(createHomeYoutubeDraft(contents[SITE_CONTENT_KEYS.homeYoutube]))
     setLegalPagesDraft(createLegalPagesDraft(contents))
   }, [contents])
 
@@ -144,6 +150,7 @@ function AdminSiteContent() {
       const contactProfilePayload = normalizeContactProfileDraft(contactProfileDraft)
       const contactPagePayload = mergeContactPageContent(contactPageDraft)
       const popupBannerPayload = mergePopupBannerContent(popupBannerDraft)
+      const homeYoutubePayload = mergeHomeYoutubeContent(homeYoutubeDraft)
       const legalPayloads = LEGAL_EDITORS.map((item) => ({
         key: item.key,
         value: mergeLegalPageContent(item.key, legalPagesDraft[item.key]),
@@ -153,6 +160,7 @@ function AdminSiteContent() {
         setContentValue(SITE_CONTENT_KEYS.contactProfile, contactProfilePayload),
         setContentValue(SITE_CONTENT_KEYS.contactPage, contactPagePayload),
         setContentValue(SITE_CONTENT_KEYS.popupBanner, popupBannerPayload),
+        setContentValue(SITE_CONTENT_KEYS.homeYoutube, homeYoutubePayload),
         ...legalPayloads.map((item) => setContentValue(item.key, item.value)),
       ])
 
@@ -466,6 +474,75 @@ function AdminSiteContent() {
                   defaultAspect="5 / 4"
                   fit="cover"
                 />
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-lg shadow-black/10">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-muted">Home page YouTube</p>
+                <h2 className="mt-2 text-xl font-semibold text-ink">Embed video at the end of home page</h2>
+                <p className="mt-2 max-w-3xl text-sm text-muted">
+                  Paste the YouTube link for the home-end video block. The knowledge buttons shown beside it are handled directly by the website layout.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  to="/"
+                  className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-emberDark transition hover:border-gold/40"
+                >
+                  Preview on site
+                </Link>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => resetKeyToDefault(SITE_CONTENT_KEYS.homeYoutube)}
+                  className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-emberDark transition hover:border-gold/40 disabled:opacity-60"
+                >
+                  Reset to default
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+              <div className="space-y-5">
+                <label className="flex cursor-pointer items-start justify-between gap-4 rounded-2xl border border-slate-200/80 bg-clay/40 px-5 py-4">
+                  <div>
+                    <p className="text-sm font-semibold text-ink">Enable home-end video block</p>
+                    <p className="mt-1 text-xs text-muted">Show the embedded YouTube block near the bottom of the home page.</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={homeYoutubeDraft.enabled === true}
+                    onChange={(e) =>
+                      setHomeYoutubeDraft((prev) => ({ ...prev, enabled: e.target.checked }))
+                    }
+                    className="mt-1 h-5 w-5 accent-ember"
+                  />
+                </label>
+
+                <div>
+                  <label className="text-sm font-semibold text-ink">YouTube URL</label>
+                  <input
+                    value={homeYoutubeDraft.youtubeUrl}
+                    onChange={(e) =>
+                      setHomeYoutubeDraft((prev) => ({ ...prev, youtubeUrl: e.target.value }))
+                    }
+                    placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
+                  />
+                  <p className="mt-2 text-xs text-muted">Supports standard YouTube links, short links, and embed links.</p>
+                </div>
+              </div>
+
+              <div className="rounded-[1.8rem] border border-slate-200/80 bg-[linear-gradient(145deg,rgba(255,248,241,0.92),rgba(255,255,255,0.98),rgba(225,210,188,0.42))] p-5 shadow-[0_24px_80px_rgba(24,19,14,0.08)]">
+                <p className="text-xs uppercase tracking-[0.35em] text-muted">Display note</p>
+                <h3 className="mt-3 font-display text-2xl text-ink">Story block with knowledge pages</h3>
+                <p className="mt-3 text-sm leading-7 text-muted">
+                  This section appears at the very end of the home page with two built-in buttons: `Know about Kannauj` and `Know about Attars`.
+                </p>
+                <div className="mt-5 aspect-video rounded-[1.5rem] border border-white/70 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.92),rgba(237,228,215,0.8),rgba(214,194,168,0.46))] shadow-inner" />
               </div>
             </div>
           </div>

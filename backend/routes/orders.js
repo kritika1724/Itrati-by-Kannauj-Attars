@@ -5,10 +5,11 @@ const Product = require('../models/Product')
 const { protect, optionalProtect, adminOnly } = require('../middleware/auth')
 const asyncHandler = require('../utils/asyncHandler')
 const { orderCreateLimiter, orderTrackLimiter, orderMutationLimiter } = require('../utils/rateLimit')
+const { getWelcomeDiscount } = require('../config/cartOffers')
 
 const router = express.Router()
 const TRACK_ORDER_SELECT =
-  'publicOrderId status createdAt updatedAt paymentMethod isPaid paidAt totalPrice itemsPrice shippingPrice taxPrice orderItems shippingAddress.fullName shippingAddress.phone shippingAddress.whatsapp shippingAddress.email shippingAddress.city shippingAddress.state shippingAddress.postalCode shippingAddress.country'
+  'publicOrderId status createdAt updatedAt paymentMethod isPaid paidAt totalPrice itemsPrice shippingPrice taxPrice discountCode discountPercent discountAmount orderItems shippingAddress.fullName shippingAddress.phone shippingAddress.whatsapp shippingAddress.email shippingAddress.city shippingAddress.state shippingAddress.postalCode shippingAddress.country'
 
 const packToGrams = (label) => {
   const str = String(label || '').toLowerCase().replace(/,/g, '').trim()
@@ -146,7 +147,7 @@ router.post(
       return res.status(403).json({ message: 'Admins cannot place orders' })
     }
 
-    const { orderItems, shippingAddress, paymentMethod } = req.body
+    const { orderItems, shippingAddress, paymentMethod, couponCode } = req.body
 
     if (!Array.isArray(orderItems) || orderItems.length === 0) {
       return res.status(400).json({ message: 'Order items are required' })
@@ -235,7 +236,9 @@ router.post(
     const itemsPrice = normalizedItems.reduce((sum, item) => sum + item.qty * item.price, 0)
     const shippingPrice = 0
     const taxPrice = 0
-    const totalPrice = itemsPrice + shippingPrice + taxPrice
+    const subtotal = itemsPrice + shippingPrice + taxPrice
+    const { discountCode, discountPercent, discountAmount } = getWelcomeDiscount(couponCode, subtotal)
+    const totalPrice = Math.max(0, subtotal - discountAmount)
 
     const method = String(paymentMethod || 'COD').trim().toUpperCase()
     const COD_LIMIT = Number(process.env.COD_LIMIT || 2000)
@@ -267,6 +270,9 @@ router.post(
               itemsPrice,
               shippingPrice,
               taxPrice,
+              discountCode,
+              discountPercent,
+              discountAmount,
               totalPrice,
               status: 'pending',
             },

@@ -10,3 +10,9 @@ services:
         value: production
       - key: PORT
         value: "10000"
+      - key: CORS_ORIGIN
+        value: "https://itratibykannaujattars.in"
+      - key: FRONTEND_ORIGIN
+        value: "https://itratibykannaujattars.in"
+      - key: BACKEND_PUBLIC_URL
+        value: "https://itratibykannaujattars.in"

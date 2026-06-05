@@ -34,6 +34,7 @@ const paymentRoutes = require('./routes/payments')
 const contactRoutes = require('./routes/contact')
 const galleryRoutes = require('./routes/gallery')
 const taxonomyRoutes = require('./routes/taxonomy')
+const fragranceClubRoutes = require('./routes/fragranceClub')
 const { ensureDefaultTaxonomy } = require('./utils/taxonomy')
 const { requestMonitor, getMonitoringSnapshot } = require('./utils/monitoring')
 const { getUploadRuntimeStatus } = require('./config/uploadRuntime')
@@ -60,6 +61,9 @@ app.get('/assets/:file', (req, res) => {
   const filePath = path.join(frontendDist, 'assets', req.params.file)
   if (!fs.existsSync(filePath)) {
     return res.status(404).type('text/plain').send('Asset not found')
+  }
+  if (/\.(js|css|woff2?|png|jpe?g|webp|svg|gif|mp4|webm)$/i.test(filePath)) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
   }
   return res.sendFile(filePath)
 })
@@ -250,6 +254,7 @@ app.use('/api/payments', paymentRoutes)
 app.use('/api/contact', contactRoutes)
 app.use('/api/gallery', galleryRoutes)
 app.use('/api/taxonomy', taxonomyRoutes)
+app.use('/api/fragrance-club', fragranceClubRoutes)
 
 app.use(
   '/uploads',

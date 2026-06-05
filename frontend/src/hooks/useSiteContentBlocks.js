@@ -5,6 +5,7 @@ import {
   SITE_CONTENT_KEYS,
   mergeContactPageContent,
   mergeContactProfile,
+  mergeHomeYoutubeContent,
   mergePopupBannerContent,
   mergeLegalPageContent,
 } from '../config/siteContent'
@@ -29,6 +30,14 @@ export const usePopupBannerContent = () => {
   const { contents } = useSiteContent()
   return useMemo(
     () => mergePopupBannerContent(contents[SITE_CONTENT_KEYS.popupBanner]),
+    [contents]
+  )
+}
+
+export const useHomeYoutubeContent = () => {
+  const { contents } = useSiteContent()
+  return useMemo(
+    () => mergeHomeYoutubeContent(contents[SITE_CONTENT_KEYS.homeYoutube]),
     [contents]
   )
 }

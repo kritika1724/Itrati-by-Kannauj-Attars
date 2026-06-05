@@ -39,6 +39,7 @@ const fragranceClubRoutes = require('./routes/fragranceClub')
 const { ensureDefaultTaxonomy } = require('./utils/taxonomy')
 const { requestMonitor, getMonitoringSnapshot } = require('./utils/monitoring')
 const { getUploadRuntimeStatus } = require('./config/uploadRuntime')
+const { getRazorpayStatus } = require('./config/razorpay')
 const { validateStartupConfig, printStartupValidationReport } = require('./config/startupValidation')
 
 dotenv.config()
@@ -66,7 +67,14 @@ app.get('/assets/:file', (req, res) => {
   return res.sendFile(filePath)
 })
 
-app.use(express.json({ limit: '1mb' }))
+app.use(
+  express.json({
+    limit: '1mb',
+    verify: (req, _res, buf) => {
+      req.rawBody = buf?.length ? buf.toString('utf8') : ''
+    },
+  })
+)
 app.use(express.urlencoded({ extended: false, limit: '1mb' }))
 app.use(requestMonitor())
 if (cookieParser) {
@@ -225,6 +233,9 @@ app.get('/api/health', (req, res) => {
   const monitoring = getMonitoringSnapshot()
   const dbConnected = mongoose.connection.readyState === 1
   const healthy = dbConnected && uploads.ready
+  const payments = {
+    razorpay: getRazorpayStatus(),
+  }
 
   res.status(healthy ? 200 : 503).json({
     status: healthy ? 'ok' : 'degraded',
@@ -235,6 +246,7 @@ app.get('/api/health', (req, res) => {
       readyState: mongoose.connection.readyState,
     },
     uploads,
+    payments,
     monitoring,
   })
 })

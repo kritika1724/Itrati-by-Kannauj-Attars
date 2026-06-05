@@ -5,6 +5,9 @@ import { toAssetUrl } from '../utils/media'
 import { openRazorpayCheckout } from '../utils/razorpay'
 import { BUSINESS } from '../config/business'
 
+const getRazorpayFailureMessage = (error) =>
+  error?.description || error?.reason || error?.step || error?.source || 'Payment failed. Please try again.'
+
 const statusLabel = (status) => {
   const map = {
     pending: 'Pending',
@@ -208,7 +211,7 @@ function OrderDetail() {
                       try {
                         const rzp = await api.createRazorpayOrder(order._id)
                         await openRazorpayCheckout({
-                          key: rzp.keyId,
+                          key: import.meta.env.VITE_RAZORPAY_KEY_ID || rzp.keyId,
                           razorpayOrderId: rzp.razorpayOrderId,
                           amount: rzp.amount,
                           currency: rzp.currency,
@@ -224,6 +227,9 @@ function OrderDetail() {
                             await api.verifyRazorpayPayment({ orderId: order._id, ...response })
                             const refreshed = await api.getOrder(order._id)
                             setOrder(refreshed)
+                          },
+                          onFailure: (error) => {
+                            setPayError(getRazorpayFailureMessage(error))
                           },
                           onDismiss: () => {
                             setPayError('Payment cancelled. You can retry anytime.')

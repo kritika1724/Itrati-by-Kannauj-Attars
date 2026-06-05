@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
@@ -26,11 +27,16 @@ function Shipping() {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues: shippingAddress,
   })
+
+  useEffect(() => {
+    reset(shippingAddress)
+  }, [shippingAddress, reset])
 
   const onSubmit = (data) => {
     dispatch(saveShippingAddress(data))

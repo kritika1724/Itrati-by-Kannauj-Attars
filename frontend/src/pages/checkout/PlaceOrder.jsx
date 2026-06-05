@@ -3,16 +3,47 @@ import { useNavigate, Link } from 'react-router-dom'
 import { api } from '../../services/api'
 import { clearCart } from '../../features/cartSlice'
 import { auth } from '../../services/api'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { openRazorpayCheckout } from '../../utils/razorpay'
 import { saveLastOrder } from '../../utils/orderStorage'
 import { BUSINESS } from '../../config/business'
 import { getCartTotals, isWelcomeCouponActive, WELCOME_COUPON_CODE } from '../../utils/cartOffers'
 
+const getRazorpayFailureMessage = (error) =>
+  error?.description || error?.reason || error?.step || error?.source || 'Payment failed. Please try again.'
+
+const normalizeShippingAddress = (value = {}) => ({
+  fullName: String(value.fullName || '').trim(),
+  email: String(value.email || '').trim(),
+  phone: String(value.phone || '').trim(),
+  whatsapp: String(value.whatsapp || '').trim(),
+  addressLine1: String(value.addressLine1 || '').trim(),
+  addressLine2: String(value.addressLine2 || '').trim(),
+  city: String(value.city || '').trim(),
+  state: String(value.state || '').trim(),
+  postalCode: String(value.postalCode || '').trim(),
+  country: String(value.country || 'India').trim(),
+})
+
+const getMissingShippingFields = (value = {}) =>
+  [
+    ['fullName', 'full name'],
+    ['email', 'email'],
+    ['phone', 'phone'],
+    ['whatsapp', 'WhatsApp number'],
+    ['addressLine1', 'address line 1'],
+    ['city', 'city'],
+    ['state', 'state'],
+    ['postalCode', 'postal code'],
+    ['country', 'country'],
+  ].filter(([key]) => !value[key]).map(([, label]) => label)
+
 function PlaceOrder() {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const user = auth.getUser()
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
   const { items, shippingAddress, paymentMethod, coupon } = useSelector((state) => state.cart)
 
@@ -22,6 +53,8 @@ function PlaceOrder() {
   const taxPrice = 0
   const { discountAmount, totalPrice } = getCartTotals({ itemsPrice, shippingPrice, taxPrice, coupon })
   const rewardActive = isWelcomeCouponActive(coupon)
+  const normalizedShippingAddress = normalizeShippingAddress(shippingAddress)
+  const missingShippingFields = getMissingShippingFields(normalizedShippingAddress)
 
   useEffect(() => {
     if ((paymentMethod || 'COD').toUpperCase() === 'COD' && totalPrice > COD_LIMIT) {
@@ -30,27 +63,17 @@ function PlaceOrder() {
   }, [paymentMethod, totalPrice, navigate])
 
   useEffect(() => {
-    const required = [
-      shippingAddress?.fullName,
-      shippingAddress?.email,
-      shippingAddress?.phone,
-      shippingAddress?.whatsapp,
-      shippingAddress?.addressLine1,
-      shippingAddress?.city,
-      shippingAddress?.state,
-      shippingAddress?.postalCode,
-      shippingAddress?.country,
-    ]
-    if (required.some((value) => !String(value || '').trim())) {
+    if (missingShippingFields.length > 0) {
       navigate('/checkout/shipping', { replace: true })
     }
-  }, [shippingAddress, navigate])
+  }, [missingShippingFields, navigate])
 
   const payWithRazorpay = async (order) => {
     const rzp = await api.createRazorpayOrder(order._id)
+    const checkoutKey = import.meta.env.VITE_RAZORPAY_KEY_ID || rzp.keyId
 
     await openRazorpayCheckout({
-      key: rzp.keyId,
+      key: checkoutKey,
       razorpayOrderId: rzp.razorpayOrderId,
       amount: rzp.amount,
       currency: rzp.currency,
@@ -58,8 +81,8 @@ function PlaceOrder() {
       description: `Order ${order.publicOrderId || order._id}`,
       prefill: {
         name: shippingAddress?.fullName || user?.name || '',
-        email: shippingAddress?.email || user?.email || '',
-        contact: shippingAddress?.whatsapp || shippingAddress?.phone || '',
+        email: normalizedShippingAddress.email || user?.email || '',
+        contact: normalizedShippingAddress.whatsapp || normalizedShippingAddress.phone || '',
       },
       themeColor: '#111B3A',
       onSuccess: async (response) => {
@@ -75,37 +98,59 @@ function PlaceOrder() {
           navigate(`/checkout/failure/${order._id}`)
         }
       },
+      onFailure: (error) => {
+        navigate(`/checkout/failure/${order._id}`, {
+          state: { message: getRazorpayFailureMessage(error) },
+        })
+      },
       onDismiss: () => {
-        navigate(`/checkout/failure/${order._id}`)
+        navigate(`/checkout/failure/${order._id}`, {
+          state: { message: 'Payment cancelled. You can retry anytime.' },
+        })
       },
     })
   }
 
   const placeOrder = async () => {
-    const payload = {
-      orderItems: items.map((i) => ({
-        product: i.product,
-        qty: i.qty,
-        packLabel: i.packLabel || '',
-        isSample: i.isSample === true,
-      })),
-      shippingAddress,
-      paymentMethod,
-      couponCode: rewardActive ? WELCOME_COUPON_CODE : '',
+    setSubmitting(true)
+    setSubmitError('')
+
+    try {
+      if (missingShippingFields.length > 0) {
+        setSubmitError(`Please complete your shipping details: ${missingShippingFields.join(', ')}.`)
+        navigate('/checkout/shipping', { replace: true })
+        return
+      }
+
+      const payload = {
+        orderItems: items.map((i) => ({
+          product: i.product,
+          qty: i.qty,
+          packLabel: i.packLabel || '',
+          isSample: i.isSample === true,
+        })),
+        shippingAddress: normalizedShippingAddress,
+        paymentMethod,
+        couponCode: rewardActive ? WELCOME_COUPON_CODE : '',
+      }
+
+      const method = String(paymentMethod || 'COD').toUpperCase()
+      const order = await api.createOrder(payload)
+      saveLastOrder(order)
+
+      if (method === 'RAZORPAY') {
+        // Keep cart until payment success; user can retry if needed.
+        await payWithRazorpay(order)
+        return
+      }
+
+      dispatch(clearCart())
+      navigate(`/checkout/success/${order._id}`)
+    } catch (error) {
+      setSubmitError(error.message || 'Could not start checkout.')
+    } finally {
+      setSubmitting(false)
     }
-
-    const method = String(paymentMethod || 'COD').toUpperCase()
-    const order = await api.createOrder(payload)
-    saveLastOrder(order)
-
-    if (method === 'RAZORPAY') {
-      // Keep cart until payment success; user can retry if needed.
-      await payWithRazorpay(order)
-      return
-    }
-
-    dispatch(clearCart())
-    navigate(`/checkout/success/${order._id}`)
   }
 
   return (
@@ -123,18 +168,18 @@ function PlaceOrder() {
             <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-lg shadow-black/10">
               <h2 className="text-lg font-semibold text-ink">Shipping</h2>
               <p className="mt-3 text-sm text-muted">
-                {shippingAddress.fullName}, {shippingAddress.phone}
+                {normalizedShippingAddress.fullName}, {normalizedShippingAddress.phone}
                 <br />
-                WhatsApp: {shippingAddress.whatsapp}
+                WhatsApp: {normalizedShippingAddress.whatsapp}
                 <br />
-                {shippingAddress.email}
+                {normalizedShippingAddress.email}
                 <br />
-                {shippingAddress.addressLine1}
-                {shippingAddress.addressLine2 ? `, ${shippingAddress.addressLine2}` : ''}
+                {normalizedShippingAddress.addressLine1}
+                {normalizedShippingAddress.addressLine2 ? `, ${normalizedShippingAddress.addressLine2}` : ''}
                 <br />
-                {shippingAddress.city}, {shippingAddress.state} {shippingAddress.postalCode}
+                {normalizedShippingAddress.city}, {normalizedShippingAddress.state} {normalizedShippingAddress.postalCode}
                 <br />
-                {shippingAddress.country}
+                {normalizedShippingAddress.country}
               </p>
               <Link to="/checkout/shipping" className="mt-4 inline-flex text-sm font-semibold text-emberDark">
                 Edit
@@ -203,12 +248,21 @@ function PlaceOrder() {
               </div>
             </div>
 
+            {submitError ? (
+              <p className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                {submitError}
+              </p>
+            ) : null}
             <button
               onClick={placeOrder}
-              disabled={items.length === 0}
+              disabled={items.length === 0 || submitting}
               className="mt-6 w-full rounded-full bg-ember px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {(paymentMethod || 'COD').toUpperCase() === 'RAZORPAY' ? 'Pay now' : 'Place order'}
+              {submitting
+                ? 'Starting checkout...'
+                : (paymentMethod || 'COD').toUpperCase() === 'RAZORPAY'
+                  ? 'Pay now'
+                  : 'Place order'}
             </button>
             <p className="mt-3 text-xs text-muted">We will use your checkout details to confirm the order.</p>
           </div>

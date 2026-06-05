@@ -60,6 +60,32 @@ const contactMatchesOrder = (order, contactValue) => {
   return allowedContacts.includes(contactValue)
 }
 
+const normalizeShippingAddress = (value = {}) => ({
+  fullName: String(value.fullName || '').trim(),
+  email: String(value.email || '').trim().toLowerCase(),
+  phone: String(value.phone || '').trim(),
+  whatsapp: String(value.whatsapp || '').trim(),
+  addressLine1: String(value.addressLine1 || '').trim(),
+  addressLine2: String(value.addressLine2 || '').trim(),
+  city: String(value.city || '').trim(),
+  state: String(value.state || '').trim(),
+  postalCode: String(value.postalCode || '').trim(),
+  country: String(value.country || 'India').trim(),
+})
+
+const getMissingShippingFields = (value = {}) =>
+  [
+    ['fullName', 'full name'],
+    ['email', 'email'],
+    ['phone', 'phone'],
+    ['whatsapp', 'WhatsApp number'],
+    ['addressLine1', 'address line 1'],
+    ['city', 'city'],
+    ['state', 'state'],
+    ['postalCode', 'postal code'],
+    ['country', 'country'],
+  ].filter(([key]) => !value[key]).map(([, label]) => label)
+
 const getEffectivePackPrice = (pack) => {
   const regularPrice = Number(pack?.price)
   const salePrice = Number(pack?.salePrice)
@@ -148,18 +174,17 @@ router.post(
     }
 
     const { orderItems, shippingAddress, paymentMethod, couponCode } = req.body
+    const normalizedShippingAddress = normalizeShippingAddress(shippingAddress)
 
     if (!Array.isArray(orderItems) || orderItems.length === 0) {
       return res.status(400).json({ message: 'Order items are required' })
     }
 
-    if (
-      !shippingAddress?.fullName ||
-      !shippingAddress?.email ||
-      !shippingAddress?.phone ||
-      !shippingAddress?.whatsapp
-    ) {
-      return res.status(400).json({ message: 'Name, email, phone, and WhatsApp number are required' })
+    const missingShippingFields = getMissingShippingFields(normalizedShippingAddress)
+    if (missingShippingFields.length > 0) {
+      return res.status(400).json({
+        message: `Shipping details are incomplete: ${missingShippingFields.join(', ')}`,
+      })
     }
 
     const productIds = [...new Set(orderItems.map((item) => String(item.product || '')).filter(Boolean))]
@@ -260,12 +285,7 @@ router.post(
             {
               user: req.user?._id || null,
               orderItems: normalizedItems,
-              shippingAddress: {
-                ...shippingAddress,
-                email: String(shippingAddress.email || '').trim().toLowerCase(),
-                phone: String(shippingAddress.phone || '').trim(),
-                whatsapp: String(shippingAddress.whatsapp || '').trim(),
-              },
+              shippingAddress: normalizedShippingAddress,
               paymentMethod: method || 'COD',
               itemsPrice,
               shippingPrice,

@@ -37,6 +37,12 @@ Recommended for same-origin production:
 - `FRONTEND_ORIGIN=https://your-domain.com`
 - `BACKEND_PUBLIC_URL=https://your-domain.com`
 
+If you want online payments with Razorpay:
+
+- `RAZORPAY_KEY_ID`
+- `RAZORPAY_KEY_SECRET`
+- `RAZORPAY_WEBHOOK_SECRET`
+
 ## Render-specific notes
 
 - Keep the existing root [render.yaml](/Users/kritikatrivedi/Desktop/K:A/render.yaml:1)
@@ -48,6 +54,8 @@ Healthy result should show:
 - `status: ok`
 - `database.connected: true`
 - `uploads.provider: cloudinary`
+- `payments.razorpay.enabled: true` if Razorpay should be live
+- `payments.razorpay.webhookEnabled: true` if webhook reconciliation is enabled
 
 The `monitoring` block should also ideally show:
 
@@ -65,6 +73,25 @@ If Cloudinary is missing in production:
 - upload API will return `503`
 
 Only use `ALLOW_LOCAL_UPLOADS=true` as a short-term emergency fallback.
+
+## Razorpay
+
+The checkout flow is already wired for Razorpay Orders + signature verification, and the backend now also accepts signed webhooks at:
+
+- `/api/payments/razorpay/webhook`
+
+In the Razorpay Dashboard:
+
+- create Test Mode keys first, then later replace them with Live Mode keys
+- enable automatic capture unless you intentionally want a manual capture workflow
+- add the webhook URL `https://your-domain.com/api/payments/razorpay/webhook`
+- set the same webhook secret in Razorpay and `RAZORPAY_WEBHOOK_SECRET`
+- subscribe to `payment.authorized`, `payment.captured`, `payment.failed`, and `order.paid`
+
+Why both client verify and webhook:
+
+- client verify gives the customer an immediate success result after checkout
+- webhook reconciles payments if the browser closes, the network drops, or the success callback is interrupted
 
 ## Monitoring checklist
 

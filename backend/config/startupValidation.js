@@ -1,4 +1,5 @@
 const { getUploadRuntimeStatus } = require('./uploadRuntime')
+const { getRazorpayStatus } = require('./razorpay')
 
 const isProduction = () => process.env.NODE_ENV === 'production'
 
@@ -20,6 +21,7 @@ const validateStartupConfig = () => {
   const errors = []
   const warnings = []
   const uploadRuntime = getUploadRuntimeStatus()
+  const razorpay = getRazorpayStatus()
   const origins = parseOrigins(env('CORS_ORIGIN'))
   const oauthEnabled =
     hasConfiguredValue('GOOGLE_CLIENT_ID') ||
@@ -66,6 +68,16 @@ const validateStartupConfig = () => {
     if (oauthEnabled && !hasConfiguredValue('FRONTEND_ORIGIN') && !origins.length) {
       warnings.push('OAuth is configured but FRONTEND_ORIGIN is not set.')
     }
+
+    if (!razorpay.enabled) {
+      warnings.push('Razorpay online payments are disabled because RAZORPAY_KEY_ID/RAZORPAY_KEY_SECRET are not fully configured.')
+    } else if (!razorpay.webhookEnabled) {
+      warnings.push('RAZORPAY_WEBHOOK_SECRET is not set. Client-side verification will work, but webhook reconciliation is disabled.')
+    }
+  }
+
+  if (razorpay.keyIdPresent !== razorpay.keySecretPresent) {
+    errors.push('RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET must be set together.')
   }
 
   if (!hasConfiguredValue('ADMIN_EMAIL')) {
@@ -80,6 +92,9 @@ const validateStartupConfig = () => {
       nodeEnv: env('NODE_ENV') || 'development',
       corsOrigins: origins,
       uploads: uploadRuntime,
+      payments: {
+        razorpay,
+      },
       oauthEnabled,
     },
   }

@@ -28,6 +28,7 @@ export const openRazorpayCheckout = async ({
   themeColor,
   onSuccess,
   onDismiss,
+  onFailure,
 }) => {
   await loadRazorpay()
 
@@ -48,7 +49,12 @@ export const openRazorpayCheckout = async ({
     },
   })
 
+  if (typeof onFailure === 'function') {
+    rzp.on('payment.failed', (response) => {
+      onFailure(response?.error || {}, response)
+    })
+  }
+
   rzp.open()
   return rzp
 }
-

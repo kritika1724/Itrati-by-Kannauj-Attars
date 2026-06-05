@@ -2,10 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useDispatch } from 'react-redux'
-import { FiFilter, FiSearch } from 'react-icons/fi'
+import { FiChevronDown, FiFilter, FiSearch } from 'react-icons/fi'
 import AddToCartModal from '../components/AddToCartModal'
 import RecentlyViewedStrip from '../components/RecentlyViewedStrip'
 import { useTaxonomy } from '../components/TaxonomyProvider'
+import FilterSidebar from '../components/product/FilterSidebar'
 import ProductGrid from '../components/product/ProductGrid'
 import ProductQuickViewModal from '../components/product/ProductQuickViewModal'
 import ProductToast from '../components/product/ProductToast'
@@ -18,6 +19,7 @@ import { notifyCartItemAdded } from '../utils/cartLeadPrompt'
 import {
   buildChoiceList,
   buildIdSet,
+  CATEGORY_DEFAULTS,
   COLLECTION_MAP,
   countActiveFilters,
   DIRECTION_DEFAULTS,
@@ -38,6 +40,7 @@ function Products() {
   const searchKey = searchParams.toString()
   const user = auth.getUser()
   const isAdmin = user?.isAdmin === true
+  const filtersRef = useRef(null)
   const searchRef = useRef(null)
   const toastTimer = useRef(0)
 
@@ -85,12 +88,18 @@ function Products() {
   const [bestSellerOnly, setBestSellerOnly] = useState(false)
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [cartModal, setCartModal] = useState({ open: false, product: null })
   const [quickViewProduct, setQuickViewProduct] = useState(null)
   const [toast, setToast] = useState({ open: false, message: '' })
+
+  const categories = useMemo(() => {
+    const values = [...CATEGORY_DEFAULTS, ...products.map((item) => String(item?.category || '').trim())]
+    return [...new Set(values.filter(Boolean))]
+  }, [products])
 
   const familyChoices = useMemo(() => buildChoiceList(FAMILY_DEFAULTS, taxonomyFamilies), [taxonomyFamilies])
   const seasonChoices = useMemo(() => buildChoiceList(SEASON_DEFAULTS, taxonomySeasons), [taxonomySeasons])
@@ -183,6 +192,45 @@ function Products() {
   }, [page, keyword, sort, selectedCategory, selectedOccasions, selectedFamilies, selectedSeasons, selectedGenders, selectedDirections, bestSellerOnly, minPrice, maxPrice, activeCollection])
 
   useEffect(() => {
+    if (!filtersOpen) return undefined
+
+    const handlePointerOutside = (event) => {
+      if (filtersRef.current && !filtersRef.current.contains(event.target)) {
+        setFiltersOpen(false)
+      }
+    }
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setFiltersOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerOutside)
+    document.addEventListener('keydown', handleEscape)
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerOutside)
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [filtersOpen])
+
+  useEffect(() => {
+    if (!filtersOpen || !window.matchMedia('(max-width: 767px)').matches) {
+      return undefined
+    }
+
+    const previousBodyOverflow = document.body.style.overflow
+    const previousHtmlOverflow = document.documentElement.style.overflow
+    document.body.style.overflow = 'hidden'
+    document.documentElement.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow
+      document.documentElement.style.overflow = previousHtmlOverflow
+    }
+  }, [filtersOpen])
+
+  useEffect(() => {
     const closeSuggestions = (event) => {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
         setSearchFocused(false)
@@ -250,6 +298,11 @@ function Products() {
   }
 
   const clearFilters = () => {
+    const nextParams = new URLSearchParams(searchParams)
+    ;['category', 'purpose', 'family', 'season', 'gender', 'direction', 'minPrice', 'maxPrice', 'bestSeller', 'page'].forEach((key) =>
+      nextParams.delete(key)
+    )
+    setSearchParams(nextParams, { replace: true })
     setPage(1)
     setSelectedCategory('')
     setSelectedOccasions([])
@@ -260,11 +313,7 @@ function Products() {
     setBestSellerOnly(false)
     setMinPrice('')
     setMaxPrice('')
-  }
-
-  const openFiltersPage = () => {
-    const qs = searchParams.toString()
-    navigate(`/products/filters${qs ? `?${qs}` : ''}`)
+    setFiltersOpen(false)
   }
 
   const handleCartConfirm = (selection) => {
@@ -318,33 +367,36 @@ function Products() {
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#FFFFFF_0%,#F7F2EA_52%,#FFFDF8_100%)] text-[#19213C]">
-      <section className="border-b border-[rgba(25,33,60,0.06)] px-4 pb-10 pt-10 sm:px-6 lg:px-8">
+      <section className="border-b border-[rgba(25,33,60,0.06)] px-4 pb-5 pt-5 sm:px-6 sm:pb-10 sm:pt-10 lg:px-8">
         <motion.div initial="hidden" animate="show" variants={fadeUp} className="mx-auto w-full max-w-[1480px]">
           {pageMeta ? (
             <div className="max-w-3xl">
               <p className="text-xs font-semibold uppercase tracking-[0.34em] text-[#8D7667]">Collection view</p>
-              <h1 className="mt-4 font-display text-4xl leading-[1.02] tracking-[-0.05em] text-[#19213C] sm:text-5xl xl:text-6xl">
+              <h1 className="mt-3 font-display text-[2rem] leading-[1.02] tracking-[-0.05em] text-[#19213C] sm:mt-4 sm:text-5xl xl:text-6xl">
                 {pageMeta.title}
               </h1>
-              <p className="mt-5 max-w-2xl text-base leading-8 text-[#5F6475] sm:text-lg">{pageMeta.lead}</p>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-[#5F6475] sm:mt-5 sm:text-lg sm:leading-8">{pageMeta.lead}</p>
             </div>
           ) : null}
 
-          <div className={`${pageMeta ? 'mt-8' : ''} flex flex-wrap items-center gap-3`}>
-            <Link to="/collections" className="rounded-full bg-[#19213C] px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(25,33,60,0.18)] transition hover:bg-[#10162A]">
+          <div className={`${pageMeta ? 'mt-5 sm:mt-8' : ''} flex flex-wrap items-center gap-3`}>
+            <Link
+              to="/collections"
+              className="rounded-full bg-[#19213C] px-4 py-2.5 text-xs font-semibold text-white shadow-[0_14px_28px_rgba(25,33,60,0.15)] transition hover:bg-[#10162A] sm:px-5 sm:py-3 sm:text-sm sm:shadow-[0_18px_40px_rgba(25,33,60,0.18)]"
+            >
               Shop by purpose
             </Link>
           </div>
         </motion.div>
       </section>
 
-      <section className="px-4 py-6 sm:px-6 lg:px-8">
+      <section className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
         <div className="mx-auto w-full max-w-[1480px]">
-          <div className="sticky top-[calc(var(--ka-nav-height,80px)+0.5rem)] z-20 rounded-[1.75rem] border border-[rgba(25,33,60,0.08)] bg-[rgba(255,255,255,0.86)] p-3 shadow-[0_24px_70px_rgba(25,33,60,0.10)] backdrop-blur-xl sm:top-[calc(var(--ka-nav-height,80px)+0.75rem)] sm:rounded-[2rem] sm:p-4">
+          <div className="sticky top-[calc(var(--ka-nav-height,80px)+0.35rem)] z-20 rounded-[1.5rem] border border-[rgba(25,33,60,0.08)] bg-[rgba(255,255,255,0.86)] p-2.5 shadow-[0_20px_52px_rgba(25,33,60,0.10)] backdrop-blur-xl sm:top-[calc(var(--ka-nav-height,80px)+0.75rem)] sm:rounded-[2rem] sm:p-4 sm:shadow-[0_24px_70px_rgba(25,33,60,0.10)]">
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,0.92fr)]">
               <div ref={searchRef} className="relative">
-                <div className="flex items-center gap-3 rounded-[1.4rem] border border-[rgba(25,33,60,0.08)] bg-white px-4 py-3 shadow-[0_8px_24px_rgba(25,33,60,0.04)]">
-                  <FiSearch className="text-[#8D7667]" size={18} />
+                <div className="flex items-center gap-2.5 rounded-[1.2rem] border border-[rgba(25,33,60,0.08)] bg-white px-3.5 py-2.5 shadow-[0_8px_24px_rgba(25,33,60,0.04)] sm:gap-3 sm:rounded-[1.4rem] sm:px-4 sm:py-3">
+                  <FiSearch className="text-[#8D7667]" size={17} />
                   <input
                     value={keyword}
                     onFocus={() => setSearchFocused(true)}
@@ -353,7 +405,7 @@ function Products() {
                       setKeyword(event.target.value)
                     }}
                     placeholder="Search attars, perfumes, rose water..."
-                    className="w-full bg-transparent text-sm text-[#19213C] outline-none placeholder:text-[#98A0B2]"
+                    className="w-full bg-transparent text-[13px] text-[#19213C] outline-none placeholder:text-[#98A0B2] sm:text-sm"
                   />
                 </div>
 
@@ -380,14 +432,14 @@ function Products() {
                 ) : null}
               </div>
 
-              <div className="grid grid-cols-1 gap-3 min-[440px]:grid-cols-2">
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
                 <select
                   value={sort}
                   onChange={(event) => {
                     setPage(1)
                     setSort(event.target.value)
                   }}
-                  className="rounded-[1.4rem] border border-[rgba(25,33,60,0.08)] bg-white px-4 py-3 text-sm font-semibold text-[#19213C] outline-none"
+                  className="rounded-[1.2rem] border border-[rgba(25,33,60,0.08)] bg-white px-3 py-2.5 text-[13px] font-semibold text-[#19213C] outline-none sm:rounded-[1.4rem] sm:px-4 sm:py-3 sm:text-sm"
                 >
                   {SORT_OPTIONS.map((option) => (
                     <option key={option.id} value={option.id}>
@@ -396,53 +448,119 @@ function Products() {
                   ))}
                 </select>
 
-                <button
-                  type="button"
-                  onClick={openFiltersPage}
-                  className="inline-flex w-full items-center justify-between gap-3 rounded-[1.4rem] border border-[rgba(25,33,60,0.08)] bg-white px-4 py-3 text-sm font-semibold text-[#19213C] shadow-[0_8px_24px_rgba(25,33,60,0.04)]"
-                >
-                  <span className="inline-flex items-center gap-2">
-                    <FiFilter size={17} />
-                    Open filters
-                  </span>
-                  {activeFilterCount > 0 ? (
-                    <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-[#19213C] px-2 py-0.5 text-[10px] font-semibold text-white">
-                      {activeFilterCount}
+                <div ref={filtersRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setFiltersOpen((value) => !value)}
+                    className="inline-flex w-full items-center justify-between gap-2 rounded-[1.2rem] border border-[rgba(25,33,60,0.08)] bg-white px-3 py-2.5 text-[13px] font-semibold text-[#19213C] shadow-[0_8px_24px_rgba(25,33,60,0.04)] sm:gap-3 sm:rounded-[1.4rem] sm:px-4 sm:py-3 sm:text-sm"
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <FiFilter size={16} />
+                      Filters
                     </span>
-                  ) : null}
-                </button>
+                    <span className="inline-flex items-center gap-2">
+                      {activeFilterCount > 0 ? (
+                        <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-[#19213C] px-2 py-0.5 text-[10px] font-semibold text-white">
+                          {activeFilterCount}
+                        </span>
+                      ) : null}
+                      <FiChevronDown className={`transition ${filtersOpen ? 'rotate-180' : ''}`} size={16} />
+                    </span>
+                  </button>
+
+                  <FilterSidebar
+                    open={filtersOpen}
+                    onClose={() => setFiltersOpen(false)}
+                    categories={categories}
+                    selectedCategory={selectedCategory}
+                    onSelectCategory={(value) => {
+                      setPage(1)
+                      setSelectedCategory(value)
+                    }}
+                    minPrice={minPrice}
+                    maxPrice={maxPrice}
+                    onMinPriceChange={(value) => {
+                      setPage(1)
+                      setMinPrice(value)
+                    }}
+                    onMaxPriceChange={(value) => {
+                      setPage(1)
+                      setMaxPrice(value)
+                    }}
+                    families={familyChoices}
+                    selectedFamilies={selectedFamilies}
+                    onToggleFamily={(id) => {
+                      setPage(1)
+                      setSelectedFamilies((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
+                    }}
+                    seasons={seasonChoices}
+                    selectedSeasons={selectedSeasons}
+                    onToggleSeason={(id) => {
+                      setPage(1)
+                      setSelectedSeasons((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
+                    }}
+                    genders={genderChoices}
+                    selectedGenders={selectedGenders}
+                    onToggleGender={(id) => {
+                      setPage(1)
+                      setSelectedGenders((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
+                    }}
+                    directions={directionChoices}
+                    selectedDirections={selectedDirections}
+                    onToggleDirection={(id) => {
+                      setPage(1)
+                      setSelectedDirections((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
+                    }}
+                    occasions={occasionChoices}
+                    selectedOccasions={selectedOccasions}
+                    onToggleOccasion={(id) => {
+                      setPage(1)
+                      setSelectedOccasions((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
+                    }}
+                    bestSellerOnly={bestSellerOnly}
+                    onToggleBestSeller={() => {
+                      setPage(1)
+                      setBestSellerOnly((value) => !value)
+                    }}
+                    onClear={clearFilters}
+                    activeCount={activeFilterCount}
+                    resultLabel={loading ? 'Updating results…' : `${products.length} item${products.length === 1 ? '' : 's'} visible`}
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-nowrap gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
-                {activeFilterCount > 0 ? (
-                  <>
-                    {selectedCategory ? <FilterChip>{selectedCategory}</FilterChip> : null}
-                    {bestSellerOnly ? <FilterChip>Bestsellers</FilterChip> : null}
-                    {selectedFamilies.map((id) => (
-                      <FilterChip key={id}>{familyMap[id] || id}</FilterChip>
-                    ))}
-                    {selectedSeasons.map((id) => (
-                      <FilterChip key={id}>{seasonMap[id] || id}</FilterChip>
-                    ))}
-                    {selectedGenders.map((id) => (
-                      <FilterChip key={id}>{genderMap[id] || id}</FilterChip>
-                    ))}
-                    {selectedDirections.map((id) => (
-                      <FilterChip key={id}>{directionMap[id] || id}</FilterChip>
-                    ))}
-                    {selectedOccasions.map((id) => (
-                      <FilterChip key={id}>{purposeMap[id] || id}</FilterChip>
-                    ))}
-                    {minPrice ? <FilterChip>From ₹{minPrice}</FilterChip> : null}
-                    {maxPrice ? <FilterChip>Up to ₹{maxPrice}</FilterChip> : null}
-                  </>
-                ) : (
-                  <p className="text-sm text-[#6B6F7A]">Use filters to narrow by fragrance family, direction, category, season, gender, occasion, or price.</p>
-                )}
+            <div className="mt-3 grid gap-3 sm:mt-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start xl:items-center">
+              <div className="min-w-0">
+                <div className="flex flex-nowrap gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
+                  {activeFilterCount > 0 ? (
+                    <>
+                      {selectedCategory ? <FilterChip>{selectedCategory}</FilterChip> : null}
+                      {bestSellerOnly ? <FilterChip>Bestsellers</FilterChip> : null}
+                      {selectedFamilies.map((id) => (
+                        <FilterChip key={id}>{familyMap[id] || id}</FilterChip>
+                      ))}
+                      {selectedSeasons.map((id) => (
+                        <FilterChip key={id}>{seasonMap[id] || id}</FilterChip>
+                      ))}
+                      {selectedGenders.map((id) => (
+                        <FilterChip key={id}>{genderMap[id] || id}</FilterChip>
+                      ))}
+                      {selectedDirections.map((id) => (
+                        <FilterChip key={id}>{directionMap[id] || id}</FilterChip>
+                      ))}
+                      {selectedOccasions.map((id) => (
+                        <FilterChip key={id}>{purposeMap[id] || id}</FilterChip>
+                      ))}
+                      {minPrice ? <FilterChip>From ₹{minPrice}</FilterChip> : null}
+                      {maxPrice ? <FilterChip>Up to ₹{maxPrice}</FilterChip> : null}
+                    </>
+                  ) : (
+                    <p className="text-xs text-[#6B6F7A] sm:text-sm">Use filters to narrow by fragrance family, direction, category, season, gender, occasion, or price.</p>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2.5 lg:justify-end">
                 {activeFilterCount > 0 ? (
                   <button
                     type="button"
@@ -452,7 +570,7 @@ function Products() {
                     Clear all filters
                   </button>
                 ) : null}
-                <p className="shrink-0 text-sm font-medium text-[#5F6475]">
+                <p className="text-sm font-medium text-[#5F6475] lg:text-right">
                   {loading ? 'Curating products...' : `${products.length} items on this page`}
                 </p>
               </div>
@@ -548,7 +666,7 @@ function Products() {
 
 function FilterChip({ children }) {
   return (
-    <span className="rounded-full border border-[rgba(200,169,106,0.24)] bg-[rgba(255,251,243,0.92)] px-3 py-1.5 text-xs font-semibold text-[#C9A24A]">
+    <span className="rounded-full border border-[rgba(200,169,106,0.24)] bg-[rgba(255,251,243,0.92)] px-2.5 py-1 text-[11px] font-semibold text-[#C9A24A] sm:px-3 sm:py-1.5 sm:text-xs">
       {children}
     </span>
   )

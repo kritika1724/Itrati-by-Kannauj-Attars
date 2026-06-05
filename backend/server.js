@@ -337,8 +337,11 @@ const start = async () => {
       throw new Error('Startup configuration is invalid. Fix the reported environment variables and redeploy.')
     }
 
+    console.log('[startup] configuration validated')
     await connectDB(process.env.MONGO_URI)
+    console.log('[startup] database connected')
     await ensureDefaultTaxonomy()
+    console.log('[startup] taxonomy ready')
 
     // Use a fixed port to avoid frontend/backend mismatches.
     const port = Number(process.env.PORT || 5000)

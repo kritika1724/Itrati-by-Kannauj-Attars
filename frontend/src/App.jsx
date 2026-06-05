@@ -20,6 +20,7 @@ const Home = lazy(() => import('./pages/Home'))
 const Collections = lazy(() => import('./pages/Collections'))
 const Contact = lazy(() => import('./pages/Contact'))
 const Products = lazy(() => import('./pages/Products'))
+const ProductFilters = lazy(() => import('./pages/ProductFilters'))
 const Wishlist = lazy(() => import('./pages/Wishlist'))
 const ProductDetail = lazy(() => import('./pages/ProductDetail'))
 const TrackOrder = lazy(() => import('./pages/TrackOrder'))
@@ -559,6 +560,7 @@ function AppShell() {
         <Route path="/explore" element={<Navigate to="/" replace />} />
         <Route path="/discovery-set" element={<Navigate to="/products?keyword=Discovery%20Set" replace />} />
         <Route path="/products" element={<Products />} />
+        <Route path="/products/filters" element={<ProductFilters />} />
         <Route
           path="/wishlist"
           element={

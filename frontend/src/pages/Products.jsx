@@ -2,11 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useDispatch } from 'react-redux'
-import { FiChevronDown, FiFilter, FiSearch } from 'react-icons/fi'
+import { FiFilter, FiSearch } from 'react-icons/fi'
 import AddToCartModal from '../components/AddToCartModal'
 import RecentlyViewedStrip from '../components/RecentlyViewedStrip'
 import { useTaxonomy } from '../components/TaxonomyProvider'
-import FilterSidebar from '../components/product/FilterSidebar'
 import ProductGrid from '../components/product/ProductGrid'
 import ProductQuickViewModal from '../components/product/ProductQuickViewModal'
 import ProductToast from '../components/product/ProductToast'
@@ -15,59 +14,22 @@ import { getPurposeCollectionMeta } from '../config/collections'
 import { fadeUp } from '../lib/motion'
 import { api, auth } from '../services/api'
 import { getSearchSuggestions } from '../components/product/productPresentation'
-import { SEASON_TAGS, GENDER_TAGS, DIRECTION_TAGS } from '../config/taxonomy'
 import { notifyCartItemAdded } from '../utils/cartLeadPrompt'
-
-const SORT_MAP = {
-  popular: 'rating_desc',
-  price_asc: 'price_asc',
-  price_desc: 'price_desc',
-  new_arrivals: 'newest',
-}
-
-const SORT_OPTIONS = [
-  { id: 'popular', label: 'Popular' },
-  { id: 'price_asc', label: 'Price: Low to High' },
-  { id: 'price_desc', label: 'Price: High to Low' },
-  { id: 'new_arrivals', label: 'New Arrivals' },
-]
-
-const CATEGORY_DEFAULTS = ['Attar', 'Perfume', 'Rose Water', 'Essential Oil']
-const FAMILY_DEFAULTS = [
-  { id: 'floral', label: 'Floral' },
-  { id: 'woody', label: 'Woody' },
-  { id: 'musky', label: 'Musk' },
-  { id: 'oudh', label: 'Oudh' },
-  { id: 'fresh', label: 'Fresh' },
-  { id: 'spicy', label: 'Spicy' },
-]
-const OCCASION_DEFAULTS = [
-  { id: 'daily_wear', label: 'Daily wear' },
-  { id: 'weddings', label: 'Weddings or Parties' },
-  { id: 'luxury_gifting', label: 'Gifting' },
-  { id: 'festive', label: 'Festive' },
-]
-const SEASON_DEFAULTS = SEASON_TAGS
-const GENDER_DEFAULTS = GENDER_TAGS
-const DIRECTION_DEFAULTS = DIRECTION_TAGS
-
-const COLLECTION_MAP = {
-  signature: {
-    title: 'Signature Attars',
-    lead: 'Admin-curated blends chosen for everyday elegance, balance, and easy wear.',
-  },
-  heritage: {
-    title: 'Heritage Collection',
-    lead: 'Admin-curated traditional profiles inspired by classic Kannauj perfumery.',
-  },
-}
-
-const toUiSort = (value) => {
-  if (value === 'price_asc') return 'price_asc'
-  if (value === 'price_desc') return 'price_desc'
-  if (value === 'newest') return 'new_arrivals'
-  return 'popular'
-}
+import {
+  buildChoiceList,
+  buildIdSet,
+  COLLECTION_MAP,
+  countActiveFilters,
+  DIRECTION_DEFAULTS,
+  FAMILY_DEFAULTS,
+  GENDER_DEFAULTS,
+  OCCASION_DEFAULTS,
+  readListParam,
+  SEASON_DEFAULTS,
+  SORT_MAP,
+  SORT_OPTIONS,
+  toUiSort,
+} from '../utils/productFilters'
 
 function Products() {
   const navigate = useNavigate()
@@ -76,7 +38,6 @@ function Products() {
   const searchKey = searchParams.toString()
   const user = auth.getUser()
   const isAdmin = user?.isAdmin === true
-  const filtersRef = useRef(null)
   const searchRef = useRef(null)
   const toastTimer = useRef(0)
 
@@ -124,7 +85,6 @@ function Products() {
   const [bestSellerOnly, setBestSellerOnly] = useState(false)
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
-  const [filtersOpen, setFiltersOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -132,79 +92,28 @@ function Products() {
   const [quickViewProduct, setQuickViewProduct] = useState(null)
   const [toast, setToast] = useState({ open: false, message: '' })
 
-  const categories = useMemo(() => {
-    const values = [...CATEGORY_DEFAULTS, ...products.map((item) => String(item?.category || '').trim())]
-    return [...new Set(values.filter(Boolean))]
-  }, [products])
+  const familyChoices = useMemo(() => buildChoiceList(FAMILY_DEFAULTS, taxonomyFamilies), [taxonomyFamilies])
+  const seasonChoices = useMemo(() => buildChoiceList(SEASON_DEFAULTS, taxonomySeasons), [taxonomySeasons])
+  const genderChoices = useMemo(() => buildChoiceList(GENDER_DEFAULTS, taxonomyGenders), [taxonomyGenders])
+  const directionChoices = useMemo(() => buildChoiceList(DIRECTION_DEFAULTS, taxonomyDirections), [taxonomyDirections])
+  const occasionChoices = useMemo(() => buildChoiceList(OCCASION_DEFAULTS, taxonomyPurposes), [taxonomyPurposes])
 
-  const familyChoices = useMemo(() => {
-    const merged = [...FAMILY_DEFAULTS, ...taxonomyFamilies.map((item) => ({ id: item.id, label: item.label }))]
-    const seen = new Set()
-    return merged.filter((item) => {
-      if (!item?.id || seen.has(item.id)) return false
-      seen.add(item.id)
-      return true
-    })
-  }, [taxonomyFamilies])
-
-  const seasonChoices = useMemo(() => {
-    const merged = [...SEASON_DEFAULTS, ...taxonomySeasons.map((item) => ({ id: item.id, label: item.label }))]
-    const seen = new Set()
-    return merged.filter((item) => {
-      if (!item?.id || seen.has(item.id)) return false
-      seen.add(item.id)
-      return true
-    })
-  }, [taxonomySeasons])
-
-  const genderChoices = useMemo(() => {
-    const merged = [...GENDER_DEFAULTS, ...taxonomyGenders.map((item) => ({ id: item.id, label: item.label }))]
-    const seen = new Set()
-    return merged.filter((item) => {
-      if (!item?.id || seen.has(item.id)) return false
-      seen.add(item.id)
-      return true
-    })
-  }, [taxonomyGenders])
-
-  const directionChoices = useMemo(() => {
-    const merged = [...DIRECTION_DEFAULTS, ...taxonomyDirections.map((item) => ({ id: item.id, label: item.label }))]
-    const seen = new Set()
-    return merged.filter((item) => {
-      if (!item?.id || seen.has(item.id)) return false
-      seen.add(item.id)
-      return true
-    })
-  }, [taxonomyDirections])
-
-  const occasionChoices = useMemo(() => {
-    const merged = [
-      ...OCCASION_DEFAULTS,
-      ...taxonomyPurposes.map((item) => ({ id: item.id, label: item.label })),
-    ]
-    const seen = new Set()
-    return merged.filter((item) => {
-      if (!item?.id || seen.has(item.id)) return false
-      seen.add(item.id)
-      return true
-    })
-  }, [taxonomyPurposes])
-
-  const purposeValues = new Set(occasionChoices.map((item) => item.id))
-  const familyValues = new Set(familyChoices.map((item) => item.id))
-  const seasonValues = new Set(seasonChoices.map((item) => item.id))
-  const genderValues = new Set(genderChoices.map((item) => item.id))
-  const directionValues = new Set(directionChoices.map((item) => item.id))
-  const activeFilterCount =
-    Number(Boolean(selectedCategory)) +
-    Number(Boolean(minPrice)) +
-    Number(Boolean(maxPrice)) +
-    selectedFamilies.length +
-    selectedSeasons.length +
-    selectedGenders.length +
-    selectedDirections.length +
-    selectedOccasions.length +
-    Number(bestSellerOnly)
+  const purposeValues = buildIdSet(occasionChoices)
+  const familyValues = buildIdSet(familyChoices)
+  const seasonValues = buildIdSet(seasonChoices)
+  const genderValues = buildIdSet(genderChoices)
+  const directionValues = buildIdSet(directionChoices)
+  const activeFilterCount = countActiveFilters({
+    selectedCategory,
+    minPrice,
+    maxPrice,
+    selectedFamilies,
+    selectedSeasons,
+    selectedGenders,
+    selectedDirections,
+    selectedOccasions,
+    bestSellerOnly,
+  })
 
   const activePurposeId = !activeCollection && selectedOccasions.length === 1 && selectedFamilies.length === 0 ? selectedOccasions[0] : ''
   const activePurposeMeta = activePurposeId
@@ -217,11 +126,6 @@ function Products() {
   useEffect(() => {
     const qpKeyword = (searchParams.get('keyword') || '').trim()
     const qpSort = (searchParams.get('sort') || '').trim()
-    const qpPurpose = (searchParams.get('purpose') || '').trim()
-    const qpFamily = (searchParams.get('family') || '').trim()
-    const qpSeason = (searchParams.get('season') || '').trim()
-    const qpGender = (searchParams.get('gender') || '').trim()
-    const qpDirection = (searchParams.get('direction') || '').trim()
     const qpCategory = (searchParams.get('category') || '').trim()
     const qpMinPrice = (searchParams.get('minPrice') || '').trim()
     const qpMaxPrice = (searchParams.get('maxPrice') || '').trim()
@@ -235,46 +139,11 @@ function Products() {
     setMinPrice(qpMinPrice)
     setMaxPrice(qpMaxPrice)
     setBestSellerOnly(['1', 'true', 'yes', 'on'].includes(qpBestSeller.toLowerCase()))
-    setSelectedOccasions(
-      qpPurpose
-        ? qpPurpose
-            .split(',')
-            .map((item) => item.trim())
-            .filter((id) => purposeValues.has(id))
-        : []
-    )
-    setSelectedFamilies(
-      qpFamily
-        ? qpFamily
-            .split(',')
-            .map((item) => item.trim())
-            .filter((id) => familyValues.has(id))
-        : []
-    )
-    setSelectedSeasons(
-      qpSeason
-        ? qpSeason
-            .split(',')
-            .map((item) => item.trim())
-            .filter((id) => seasonValues.has(id))
-        : []
-    )
-    setSelectedGenders(
-      qpGender
-        ? qpGender
-            .split(',')
-            .map((item) => item.trim())
-            .filter((id) => genderValues.has(id))
-        : []
-    )
-    setSelectedDirections(
-      qpDirection
-        ? qpDirection
-            .split(',')
-            .map((item) => item.trim())
-            .filter((id) => directionValues.has(id))
-        : []
-    )
+    setSelectedOccasions(readListParam(searchParams, 'purpose', purposeValues))
+    setSelectedFamilies(readListParam(searchParams, 'family', familyValues))
+    setSelectedSeasons(readListParam(searchParams, 'season', seasonValues))
+    setSelectedGenders(readListParam(searchParams, 'gender', genderValues))
+    setSelectedDirections(readListParam(searchParams, 'direction', directionValues))
     setPage(Number.isFinite(nextPage) && nextPage > 0 ? nextPage : 1)
   }, [searchKey, taxonomyLoading, purposeValues.size, familyValues.size, seasonValues.size, genderValues.size, directionValues.size])
 
@@ -312,45 +181,6 @@ function Products() {
 
     load()
   }, [page, keyword, sort, selectedCategory, selectedOccasions, selectedFamilies, selectedSeasons, selectedGenders, selectedDirections, bestSellerOnly, minPrice, maxPrice, activeCollection])
-
-  useEffect(() => {
-    if (!filtersOpen) return undefined
-
-    const handlePointerOutside = (event) => {
-      if (filtersRef.current && !filtersRef.current.contains(event.target)) {
-        setFiltersOpen(false)
-      }
-    }
-
-    const handleEscape = (event) => {
-      if (event.key === 'Escape') {
-        setFiltersOpen(false)
-      }
-    }
-
-    document.addEventListener('pointerdown', handlePointerOutside)
-    document.addEventListener('keydown', handleEscape)
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerOutside)
-      document.removeEventListener('keydown', handleEscape)
-    }
-  }, [filtersOpen])
-
-  useEffect(() => {
-    if (!filtersOpen || !window.matchMedia('(max-width: 767px)').matches) {
-      return undefined
-    }
-
-    const previousBodyOverflow = document.body.style.overflow
-    const previousHtmlOverflow = document.documentElement.style.overflow
-    document.body.style.overflow = 'hidden'
-    document.documentElement.style.overflow = 'hidden'
-
-    return () => {
-      document.body.style.overflow = previousBodyOverflow
-      document.documentElement.style.overflow = previousHtmlOverflow
-    }
-  }, [filtersOpen])
 
   useEffect(() => {
     const closeSuggestions = (event) => {
@@ -430,6 +260,11 @@ function Products() {
     setBestSellerOnly(false)
     setMinPrice('')
     setMaxPrice('')
+  }
+
+  const openFiltersPage = () => {
+    const qs = searchParams.toString()
+    navigate(`/products/filters${qs ? `?${qs}` : ''}`)
   }
 
   const handleCartConfirm = (selection) => {
@@ -561,85 +396,21 @@ function Products() {
                   ))}
                 </select>
 
-                <div ref={filtersRef} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setFiltersOpen((value) => !value)}
-                    className="inline-flex w-full items-center justify-between gap-3 rounded-[1.4rem] border border-[rgba(25,33,60,0.08)] bg-white px-4 py-3 text-sm font-semibold text-[#19213C] shadow-[0_8px_24px_rgba(25,33,60,0.04)]"
-                  >
-                    <span className="inline-flex items-center gap-2">
-                      <FiFilter size={17} />
-                      Filters
+                <button
+                  type="button"
+                  onClick={openFiltersPage}
+                  className="inline-flex w-full items-center justify-between gap-3 rounded-[1.4rem] border border-[rgba(25,33,60,0.08)] bg-white px-4 py-3 text-sm font-semibold text-[#19213C] shadow-[0_8px_24px_rgba(25,33,60,0.04)]"
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <FiFilter size={17} />
+                    Open filters
+                  </span>
+                  {activeFilterCount > 0 ? (
+                    <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-[#19213C] px-2 py-0.5 text-[10px] font-semibold text-white">
+                      {activeFilterCount}
                     </span>
-                    <span className="inline-flex items-center gap-2">
-                      {activeFilterCount > 0 ? (
-                        <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-[#19213C] px-2 py-0.5 text-[10px] font-semibold text-white">
-                          {activeFilterCount}
-                        </span>
-                      ) : null}
-                      <FiChevronDown className={`transition ${filtersOpen ? 'rotate-180' : ''}`} size={16} />
-                    </span>
-                  </button>
-
-                  <FilterSidebar
-                    open={filtersOpen}
-                    onClose={() => setFiltersOpen(false)}
-                    categories={categories}
-                    selectedCategory={selectedCategory}
-                    onSelectCategory={(value) => {
-                      setPage(1)
-                      setSelectedCategory(value)
-                    }}
-                    minPrice={minPrice}
-                    maxPrice={maxPrice}
-                    onMinPriceChange={(value) => {
-                      setPage(1)
-                      setMinPrice(value)
-                    }}
-                    onMaxPriceChange={(value) => {
-                      setPage(1)
-                      setMaxPrice(value)
-                    }}
-                    families={familyChoices}
-                    selectedFamilies={selectedFamilies}
-                    onToggleFamily={(id) => {
-                      setPage(1)
-                      setSelectedFamilies((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
-                    }}
-                    seasons={seasonChoices}
-                    selectedSeasons={selectedSeasons}
-                    onToggleSeason={(id) => {
-                      setPage(1)
-                      setSelectedSeasons((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
-                    }}
-                    genders={genderChoices}
-                    selectedGenders={selectedGenders}
-                    onToggleGender={(id) => {
-                      setPage(1)
-                      setSelectedGenders((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
-                    }}
-                    directions={directionChoices}
-                    selectedDirections={selectedDirections}
-                    onToggleDirection={(id) => {
-                      setPage(1)
-                      setSelectedDirections((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
-                    }}
-                    occasions={occasionChoices}
-                    selectedOccasions={selectedOccasions}
-                    onToggleOccasion={(id) => {
-                      setPage(1)
-                      setSelectedOccasions((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
-                    }}
-                    bestSellerOnly={bestSellerOnly}
-                    onToggleBestSeller={() => {
-                      setPage(1)
-                      setBestSellerOnly((value) => !value)
-                    }}
-                    onClear={clearFilters}
-                    activeCount={activeFilterCount}
-                    resultLabel={loading ? 'Updating results…' : `${products.length} item${products.length === 1 ? '' : 's'} visible`}
-                  />
-                </div>
+                  ) : null}
+                </button>
               </div>
             </div>
 
@@ -671,9 +442,20 @@ function Products() {
                   <p className="text-sm text-[#6B6F7A]">Use filters to narrow by fragrance family, direction, category, season, gender, occasion, or price.</p>
                 )}
               </div>
-              <p className="shrink-0 text-sm font-medium text-[#5F6475]">
-                {loading ? 'Curating products...' : `${products.length} items on this page`}
-              </p>
+              <div className="flex items-center gap-3">
+                {activeFilterCount > 0 ? (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="rounded-full border border-[rgba(25,33,60,0.1)] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#19213C] transition hover:border-[rgba(200,169,106,0.38)]"
+                  >
+                    Clear all filters
+                  </button>
+                ) : null}
+                <p className="shrink-0 text-sm font-medium text-[#5F6475]">
+                  {loading ? 'Curating products...' : `${products.length} items on this page`}
+                </p>
+              </div>
             </div>
           </div>
         </div>

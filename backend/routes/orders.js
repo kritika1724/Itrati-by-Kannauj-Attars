@@ -440,14 +440,15 @@ router.put(
   '/:id/pay',
   orderMutationLimiter,
   protect,
+  adminOnly,
   asyncHandler(async (req, res) => {
     const order = await Order.findById(req.params.id)
     if (!order) {
       return res.status(404).json({ message: 'Order not found' })
     }
 
-    if (!canAccessOrder(req.user, order.user)) {
-      return res.status(403).json({ message: 'Not authorized' })
+    if ((order.paymentMethod || '').toUpperCase() === 'RAZORPAY') {
+      return res.status(403).json({ message: 'Razorpay orders must be confirmed through payment signature verification' })
     }
 
     order.isPaid = true

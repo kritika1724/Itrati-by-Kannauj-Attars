@@ -80,10 +80,10 @@ function ProductCard({ product, onView, onAdd, onQuickView, isAdmin = false, sho
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-end justify-between gap-2.5 sm:mt-5 sm:gap-3">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8D7667] sm:text-xs sm:tracking-[0.24em]">Price</p>
-            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 sm:mt-2 sm:gap-2">
+          <div className="mt-4 flex flex-wrap items-end justify-between gap-2.5 sm:mt-5 sm:gap-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8D7667] sm:text-xs sm:tracking-[0.24em]">Price</p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5 sm:mt-2 sm:gap-2">
               <span className="text-lg font-semibold tracking-[-0.03em] text-[#19213C] sm:text-2xl">₹{Number(price || 0).toLocaleString('en-IN')}</span>
               {minPack?.onSale ? (
                 <span className="text-xs text-[#8E8E96] line-through sm:text-sm">₹{Number(minPack.price || 0).toLocaleString('en-IN')}</span>
@@ -110,7 +110,7 @@ function ProductCard({ product, onView, onAdd, onQuickView, isAdmin = false, sho
         ) : null}
 
         {showActions ? (
-          <div className="mt-auto grid grid-cols-2 gap-2 pt-4 sm:gap-3 sm:pt-6">
+          <div className="mt-auto grid grid-cols-1 gap-2 pt-4 min-[420px]:grid-cols-2 sm:gap-3 sm:pt-6">
             {!isAdmin ? (
               <button
                 type="button"

@@ -69,7 +69,12 @@ function PlaceOrder() {
   }, [missingShippingFields, navigate])
 
   const payWithRazorpay = async (order) => {
-    const rzp = await api.createRazorpayOrder(order._id)
+    const rzp = await api.createRazorpayOrder({
+      orderId: order._id,
+      email: normalizedShippingAddress.email,
+      phone: normalizedShippingAddress.phone,
+      whatsapp: normalizedShippingAddress.whatsapp,
+    })
     const checkoutKey = import.meta.env.VITE_RAZORPAY_KEY_ID || rzp.keyId
 
     await openRazorpayCheckout({
@@ -89,6 +94,9 @@ function PlaceOrder() {
         try {
           const updated = await api.verifyRazorpayPayment({
             orderId: order._id,
+            email: normalizedShippingAddress.email,
+            phone: normalizedShippingAddress.phone,
+            whatsapp: normalizedShippingAddress.whatsapp,
             ...response,
           })
           saveLastOrder(updated)

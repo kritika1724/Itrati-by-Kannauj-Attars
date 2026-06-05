@@ -29,13 +29,30 @@ function FilterSidebar({
   bestSellerOnly = false,
   onToggleBestSeller,
   onClear,
+  activeCount = 0,
+  resultLabel = 'View products',
 }) {
   const content = (
-    <div className="flex h-full flex-col overflow-hidden rounded-t-[2rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.99),rgba(252,249,243,0.98))] shadow-[0_32px_90px_rgba(25,33,60,0.16)] md:rounded-[2rem] md:border md:border-[rgba(25,33,60,0.08)]">
+    <div className="flex h-full max-h-[min(92svh,860px)] flex-col overflow-hidden rounded-t-[2rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.995),rgba(252,249,243,0.985))] shadow-[0_32px_90px_rgba(25,33,60,0.16)] overscroll-contain md:max-h-[min(80vh,780px)] md:rounded-[2rem] md:border md:border-[rgba(25,33,60,0.08)]">
+      <div className="flex justify-center pt-3 md:hidden">
+        <span className="h-1.5 w-14 rounded-full bg-[rgba(25,33,60,0.12)]" />
+      </div>
+
       <div className="flex items-start justify-between gap-4 border-b border-[rgba(25,33,60,0.08)] px-5 py-5 sm:px-6">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8D7667]">Filter & refine</p>
           <h3 className="mt-2 text-xl font-semibold text-[#19213C]">Curate your fragrance view</h3>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {activeCount > 0 ? (
+              <span className="inline-flex items-center rounded-full bg-[rgba(25,33,60,0.08)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#19213C]">
+                {activeCount} active
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-[rgba(25,33,60,0.05)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6B6F7A]">
+                No filters yet
+              </span>
+            )}
+          </div>
         </div>
         <button
           type="button"
@@ -115,7 +132,7 @@ function FilterSidebar({
 
         <section>
           <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8D7667]">Price range</p>
-          <div className="mt-3 grid grid-cols-2 gap-3">
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="rounded-[1.4rem] border border-[rgba(25,33,60,0.08)] bg-white px-4 py-3">
               <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8D7667]">Min</span>
               <input
@@ -258,11 +275,26 @@ function FilterSidebar({
         </section>
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-t border-[rgba(25,33,60,0.08)] px-5 py-4 sm:px-6">
+      <div className="border-t border-[rgba(25,33,60,0.08)] bg-white/88 px-5 py-4 sm:px-6">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <p className="text-xs font-medium text-[#6B6F7A]">{resultLabel}</p>
+          {activeCount > 0 ? (
+            <button
+              type="button"
+              onClick={onClear}
+              className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8D7667] transition hover:text-[#19213C]"
+            >
+              Reset
+            </button>
+          ) : null}
+        </div>
+
+        <div className="flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={onClear}
-          className="rounded-full border border-[rgba(25,33,60,0.1)] bg-white px-4 py-2 text-sm font-semibold text-[#19213C] transition hover:border-[rgba(200,169,106,0.38)]"
+          disabled={activeCount === 0}
+          className="rounded-full border border-[rgba(25,33,60,0.1)] bg-white px-4 py-2 text-sm font-semibold text-[#19213C] transition hover:border-[rgba(200,169,106,0.38)] disabled:cursor-not-allowed disabled:opacity-45"
         >
           Clear all
         </button>
@@ -272,8 +304,9 @@ function FilterSidebar({
           className="inline-flex items-center gap-2 rounded-full bg-[#19213C] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(25,33,60,0.18)] transition hover:bg-[#11172B]"
         >
           <FiSliders size={16} />
-          Apply filters
+          View products
         </button>
+        </div>
       </div>
     </div>
   )
@@ -309,7 +342,7 @@ function FilterSidebar({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 24 }}
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed inset-x-0 bottom-0 z-[75] max-h-[88svh]"
+              className="fixed inset-x-0 bottom-0 z-[75] px-2 pb-2"
             >
               {content}
             </motion.div>

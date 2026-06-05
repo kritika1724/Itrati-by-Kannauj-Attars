@@ -209,7 +209,12 @@ function OrderDetail() {
                       setPaying(true)
                       setPayError('')
                       try {
-                        const rzp = await api.createRazorpayOrder(order._id)
+                        const rzp = await api.createRazorpayOrder({
+                          orderId: order._id,
+                          email: order?.shippingAddress?.email || '',
+                          phone: order?.shippingAddress?.phone || '',
+                          whatsapp: order?.shippingAddress?.whatsapp || '',
+                        })
                         await openRazorpayCheckout({
                           key: import.meta.env.VITE_RAZORPAY_KEY_ID || rzp.keyId,
                           razorpayOrderId: rzp.razorpayOrderId,
@@ -224,7 +229,13 @@ function OrderDetail() {
                           },
                           themeColor: '#111B3A',
                           onSuccess: async (response) => {
-                            await api.verifyRazorpayPayment({ orderId: order._id, ...response })
+                            await api.verifyRazorpayPayment({
+                              orderId: order._id,
+                              email: order?.shippingAddress?.email || '',
+                              phone: order?.shippingAddress?.phone || '',
+                              whatsapp: order?.shippingAddress?.whatsapp || '',
+                              ...response,
+                            })
                             const refreshed = await api.getOrder(order._id)
                             setOrder(refreshed)
                           },

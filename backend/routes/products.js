@@ -31,6 +31,60 @@ const normalizeCollections = (value) => {
   if (!Array.isArray(value)) return []
   return [...new Set(value.map((item) => String(item || '').trim().toLowerCase()).filter(Boolean))]
 }
+const VALID_BUYER_TYPES = new Set(['personal', 'industrial', 'both'])
+const normalizeProductText = (value) => String(value || '').trim()
+const normalizeProductPrice = (value) => {
+  const price = Number(value)
+  return Number.isFinite(price) && price >= 0 ? price : null
+}
+const normalizeProductImages = (value) =>
+  Array.isArray(value) ? [...new Set(value.map((item) => String(item || '').trim()).filter(Boolean))].slice(0, 12) : []
+const normalizePacks = (value) =>
+  Array.isArray(value)
+    ? value
+        .map((item) => {
+          const label = String(item?.label || '').trim()
+          const price = normalizeProductPrice(item?.price)
+          const salePriceRaw = item?.salePrice
+          const salePrice =
+            salePriceRaw === null || salePriceRaw === undefined || salePriceRaw === ''
+              ? null
+              : normalizeProductPrice(salePriceRaw)
+          const stock = normalizeProductStock(item?.stock)
+
+          return { label, price, salePrice, stock }
+        })
+        .filter((item) => item.label && item.price !== null)
+    : []
+const validateProductPayload = ({ name, description, category, buyerType, price, images, packs, sample }) => {
+  if (!name || !description || price === null) {
+    return 'Name, description, and a valid price are required'
+  }
+  if (!category) {
+    return 'Category is required'
+  }
+  if (!VALID_BUYER_TYPES.has(buyerType)) {
+    return 'Buyer type is invalid'
+  }
+  if (!images.length) {
+    return 'At least one product image is required'
+  }
+  if (packs.length === 0) {
+    return 'Add at least one valid pack with price'
+  }
+  const invalidSalePack = packs.find(
+    (pack) => pack.salePrice !== null && (pack.salePrice <= 0 || pack.salePrice >= pack.price)
+  )
+  if (invalidSalePack) {
+    return 'Sale price must be lower than the regular pack price'
+  }
+  if (sample.enabled === true) {
+    if (!sample.label || !Number.isFinite(sample.price) || sample.price < 0) {
+      return 'Sample label and a valid sample price are required'
+    }
+  }
+  return ''
+}
 
 const normalizeSample = (value) => {
   if (value?.enabled !== true) {
@@ -310,17 +364,35 @@ router.post('/', protect, adminOnly, asyncHandler(async (req, res) => {
     detailSections,
     relatedProducts,
   } = req.body
+  const normalizedName = normalizeProductText(name)
+  const normalizedDescription = normalizeProductText(description)
+  const normalizedCategory = normalizeProductText(category)
+  const normalizedBuyerType = VALID_BUYER_TYPES.has(String(buyerType || '').trim()) ? String(buyerType).trim() : 'personal'
+  const normalizedPrice = normalizeProductPrice(price)
+  const normalizedImages = normalizeProductImages(images)
+  const normalizedPacks = normalizePacks(packs)
+  const normalizedSample = normalizeSample(sample)
+  const validationError = validateProductPayload({
+    name: normalizedName,
+    description: normalizedDescription,
+    category: normalizedCategory,
+    buyerType: normalizedBuyerType,
+    price: normalizedPrice,
+    images: normalizedImages,
+    packs: normalizedPacks,
+    sample: normalizedSample,
+  })
 
-  if (!name || !description || price === undefined) {
-    return res.status(400).json({ message: 'Name, description, and price are required' })
+  if (validationError) {
+    return res.status(400).json({ message: validationError })
   }
 
   const product = await Product.create({
-    name,
-    description,
+    name: normalizedName,
+    description: normalizedDescription,
     shortDescription: normalizeShortDescription(shortDescription),
-    category,
-    buyerType,
+    category: normalizedCategory,
+    buyerType: normalizedBuyerType,
     purposeTags: Array.isArray(purposeTags) ? purposeTags : [],
     familyTags: Array.isArray(familyTags) ? familyTags : [],
     seasonTags: Array.isArray(seasonTags) ? seasonTags : [],
@@ -329,11 +401,11 @@ router.post('/', protect, adminOnly, asyncHandler(async (req, res) => {
     featuredCollections: normalizeCollections(featuredCollections),
     isBestSeller: isBestSeller === true,
     isNewArrival: isNewArrival === true,
-    sample: normalizeSample(sample),
+    sample: normalizedSample,
     availableSizesText: normalizeAvailableSizesText(availableSizesText),
-    price,
-    packs: Array.isArray(packs) ? packs : [],
-    images,
+    price: normalizedPrice,
+    packs: normalizedPacks,
+    images: normalizedImages,
     imageZoom: normalizeImageZoom(imageZoom),
     stock: normalizeProductStock(stock),
     highlights: normalizeHighlights(highlights),
@@ -392,6 +464,16 @@ router.put('/:id', protect, adminOnly, asyncHandler(async (req, res) => {
         product[field] = normalizeCollections(req.body[field])
       } else if (field === 'sample') {
         product[field] = normalizeSample(req.body[field])
+      } else if (field === 'name' || field === 'description' || field === 'category') {
+        product[field] = normalizeProductText(req.body[field])
+      } else if (field === 'buyerType') {
+        product[field] = VALID_BUYER_TYPES.has(String(req.body[field] || '').trim()) ? String(req.body[field]).trim() : 'personal'
+      } else if (field === 'price') {
+        product[field] = normalizeProductPrice(req.body[field])
+      } else if (field === 'images') {
+        product[field] = normalizeProductImages(req.body[field])
+      } else if (field === 'packs') {
+        product[field] = normalizePacks(req.body[field])
       } else if (field === 'stock') {
         product[field] = normalizeProductStock(req.body[field])
       } else if (field === 'imageZoom') {
@@ -413,6 +495,20 @@ router.put('/:id', protect, adminOnly, asyncHandler(async (req, res) => {
       }
     }
   })
+
+  const validationError = validateProductPayload({
+    name: normalizeProductText(product.name),
+    description: normalizeProductText(product.description),
+    category: normalizeProductText(product.category),
+    buyerType: product.buyerType,
+    price: normalizeProductPrice(product.price),
+    images: normalizeProductImages(product.images),
+    packs: normalizePacks(product.packs),
+    sample: normalizeSample(product.sample),
+  })
+  if (validationError) {
+    return res.status(400).json({ message: validationError })
+  }
 
   const updated = await product.save()
   await clearCacheByPrefix(PRODUCTS_CACHE_KEY_PREFIX)

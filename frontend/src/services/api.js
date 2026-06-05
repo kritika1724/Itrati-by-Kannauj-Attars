@@ -162,8 +162,15 @@ export const api = {
   cancelOrder: (id) => request(`/orders/${id}/cancel`, { method: 'PUT' }),
   adminStats: () => request('/admin/stats'),
   // Razorpay payments
-  createRazorpayOrder: (orderId) =>
-    request('/payments/razorpay/order', { method: 'POST', body: JSON.stringify({ orderId }) }),
+  createRazorpayOrder: (payloadOrOrderId) =>
+    request('/payments/razorpay/order', {
+      method: 'POST',
+      body: JSON.stringify(
+        typeof payloadOrOrderId === 'object' && payloadOrOrderId !== null
+          ? payloadOrOrderId
+          : { orderId: payloadOrOrderId }
+      ),
+    }),
   verifyRazorpayPayment: (payload) =>
     request('/payments/razorpay/verify', { method: 'POST', body: JSON.stringify(payload) }),
   uploadMedia: async (file) => {

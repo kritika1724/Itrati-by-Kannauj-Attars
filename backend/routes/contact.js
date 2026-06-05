@@ -6,6 +6,7 @@ const asyncHandler = require('../utils/asyncHandler')
 const { contactSubmitLimiter } = require('../utils/rateLimit')
 
 const router = express.Router()
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const tryGetUserIdFromBearer = (req) => {
   try {
@@ -27,18 +28,33 @@ router.post(
   contactSubmitLimiter,
   asyncHandler(async (req, res) => {
     const { name, email, message } = req.body || {}
+    const normalizedName = String(name || '').trim()
+    const normalizedEmail = String(email || '').trim().toLowerCase()
+    const normalizedMessage = String(message || '').trim()
 
-    if (!name || !email || !message) {
+    if (!normalizedName || !normalizedEmail || !normalizedMessage) {
       return res.status(400).json({ message: 'Name, email, and message are required' })
+    }
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      return res.status(400).json({ message: 'Enter a valid email address' })
+    }
+    if (normalizedName.length > 120) {
+      return res.status(400).json({ message: 'Name must be 120 characters or fewer' })
+    }
+    if (normalizedMessage.length < 10) {
+      return res.status(400).json({ message: 'Message must be at least 10 characters' })
+    }
+    if (normalizedMessage.length > 4000) {
+      return res.status(400).json({ message: 'Message must be 4000 characters or fewer' })
     }
 
     const userId = tryGetUserIdFromBearer(req)
 
     const doc = await ContactMessage.create({
       user: userId || undefined,
-      name: String(name).trim(),
-      email: String(email).trim().toLowerCase(),
-      message: String(message).trim(),
+      name: normalizedName,
+      email: normalizedEmail,
+      message: normalizedMessage,
       ip: String(req.ip || ''),
       userAgent: String(req.headers['user-agent'] || ''),
     })

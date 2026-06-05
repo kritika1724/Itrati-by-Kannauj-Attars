@@ -279,7 +279,7 @@ function Home() {
 
             <motion.div variants={fadeUp} className="relative mt-12 flex flex-wrap items-center justify-center gap-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/90">
               <span className="rounded-full border border-white/22 bg-[rgba(7,16,36,0.24)] px-4 py-2 backdrop-blur-md">Since 1998</span>
-              <span className="rounded-full border border-white/22 bg-[rgba(7,16,36,0.24)] px-4 py-2 backdrop-blur-md">GI-tagged heritage</span>
+              <span className="rounded-full border border-white/22 bg-[rgba(7,16,36,0.24)] px-4 py-2 backdrop-blur-md">Deg-Bhapka distilled</span>
               <span className="rounded-full border border-white/22 bg-[rgba(7,16,36,0.24)] px-4 py-2 backdrop-blur-md">Kannauj crafted</span>
             </motion.div>
           </motion.div>

@@ -5,6 +5,7 @@ const helmet = require('helmet')
 const morgan = require('morgan')
 const rateLimit = require('express-rate-limit')
 const mongoose = require('mongoose')
+const mongoSanitize = require('mongo-sanitize')
 const fs = require('fs')
 let cookieParser
 try {
@@ -59,6 +60,22 @@ const getIndexHtmlAssetRefs = () => {
   return [...new Set([...html.matchAll(/\/assets\/([^"'?#\s>]+)/g)].map((match) => match[1]))]
 }
 
+const sanitizeMongoInput = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeMongoInput(item))
+  }
+
+  if (!value || typeof value !== 'object') {
+    return value
+  }
+
+  const sanitized = mongoSanitize(value)
+  Object.keys(sanitized).forEach((key) => {
+    sanitized[key] = sanitizeMongoInput(sanitized[key])
+  })
+  return sanitized
+}
+
 app.get('/assets/:file', (req, res) => {
   const filePath = path.join(frontendDist, 'assets', req.params.file)
   if (!fs.existsSync(filePath)) {
@@ -76,6 +93,12 @@ app.use(
   })
 )
 app.use(express.urlencoded({ extended: false, limit: '1mb' }))
+app.use((req, _res, next) => {
+  req.body = sanitizeMongoInput(req.body)
+  req.query = sanitizeMongoInput(req.query)
+  req.params = sanitizeMongoInput(req.params)
+  next()
+})
 app.use(requestMonitor())
 if (cookieParser) {
   app.use(cookieParser())

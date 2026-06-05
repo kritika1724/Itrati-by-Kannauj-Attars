@@ -4,11 +4,44 @@ const mongoose = require('mongoose')
 const Order = require('../models/Order')
 const { paymentActionLimiter } = require('../utils/rateLimit')
 const { getRazorpayClient, mustGetRazorpayConfig, mustGetRazorpayWebhookSecret } = require('../config/razorpay')
+const { optionalProtect, adminOnly } = require('../middleware/auth')
 
 const router = express.Router()
 const ORDER_PAYMENT_SELECT =
   'publicOrderId user shippingAddress.fullName shippingAddress.email shippingAddress.phone shippingAddress.whatsapp shippingAddress.addressLine1 shippingAddress.addressLine2 shippingAddress.city shippingAddress.state shippingAddress.postalCode shippingAddress.country paymentMethod totalPrice isPaid status paymentResult paidAt'
 const MINIMUM_RAZORPAY_AMOUNT_PAISE = 100
+
+const normalizePhone = (value) => {
+  const digits = String(value || '').replace(/\D/g, '')
+  if (!digits) return ''
+  return digits.length > 10 ? digits.slice(-10) : digits
+}
+
+const normalizeEmail = (value) => String(value || '').trim().toLowerCase()
+
+const canAccessPaymentOrder = (req, order) => {
+  if (req.user?.isAdmin === true) return true
+  if (req.user?._id && order.user && String(req.user._id) === String(order.user._id || order.user)) {
+    return true
+  }
+
+  if (order.user) return false
+
+  const requestEmail = normalizeEmail(req.body?.email)
+  const orderEmail = normalizeEmail(order.shippingAddress?.email)
+  if (requestEmail && orderEmail && requestEmail === orderEmail) {
+    return true
+  }
+
+  const requestContacts = [req.body?.phone, req.body?.whatsapp, req.body?.contact]
+    .map(normalizePhone)
+    .filter(Boolean)
+  const orderContacts = [order.shippingAddress?.phone, order.shippingAddress?.whatsapp]
+    .map(normalizePhone)
+    .filter(Boolean)
+
+  return requestContacts.some((value) => orderContacts.includes(value))
+}
 
 const buildPaymentResult = ({
   order,
@@ -171,7 +204,7 @@ router.post('/razorpay/webhook', async (req, res) => {
 })
 
 // Create (or re-create) a Razorpay order for a given app Order.
-router.post('/razorpay/order', paymentActionLimiter, async (req, res) => {
+router.post('/razorpay/order', optionalProtect, paymentActionLimiter, async (req, res) => {
   try {
     const { keyId } = mustGetRazorpayConfig()
     const razorpay = getRazorpayClient()
@@ -180,6 +213,9 @@ router.post('/razorpay/order', paymentActionLimiter, async (req, res) => {
     if (!orderId) return res.status(400).json({ message: 'orderId is required' })
 
     const order = await getOrderOr404(orderId)
+    if (!canAccessPaymentOrder(req, order)) {
+      return res.status(403).json({ message: 'Not authorized to start payment for this order' })
+    }
 
     if ((order.paymentMethod || '').toUpperCase() !== 'RAZORPAY') {
       return res.status(400).json({ message: 'Order payment method is not Razorpay' })
@@ -242,7 +278,7 @@ router.post('/razorpay/order', paymentActionLimiter, async (req, res) => {
 })
 
 // Verify payment signature and mark paid.
-router.post('/razorpay/verify', paymentActionLimiter, async (req, res) => {
+router.post('/razorpay/verify', optionalProtect, paymentActionLimiter, async (req, res) => {
   try {
     const { keySecret } = mustGetRazorpayConfig()
 
@@ -257,6 +293,9 @@ router.post('/razorpay/verify', paymentActionLimiter, async (req, res) => {
     }
 
     const order = await getOrderOr404(orderId)
+    if (!canAccessPaymentOrder(req, order)) {
+      return res.status(403).json({ message: 'Not authorized to verify payment for this order' })
+    }
 
     if ((order.paymentMethod || '').toUpperCase() !== 'RAZORPAY') {
       return res.status(400).json({ message: 'Order payment method is not Razorpay' })

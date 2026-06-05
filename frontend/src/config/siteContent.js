@@ -13,6 +13,49 @@ export const SITE_CONTENT_KEYS = {
 
 const cloneValue = (value) => JSON.parse(JSON.stringify(value))
 const trimString = (value) => String(value || '').trim()
+const YOUTUBE_EMBED_BASE_URL = 'https://www.youtube.com/embed/'
+
+const normalizeYoutubeVideoId = (value) => {
+  const id = trimString(value).split(/[/?#&]/, 1)[0]
+  return /^[A-Za-z0-9_-]{6,}$/.test(id) ? id : ''
+}
+
+export const normalizeYoutubeEmbedUrl = (value) => {
+  const raw = trimString(value)
+  if (!raw) return ''
+
+  try {
+    const url = new URL(raw)
+    const host = url.hostname.replace(/^www\./i, '').toLowerCase()
+
+    if (host === 'youtu.be') {
+      const id = normalizeYoutubeVideoId(url.pathname.split('/').filter(Boolean)[0])
+      return id ? `${YOUTUBE_EMBED_BASE_URL}${id}` : ''
+    }
+
+    if (
+      host === 'youtube.com' ||
+      host === 'm.youtube.com' ||
+      host === 'youtube-nocookie.com' ||
+      host === 'player.youtube.com'
+    ) {
+      if (url.pathname === '/watch') {
+        const id = normalizeYoutubeVideoId(url.searchParams.get('v'))
+        return id ? `${YOUTUBE_EMBED_BASE_URL}${id}` : ''
+      }
+
+      const parts = url.pathname.split('/').filter(Boolean)
+      if (parts[0] === 'embed' || parts[0] === 'shorts' || parts[0] === 'v') {
+        const id = normalizeYoutubeVideoId(parts[1])
+        return id ? `${YOUTUBE_EMBED_BASE_URL}${id}` : ''
+      }
+    }
+  } catch {
+    return ''
+  }
+
+  return ''
+}
 
 export const DEFAULT_CONTACT_PROFILE = {
   emails: Array.isArray(BUSINESS.emails) && BUSINESS.emails.length ? BUSINESS.emails : [BUSINESS.email].filter(Boolean),
@@ -50,7 +93,7 @@ export const DEFAULT_POPUP_BANNER_CONTENT = {
 
 export const DEFAULT_HOME_YOUTUBE_CONTENT = {
   enabled: true,
-  youtubeUrl: 'https://www.youtube.com/watch?v=keUbMuQl8zI',
+  youtubeUrl: 'https://www.youtube.com/embed/keUbMuQl8zI',
 }
 
 export const DEFAULT_LEGAL_CONTENT = {
@@ -227,10 +270,11 @@ export const mergePopupBannerContent = (value) => {
 export const mergeHomeYoutubeContent = (value) => {
   const fallback = getDefaultSiteContentValue(SITE_CONTENT_KEYS.homeYoutube)
   const raw = value && typeof value === 'object' ? value : {}
+  const youtubeUrl = readOptionalString(raw, 'youtubeUrl', fallback.youtubeUrl)
 
   return {
     enabled: normalizeBoolean(raw.enabled, fallback.enabled),
-    youtubeUrl: readOptionalString(raw, 'youtubeUrl', fallback.youtubeUrl),
+    youtubeUrl: normalizeYoutubeEmbedUrl(youtubeUrl) || trimString(youtubeUrl),
   }
 }
 

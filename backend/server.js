@@ -18,6 +18,7 @@ try {
 } catch {
   compression = null
 }
+const YOUTUBE_FRAME_SOURCES = ['https://www.youtube.com', 'https://www.youtube-nocookie.com']
 const connectDB = require('./config/db')
 const path = require('path')
 const authRoutes = require('./routes/auth')
@@ -117,7 +118,8 @@ app.use(
           'https://*.cloudinary.com',
         ],
         scriptSrc: ["'self'", "'unsafe-inline'", 'https://checkout.razorpay.com'],
-        frameSrc: ["'self'", 'https://checkout.razorpay.com', 'https://api.razorpay.com'],
+        frameSrc: ["'self'", 'https://checkout.razorpay.com', 'https://api.razorpay.com', ...YOUTUBE_FRAME_SOURCES],
+        childSrc: ["'self'", ...YOUTUBE_FRAME_SOURCES],
         connectSrc: [
           "'self'",
           'https://checkout.razorpay.com',

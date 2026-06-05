@@ -12,6 +12,7 @@ import RecentlyViewedStrip from '../components/RecentlyViewedStrip'
 import { useSiteAssets } from '../components/SiteAssetsProvider'
 import { BUSINESS } from '../config/business'
 import { KNOWLEDGE_PAGE_LIST } from '../config/knowledge'
+import { normalizeYoutubeEmbedUrl } from '../config/siteContent'
 import { useHomeYoutubeContent, useSiteContactProfile } from '../hooks/useSiteContentBlocks'
 import { fadeLeft, fadeUp, heroStagger, revealCard, staggerGrid, viewportOnce } from '../lib/motion'
 import { auth } from '../services/api'
@@ -87,41 +88,6 @@ const clientVoices = [
   },
 ]
 
-const getYoutubeEmbedUrl = (value) => {
-  const raw = String(value || '').trim()
-  if (!raw) return ''
-
-  if (/^https:\/\/www\.youtube\.com\/embed\//i.test(raw) || /^https:\/\/player\.youtube\.com\//i.test(raw)) {
-    return raw
-  }
-
-  try {
-    const url = new URL(raw)
-    const host = url.hostname.replace(/^www\./i, '').toLowerCase()
-
-    if (host === 'youtu.be') {
-      const id = url.pathname.split('/').filter(Boolean)[0]
-      return id ? `https://www.youtube.com/embed/${id}` : ''
-    }
-
-    if (host === 'youtube.com' || host === 'm.youtube.com') {
-      if (url.pathname === '/watch') {
-        const id = url.searchParams.get('v')
-        return id ? `https://www.youtube.com/embed/${id}` : ''
-      }
-
-      const parts = url.pathname.split('/').filter(Boolean)
-      if (parts[0] === 'shorts' || parts[0] === 'embed') {
-        return parts[1] ? `https://www.youtube.com/embed/${parts[1]}` : ''
-      }
-    }
-  } catch {
-    return ''
-  }
-
-  return ''
-}
-
 function Home() {
   useEffect(() => {
     applySeo()
@@ -140,7 +106,7 @@ function Home() {
   const homeVideo = assets?.['home.top.video']
     ? toAssetUrl(assets['home.top.video'], import.meta.env.VITE_API_ASSET)
     : ''
-  const homeYoutubeEmbedUrl = getYoutubeEmbedUrl(homeYoutube.youtubeUrl)
+  const homeYoutubeEmbedUrl = normalizeYoutubeEmbedUrl(homeYoutube.youtubeUrl)
 
   useEffect(() => {
     const onAuth = () => setUser(auth.getUser())

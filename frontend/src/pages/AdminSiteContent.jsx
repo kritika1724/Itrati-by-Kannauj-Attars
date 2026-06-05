@@ -529,10 +529,10 @@ function AdminSiteContent() {
                     onChange={(e) =>
                       setHomeYoutubeDraft((prev) => ({ ...prev, youtubeUrl: e.target.value }))
                     }
-                    placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
+                    placeholder="https://www.youtube.com/embed/... or https://youtu.be/..."
                     className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
                   />
-                  <p className="mt-2 text-xs text-muted">Supports standard YouTube links, short links, and embed links.</p>
+                  <p className="mt-2 text-xs text-muted">Use an embed URL for best results. Watch, short, nocookie, and embed links are normalized automatically.</p>
                 </div>
               </div>
 

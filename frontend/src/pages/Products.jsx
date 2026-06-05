@@ -190,28 +190,11 @@ function Products() {
     })
   }, [taxonomyPurposes])
 
-  const purposeValues = useMemo(() => new Set(occasionChoices.map((item) => item.id)), [occasionChoices])
-  const familyValues = useMemo(() => new Set(familyChoices.map((item) => item.id)), [familyChoices])
-  const seasonValues = useMemo(() => new Set(seasonChoices.map((item) => item.id)), [seasonChoices])
-  const genderValues = useMemo(() => new Set(genderChoices.map((item) => item.id)), [genderChoices])
-  const directionValues = useMemo(() => new Set(directionChoices.map((item) => item.id)), [directionChoices])
-  const querySnapshot = useMemo(() => {
-    const params = new URLSearchParams(searchKey)
-    return {
-      keyword: (params.get('keyword') || '').trim(),
-      sort: (params.get('sort') || '').trim(),
-      purpose: (params.get('purpose') || '').trim(),
-      family: (params.get('family') || '').trim(),
-      season: (params.get('season') || '').trim(),
-      gender: (params.get('gender') || '').trim(),
-      direction: (params.get('direction') || '').trim(),
-      category: (params.get('category') || '').trim(),
-      minPrice: (params.get('minPrice') || '').trim(),
-      maxPrice: (params.get('maxPrice') || '').trim(),
-      bestSeller: (params.get('bestSeller') || '').trim(),
-      page: (params.get('page') || '').trim(),
-    }
-  }, [searchKey])
+  const purposeValues = new Set(occasionChoices.map((item) => item.id))
+  const familyValues = new Set(familyChoices.map((item) => item.id))
+  const seasonValues = new Set(seasonChoices.map((item) => item.id))
+  const genderValues = new Set(genderChoices.map((item) => item.id))
+  const directionValues = new Set(directionChoices.map((item) => item.id))
   const activeFilterCount =
     Number(Boolean(selectedCategory)) +
     Number(Boolean(minPrice)) +
@@ -232,56 +215,68 @@ function Products() {
   const suggestions = useMemo(() => getSearchSuggestions(products, keyword), [products, keyword])
 
   useEffect(() => {
-    const nextPage = Number(querySnapshot.page || 1)
+    const qpKeyword = (searchParams.get('keyword') || '').trim()
+    const qpSort = (searchParams.get('sort') || '').trim()
+    const qpPurpose = (searchParams.get('purpose') || '').trim()
+    const qpFamily = (searchParams.get('family') || '').trim()
+    const qpSeason = (searchParams.get('season') || '').trim()
+    const qpGender = (searchParams.get('gender') || '').trim()
+    const qpDirection = (searchParams.get('direction') || '').trim()
+    const qpCategory = (searchParams.get('category') || '').trim()
+    const qpMinPrice = (searchParams.get('minPrice') || '').trim()
+    const qpMaxPrice = (searchParams.get('maxPrice') || '').trim()
+    const qpBestSeller = (searchParams.get('bestSeller') || '').trim()
+    const qpPageRaw = (searchParams.get('page') || '').trim()
+    const nextPage = Number(qpPageRaw || 1)
 
-    setKeyword(querySnapshot.keyword)
-    setSort(toUiSort(querySnapshot.sort))
-    setSelectedCategory(querySnapshot.category)
-    setMinPrice(querySnapshot.minPrice)
-    setMaxPrice(querySnapshot.maxPrice)
-    setBestSellerOnly(['1', 'true', 'yes', 'on'].includes(querySnapshot.bestSeller.toLowerCase()))
+    setKeyword(qpKeyword)
+    setSort(toUiSort(qpSort))
+    setSelectedCategory(qpCategory)
+    setMinPrice(qpMinPrice)
+    setMaxPrice(qpMaxPrice)
+    setBestSellerOnly(['1', 'true', 'yes', 'on'].includes(qpBestSeller.toLowerCase()))
     setSelectedOccasions(
-      querySnapshot.purpose
-        ? querySnapshot.purpose
+      qpPurpose
+        ? qpPurpose
             .split(',')
             .map((item) => item.trim())
             .filter((id) => purposeValues.has(id))
         : []
     )
     setSelectedFamilies(
-      querySnapshot.family
-        ? querySnapshot.family
+      qpFamily
+        ? qpFamily
             .split(',')
             .map((item) => item.trim())
             .filter((id) => familyValues.has(id))
         : []
     )
     setSelectedSeasons(
-      querySnapshot.season
-        ? querySnapshot.season
+      qpSeason
+        ? qpSeason
             .split(',')
             .map((item) => item.trim())
             .filter((id) => seasonValues.has(id))
         : []
     )
     setSelectedGenders(
-      querySnapshot.gender
-        ? querySnapshot.gender
+      qpGender
+        ? qpGender
             .split(',')
             .map((item) => item.trim())
             .filter((id) => genderValues.has(id))
         : []
     )
     setSelectedDirections(
-      querySnapshot.direction
-        ? querySnapshot.direction
+      qpDirection
+        ? qpDirection
             .split(',')
             .map((item) => item.trim())
             .filter((id) => directionValues.has(id))
         : []
     )
     setPage(Number.isFinite(nextPage) && nextPage > 0 ? nextPage : 1)
-  }, [querySnapshot, taxonomyLoading, purposeValues, familyValues, seasonValues, genderValues, directionValues])
+  }, [searchKey, taxonomyLoading, purposeValues.size, familyValues.size, seasonValues.size, genderValues.size, directionValues.size])
 
   useEffect(() => {
     const load = async () => {

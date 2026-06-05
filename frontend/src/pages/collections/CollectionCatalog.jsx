@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import AdminAssetImage from '../../components/AdminAssetImage'
@@ -29,7 +29,7 @@ function CollectionCatalog({
   const [busyId, setBusyId] = useState('')
   const [cartModal, setCartModal] = useState({ open: false, product: null })
 
-  const load = useCallback(async () => {
+  const load = async () => {
     try {
       setError('')
       setLoading(true)
@@ -48,11 +48,11 @@ function CollectionCatalog({
     } finally {
       setLoading(false)
     }
-  }, [collectionKey, isAdmin, queryParam])
+  }
 
   useEffect(() => {
     load()
-  }, [load])
+  }, [collectionKey, isAdmin, queryParam])
 
   const curatedIds = useMemo(() => new Set(products.map((product) => product._id)), [products])
   const availableProducts = useMemo(

@@ -71,7 +71,7 @@ function PlaceOrder() {
           saveLastOrder(updated)
           dispatch(clearCart())
           navigate(`/checkout/success/${updated._id}`)
-        } catch {
+        } catch (e) {
           navigate(`/checkout/failure/${order._id}`)
         }
       },

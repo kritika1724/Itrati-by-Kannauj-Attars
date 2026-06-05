@@ -140,6 +140,7 @@ function AppShell() {
   const [user, setUser] = useState(auth.getUser())
   const headerRef = useRef(null)
   const isAdmin = user?.isAdmin === true
+  const isLoggedIn = !!user
   const [mobileOpen, setMobileOpen] = useState(false)
   const [headerHeight, setHeaderHeight] = useState(88)
   const inAdminArea = isAdmin && location.pathname.startsWith('/admin')

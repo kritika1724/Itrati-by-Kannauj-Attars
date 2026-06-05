@@ -33,6 +33,11 @@ const NOTE_LIBRARY = {
     heart: ['Oudh wood', 'Smoked rose'],
     base: ['Dark amber', 'Sacred balsam'],
   },
+  oudh: {
+    top: ['Dry saffron', 'Resin spark'],
+    heart: ['Oudh wood', 'Smoked rose'],
+    base: ['Dark amber', 'Sacred balsam'],
+  },
   fresh: {
     top: ['Crisp green lift', 'Morning citrus'],
     heart: ['Soft petals', 'Cooling herbs'],

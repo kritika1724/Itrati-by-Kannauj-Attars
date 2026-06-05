@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../services/api'
 
@@ -10,7 +10,7 @@ function AdminProducts() {
   const [pages, setPages] = useState(1)
   const [keyword, setKeyword] = useState('')
 
-  const loadProducts = useCallback(async () => {
+  const loadProducts = async () => {
     try {
       const data = await api.getProducts({ page, limit: 24, sort: 'newest', keyword })
       const list = Array.isArray(data) ? data : data.products || []
@@ -19,11 +19,11 @@ function AdminProducts() {
     } catch (err) {
       setError(err.message)
     }
-  }, [page, keyword])
+  }
 
   useEffect(() => {
     loadProducts()
-  }, [loadProducts])
+  }, [page, keyword])
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this product?')) return

@@ -62,9 +62,6 @@ app.get('/assets/:file', (req, res) => {
   if (!fs.existsSync(filePath)) {
     return res.status(404).type('text/plain').send('Asset not found')
   }
-  if (/\.(js|css|woff2?|png|jpe?g|webp|svg|gif|mp4|webm)$/i.test(filePath)) {
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
-  }
   return res.sendFile(filePath)
 })
 
@@ -337,11 +334,8 @@ const start = async () => {
       throw new Error('Startup configuration is invalid. Fix the reported environment variables and redeploy.')
     }
 
-    console.log('[startup] configuration validated')
     await connectDB(process.env.MONGO_URI)
-    console.log('[startup] database connected')
     await ensureDefaultTaxonomy()
-    console.log('[startup] taxonomy ready')
 
     // Use a fixed port to avoid frontend/backend mismatches.
     const port = Number(process.env.PORT || 5000)

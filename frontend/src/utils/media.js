@@ -1,41 +1,18 @@
-const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '0.0.0.0'])
-
-const isLocalHost = (hostname) => LOCAL_HOSTS.has(String(hostname || '').toLowerCase())
-
-const getSafeAssetBase = (assetBase) => {
-  const browserOrigin = typeof window !== 'undefined' ? window.location.origin : ''
-  const browserHost = typeof window !== 'undefined' ? window.location.hostname : ''
-  const publicBrowserOrigin = browserOrigin && !isLocalHost(browserHost) ? browserOrigin : ''
-
-  const normalizeOrigin = (value) => {
-    if (!value) return ''
-    try {
-      if (value.startsWith('/')) {
-        return browserOrigin || ''
-      }
-      const origin = new URL(value).origin
-      if (publicBrowserOrigin && isLocalHost(new URL(origin).hostname)) {
-        return publicBrowserOrigin
-      }
-      return origin
-    } catch {
-      return publicBrowserOrigin || browserOrigin || ''
-    }
-  }
-
-  const explicitBase = normalizeOrigin(assetBase)
-  if (explicitBase) return explicitBase
-
-  const envApiBase = normalizeOrigin(import.meta.env.VITE_API_BASE || '')
-  if (envApiBase) return envApiBase
-
-  return publicBrowserOrigin || browserOrigin || 'http://localhost:5000'
-}
-
 export const toAssetUrl = (rawUrl, assetBase) => {
   if (!rawUrl) return ''
 
-  const base = getSafeAssetBase(assetBase)
+  const base =
+    assetBase ||
+    (() => {
+      try {
+        const apiBase = import.meta.env.VITE_API_BASE || 'http://localhost:5000/api'
+        // Support relative API bases like "/api" (recommended with Vite proxy).
+        if (apiBase.startsWith('/')) return window.location.origin
+        return new URL(apiBase).origin
+      } catch {
+        return typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000'
+      }
+    })()
   const url = String(rawUrl).trim()
 
   // External URL (keep as-is) unless it's clearly pointing at our /uploads path.

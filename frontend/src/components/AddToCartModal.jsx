@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 
-const EMPTY_PACKS = []
-
 const getMinPack = (packs = []) => {
   const normalized = packs
     .map((p) => {
@@ -38,7 +36,7 @@ const isBulkPack = (label) => {
 }
 
 function AddToCartModal({ open, product, onClose, onConfirm }) {
-  const packs = Array.isArray(product?.packs) ? product.packs : EMPTY_PACKS
+  const packs = Array.isArray(product?.packs) ? product.packs : []
   const minPack = useMemo(() => getMinPack(packs), [packs])
   const [packLabel, setPackLabel] = useState('')
   const [qty, setQty] = useState(1)

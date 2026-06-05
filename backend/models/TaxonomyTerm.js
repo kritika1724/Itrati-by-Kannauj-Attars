@@ -4,7 +4,7 @@ const taxonomyTermSchema = new mongoose.Schema(
   {
     group: {
       type: String,
-      enum: ['purpose', 'family', 'season', 'gender', 'direction', 'collection'],
+      enum: ['purpose', 'family', 'collection'],
       required: true,
     },
     slug: {

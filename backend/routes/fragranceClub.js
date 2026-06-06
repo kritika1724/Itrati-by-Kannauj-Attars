@@ -1,6 +1,7 @@
 const express = require('express')
 const FragranceClubMember = require('../models/FragranceClubMember')
 const FragranceClubCampaign = require('../models/FragranceClubCampaign')
+const Order = require('../models/Order')
 const { protect, adminOnly } = require('../middleware/auth')
 const asyncHandler = require('../utils/asyncHandler')
 const { leadCaptureLimiter } = require('../utils/rateLimit')
@@ -9,6 +10,44 @@ const { WELCOME_COUPON_CODE, WELCOME_COUPON_PERCENT } = require('../config/cartO
 const router = express.Router()
 
 const normalizeMobile = (value) => String(value || '').replace(/\D/g, '').slice(-10)
+const normalizeEmail = (value) => String(value || '').trim().toLowerCase()
+
+const orderMatchesMember = (order, member) => {
+  const memberEmail = normalizeEmail(member.email)
+  const memberMobile = normalizeMobile(member.mobileNumber)
+  const orderEmail = normalizeEmail(order?.shippingAddress?.email)
+  const orderPhones = [order?.shippingAddress?.phone, order?.shippingAddress?.whatsapp]
+    .map(normalizeMobile)
+    .filter(Boolean)
+
+  return Boolean(
+    (memberEmail && orderEmail === memberEmail) ||
+      (memberMobile && orderPhones.includes(memberMobile))
+  )
+}
+
+const summarizeMemberOrders = (orders = []) => {
+  const latestOrder = orders[0] || null
+  const paidOrderCount = orders.filter((order) => order.isPaid === true).length
+
+  return {
+    hasOrder: orders.length > 0,
+    orderCount: orders.length,
+    paidOrderCount,
+    latestOrder: latestOrder
+      ? {
+          id: latestOrder._id,
+          publicOrderId: latestOrder.publicOrderId,
+          totalPrice: latestOrder.totalPrice,
+          status: latestOrder.status,
+          paymentMethod: latestOrder.paymentMethod,
+          isPaid: latestOrder.isPaid === true,
+          paidAt: latestOrder.paidAt,
+          createdAt: latestOrder.createdAt,
+        }
+      : null,
+  }
+}
 
 const audienceCountQuery = (audience) => {
   switch (String(audience || 'all-members')) {
@@ -151,7 +190,34 @@ router.get(
     const members = await FragranceClubMember.find({})
       .sort({ createdAt: -1 })
       .lean()
-    res.json(members)
+
+    const earliestMemberDate = members.reduce((earliest, member) => {
+      const time = member.createdAt ? new Date(member.createdAt).getTime() : 0
+      if (!Number.isFinite(time) || time <= 0) return earliest
+      return earliest && earliest.getTime() <= time ? earliest : new Date(time)
+    }, null)
+
+    const orders = earliestMemberDate
+      ? await Order.find({ createdAt: { $gte: earliestMemberDate } })
+          .select('_id publicOrderId shippingAddress.email shippingAddress.phone shippingAddress.whatsapp totalPrice paymentMethod isPaid paidAt status createdAt')
+          .sort({ createdAt: -1 })
+          .lean()
+      : []
+
+    const membersWithOrders = members.map((member) => {
+      const memberCreatedAt = member.createdAt ? new Date(member.createdAt).getTime() : 0
+      const matchingOrders = orders.filter((order) => {
+        const orderCreatedAt = order.createdAt ? new Date(order.createdAt).getTime() : 0
+        return orderCreatedAt >= memberCreatedAt && orderMatchesMember(order, member)
+      })
+
+      return {
+        ...member,
+        orderSummary: summarizeMemberOrders(matchingOrders),
+      }
+    })
+
+    res.json(membersWithOrders)
   })
 )
 

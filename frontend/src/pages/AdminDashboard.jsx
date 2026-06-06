@@ -95,6 +95,12 @@ function AdminDashboard() {
               Filters
             </Link>
             <Link
+              to="/admin/fragrance-club"
+              className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-emberDark hover:border-gold/40"
+            >
+              Fragrance Club
+            </Link>
+            <Link
               to="/admin/orders"
               className="rounded-full bg-ember px-5 py-2 text-sm font-semibold text-white transition hover:bg-emberDark"
             >
@@ -115,11 +121,12 @@ function AdminDashboard() {
         <div className="mx-auto w-full max-w-6xl">
           {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
             {[
               { label: 'Products', value: stats?.products ?? '—', sticker: stats?.lowStockCount, stickerLabel: 'low stock' },
               { label: 'Orders', value: stats?.orders ?? '—', sticker: stats?.newOrders },
               { label: 'Contacts', value: stats?.contactMessages ?? '—', sticker: stats?.newContactMessages },
+              { label: 'Fragrance Club', value: stats?.fragranceClubMembers ?? '—', to: '/admin/fragrance-club' },
             ].map((card) => (
               <div
                 key={card.label}
@@ -133,7 +140,16 @@ function AdminDashboard() {
                   </p>
                 ) : null}
                 <div className="mt-6 h-px w-full bg-[linear-gradient(90deg,rgba(201,162,74,0.45),rgba(201,162,74,0))]" />
-                <p className="mt-4 text-sm text-muted">Updated live from the database.</p>
+                {card.to ? (
+                  <Link
+                    to={card.to}
+                    className="mt-4 inline-flex rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-emberDark hover:border-gold/40"
+                  >
+                    View members
+                  </Link>
+                ) : (
+                  <p className="mt-4 text-sm text-muted">Updated live from the database.</p>
+                )}
               </div>
             ))}
           </div>

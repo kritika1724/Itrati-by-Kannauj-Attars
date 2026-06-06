@@ -52,6 +52,7 @@ const AdminMedia = lazy(() => import('./pages/AdminMedia'))
 const AdminSiteContent = lazy(() => import('./pages/AdminSiteContent'))
 const AdminContacts = lazy(() => import('./pages/AdminContacts'))
 const AdminFilters = lazy(() => import('./pages/AdminFilters'))
+const AdminFragranceClub = lazy(() => import('./pages/AdminFragranceClub'))
 
 const navLinkClass = ({ isActive }) =>
   `relative text-sm font-semibold tracking-wide transition ${
@@ -316,6 +317,9 @@ function AppShell() {
               </NavLink>
               <NavLink to="/admin/filters" className={adminNavLinkClass}>
                 Filters
+              </NavLink>
+              <NavLink to="/admin/fragrance-club" className={adminNavLinkClass}>
+                Fragrance Club
               </NavLink>
               <NavLink to="/admin/contacts" className={adminNavLinkClass}>
                 Contacts
@@ -743,6 +747,14 @@ function AppShell() {
           element={
             <ProtectedRoute adminOnly>
               <AdminFilters />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/fragrance-club"
+          element={
+            <ProtectedRoute adminOnly>
+              <AdminFragranceClub />
             </ProtectedRoute>
           }
         />

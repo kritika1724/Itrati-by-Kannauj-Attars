@@ -55,6 +55,17 @@ const resolveRouteLabel = (req) => {
   return `${req.method} ${(req.originalUrl || req.url || '/').split('?')[0]}`
 }
 
+const stripMethodPrefix = (method, path) => {
+  const prefix = `${method} `
+  return String(path || '').startsWith(prefix) ? String(path).slice(prefix.length) : path
+}
+
+const isExpectedSessionRefreshMiss = (req, statusCode, routeLabel) => {
+  if (statusCode !== 401 || req.method !== 'POST') return false
+  const path = stripMethodPrefix(req.method, routeLabel)
+  return path === '/api/session/refresh'
+}
+
 const recordAlert = (alert) => {
   const event = {
     ...alert,
@@ -62,7 +73,8 @@ const recordAlert = (alert) => {
   }
   pushBounded(metrics.recentAlerts, event, MAX_ALERTS)
 
-  const line = `[monitor] ${event.severity.toUpperCase()} ${event.method} ${event.path} -> ${event.statusCode} in ${event.durationMs}ms`
+  const path = stripMethodPrefix(event.method, event.path)
+  const line = `[monitor] ${event.severity.toUpperCase()} ${event.method} ${path} -> ${event.statusCode} in ${event.durationMs}ms`
   if (event.severity === 'error') {
     console.error(line)
   } else {
@@ -91,6 +103,8 @@ const requestMonitor = () => (req, res, next) => {
     pushBounded(metrics.latencySamplesMs, durationMs, MAX_LATENCY_SAMPLES)
 
     if (statusCode >= 400) {
+      if (isExpectedSessionRefreshMiss(req, statusCode, routeLabel)) return
+
       recordAlert({
         severity: statusCode >= 500 ? 'error' : 'warn',
         type: statusCode >= 500 ? 'http_5xx' : 'http_4xx',

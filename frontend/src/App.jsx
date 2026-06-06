@@ -353,7 +353,7 @@ function AppShell() {
               aria-label="Go to home"
               title={BUSINESS.displayName}
             >
-              <LogoMark className="h-14 w-14 sm:h-[3.5rem] sm:w-[3.5rem]" />
+              <LogoMark className="h-20 w-20 sm:h-20 sm:w-20" />
               <div className="flex min-w-0 flex-col items-start justify-center leading-none">
                 <BrandWordmark className="ml-1 sm:ml-1.5 max-w-[11.25rem] sm:max-w-[15.5rem]" />
                 <span className="truncate pl-1.5 pt-0.5 text-[10px] uppercase tracking-[0.22em] text-muted sm:pl-2.5 sm:text-xs sm:tracking-[0.3em]">

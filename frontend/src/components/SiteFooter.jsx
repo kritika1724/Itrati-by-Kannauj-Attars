@@ -28,7 +28,7 @@ function SiteFooter() {
         <div className="grid gap-10 lg:grid-cols-[1.1fr_0.8fr_0.8fr]">
           <div>
             <Link to="/" className="inline-flex items-center gap-3" aria-label={`Go to ${BUSINESS.brandName} home`}>
-              <LogoMark className="h-14 w-14" />
+              <LogoMark className="h-20 w-20" />
               <div className="min-w-0">
                 <BrandWordmark className="max-w-[12rem]" />
                 <p className="mt-2 text-[10px] uppercase tracking-[0.24em] text-muted sm:text-xs sm:tracking-[0.3em]">

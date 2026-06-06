@@ -3,9 +3,21 @@
 import { PURPOSE_TAGS, FAMILY_TAGS } from './taxonomy'
 
 export const SITE_ASSET_KEYS = [
-  { key: 'site.logo', label: 'Site: Logo (Navbar / Branding)' },
-  { key: 'site.favicon', label: 'Site: Favicon (Browser Icon)' },
-  { key: 'site.wordmark', label: 'Site: Wordmark (Navbar Text)' },
+  {
+    key: 'site.logo',
+    label: 'Brand: Logo icon',
+    description: 'Round logo mark shown in the navbar and footer.',
+  },
+  {
+    key: 'site.wordmark',
+    label: 'Brand: Itrati wordmark image',
+    description: 'The Itrati text image shown beside the logo in the navbar and footer.',
+  },
+  {
+    key: 'site.favicon',
+    label: 'Brand: Favicon',
+    description: 'Small browser tab icon. Falls back to the logo icon when empty.',
+  },
   { key: 'banner.popup.image', label: 'Banner: Popup Image' },
   { key: 'home.top.video', label: 'Home: Top Horizontal Video', type: 'video' },
   { key: 'home.hero.card', label: 'Home: Hero Card Image' },

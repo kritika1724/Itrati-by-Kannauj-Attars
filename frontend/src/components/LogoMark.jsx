@@ -13,14 +13,14 @@ function LogoMark({ className = '' }) {
   if (src) {
     return (
       <div
-        className={`relative grid h-11 w-11 place-items-center overflow-hidden rounded-full border border-gold/25 bg-white shadow-sm ${className}`}
+        className={`relative grid h-14 w-14 place-items-center overflow-hidden rounded-full border border-gold/25 bg-white shadow-sm ${className}`}
         aria-label={`${BUSINESS.displayName} logo`}
         title={BUSINESS.displayName}
       >
         <img
           src={src}
           alt={BUSINESS.displayName}
-          className="h-full w-full object-contain p-1.5 transition-transform duration-300"
+          className="h-full w-full object-contain p-0.5 transition-transform duration-300"
           style={{ transform: `scale(${logoZoom})` }}
         />
       </div>
@@ -29,13 +29,13 @@ function LogoMark({ className = '' }) {
 
   return (
     <div
-      className={`relative grid h-11 w-11 place-items-center rounded-full border border-gold/30 bg-white shadow-sm ${className}`}
+      className={`relative grid h-14 w-14 place-items-center rounded-full border border-gold/30 bg-white shadow-sm ${className}`}
       aria-label={`${BUSINESS.displayName} logo`}
       title={BUSINESS.displayName}
     >
       <div className="absolute inset-1 rounded-full bg-[radial-gradient(circle_at_top,rgba(201,162,74,0.26),rgba(255,255,255,0.94))]" />
       <div className="absolute inset-0 rounded-full bg-[conic-gradient(from_180deg,rgba(201,162,74,0.08),rgba(17,27,58,0.06),rgba(201,162,74,0.10))] opacity-60" />
-      <span className="relative font-display text-[12px] tracking-[0.18em] text-ink">
+      <span className="relative font-display text-[15px] tracking-[0.18em] text-ink">
         K<span className="mx-0.5 text-gold">/</span>A
       </span>
     </div>

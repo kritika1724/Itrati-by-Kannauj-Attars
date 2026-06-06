@@ -476,13 +476,13 @@ function LeadCouponModal() {
                 >
                   {submitting ? 'Connecting & unlocking…' : "Let's Connect"}
                 </button>
-                <button
-                  type="button"
+                <Link
+                  to="/cart"
                   onClick={close}
                   className="rounded-full border border-[rgba(25,33,60,0.1)] bg-white px-6 py-3 text-sm font-semibold text-[#19213C] transition hover:border-gold/30"
                 >
                   Maybe later
-                </button>
+                </Link>
               </div>
             </div>
           </div>

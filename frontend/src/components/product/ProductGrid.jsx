@@ -5,7 +5,7 @@ import { revealCard, staggerGrid } from '../../lib/motion'
 function ProductGrid({ products = [], loading = false, isAdmin = false, onView, onAdd, onQuickView }) {
   if (loading && products.length === 0) {
     return (
-      <div className="grid grid-cols-2 gap-2.5 sm:gap-5 lg:grid-cols-3 2xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 2xl:grid-cols-4">
         {Array.from({ length: 8 }).map((_, index) => (
           <div
             key={index}
@@ -29,10 +29,10 @@ function ProductGrid({ products = [], loading = false, isAdmin = false, onView, 
       initial="hidden"
       animate="show"
       variants={staggerGrid(0.045, 0.02)}
-      className="grid grid-cols-2 gap-2.5 sm:gap-5 lg:grid-cols-3 2xl:grid-cols-4"
+      className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 2xl:grid-cols-4"
     >
       {products.map((product) => (
-        <motion.div key={product._id} variants={revealCard}>
+        <motion.div key={product._id} variants={revealCard} className="h-full">
           <ProductCard
             product={product}
             onView={() => onView?.(product)}

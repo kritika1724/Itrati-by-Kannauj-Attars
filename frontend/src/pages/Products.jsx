@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useDispatch } from 'react-redux'
-import { FiChevronDown, FiFilter, FiSearch } from 'react-icons/fi'
+import { FiChevronDown, FiFilter, FiSearch, FiX } from 'react-icons/fi'
 import AddToCartModal from '../components/AddToCartModal'
 import RecentlyViewedStrip from '../components/RecentlyViewedStrip'
 import { useTaxonomy } from '../components/TaxonomyProvider'
@@ -17,8 +17,10 @@ import { api, auth } from '../services/api'
 import { getSearchSuggestions } from '../components/product/productPresentation'
 import { notifyCartItemAdded } from '../utils/cartLeadPrompt'
 import {
+  AVAILABILITY_OPTIONS,
   buildChoiceList,
   buildIdSet,
+  buildSizeChoicesFromProducts,
   CATEGORY_DEFAULTS,
   COLLECTION_MAP,
   countActiveFilters,
@@ -26,6 +28,7 @@ import {
   FAMILY_DEFAULTS,
   GENDER_DEFAULTS,
   OCCASION_DEFAULTS,
+  readFirstListParam,
   readListParam,
   SEASON_DEFAULTS,
   SORT_MAP,
@@ -33,11 +36,80 @@ import {
   toUiSort,
 } from '../utils/productFilters'
 
+const PAGE_SIZE = 12
+const FILTER_PARAM_KEYS = [
+  'keyword',
+  'sort',
+  'category',
+  'productType',
+  'type',
+  'purpose',
+  'occasion',
+  'family',
+  'fragranceFamily',
+  'fragrance_family',
+  'season',
+  'gender',
+  'direction',
+  'fragranceDirection',
+  'fragrance_direction',
+  'minPrice',
+  'maxPrice',
+  'size',
+  'ml',
+  'pack',
+  'packSize',
+  'availability',
+  'stock',
+  'bestSeller',
+  'page',
+  'limit',
+]
+const AVAILABILITY_IDS = new Set(AVAILABILITY_OPTIONS.map((item) => item.id))
+
+const normalizePage = (value) => {
+  const page = Number(value || 1)
+  return Number.isFinite(page) && page > 0 ? Math.floor(page) : 1
+}
+
+const normalizePriceDraft = (value) => {
+  const trimmed = String(value || '').trim()
+  if (!trimmed) return ''
+  const price = Number(trimmed)
+  return Number.isFinite(price) && price >= 0 ? String(Math.floor(price)) : ''
+}
+
+const normalizeAvailability = (value) => {
+  const normalized = String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_')
+  if (AVAILABILITY_IDS.has(normalized)) return normalized
+  if (['1', 'true', 'yes', 'available'].includes(normalized)) return 'in_stock'
+  if (['0', 'false', 'no', 'sold_out', 'unavailable'].includes(normalized)) return 'out_of_stock'
+  return ''
+}
+
+const getFirstParam = (searchParams, keys) => {
+  for (const key of keys) {
+    const value = (searchParams.get(key) || '').trim()
+    if (value) return value
+  }
+  return ''
+}
+
+const canonicalCategory = (value) => {
+  const raw = String(value || '').trim()
+  if (!raw) return ''
+  return CATEGORY_DEFAULTS.find((item) => item.toLowerCase() === raw.toLowerCase()) || raw
+}
+
 function Products() {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const [searchParams, setSearchParams] = useSearchParams()
   const searchKey = searchParams.toString()
+  const currentParams = useMemo(() => new URLSearchParams(searchKey), [searchKey])
   const user = auth.getUser()
   const isAdmin = user?.isAdmin === true
   const filtersRef = useRef(null)
@@ -57,7 +129,6 @@ function Products() {
     genderMap,
     directionMap,
     collectionMap,
-    loading: taxonomyLoading,
   } = useTaxonomy()
 
   const availableCollectionKeys = useMemo(
@@ -65,7 +136,7 @@ function Products() {
     [taxonomyCollections]
   )
 
-  const collectionKey = (searchParams.get('collection') || '').trim().toLowerCase()
+  const collectionKey = (currentParams.get('collection') || '').trim().toLowerCase()
   const activeCollection = availableCollectionKeys.has(collectionKey) ? collectionKey : ''
   const collectionMeta = activeCollection
     ? COLLECTION_MAP[activeCollection] || {
@@ -74,20 +145,64 @@ function Products() {
       }
     : null
 
+  const familyChoices = useMemo(() => buildChoiceList(FAMILY_DEFAULTS, taxonomyFamilies), [taxonomyFamilies])
+  const seasonChoices = useMemo(() => buildChoiceList(SEASON_DEFAULTS, taxonomySeasons), [taxonomySeasons])
+  const genderChoices = useMemo(() => buildChoiceList(GENDER_DEFAULTS, taxonomyGenders), [taxonomyGenders])
+  const directionChoices = useMemo(() => buildChoiceList(DIRECTION_DEFAULTS, taxonomyDirections), [taxonomyDirections])
+  const occasionChoices = useMemo(() => buildChoiceList(OCCASION_DEFAULTS, taxonomyPurposes), [taxonomyPurposes])
+
+  const purposeValues = useMemo(() => buildIdSet(occasionChoices), [occasionChoices])
+  const familyValues = useMemo(() => buildIdSet(familyChoices), [familyChoices])
+  const seasonValues = useMemo(() => buildIdSet(seasonChoices), [seasonChoices])
+  const genderValues = useMemo(() => buildIdSet(genderChoices), [genderChoices])
+  const directionValues = useMemo(() => buildIdSet(directionChoices), [directionChoices])
+
+  const filters = useMemo(() => {
+    const sortParam = (currentParams.get('sort') || '').trim()
+    const bestSeller = (currentParams.get('bestSeller') || '').trim().toLowerCase()
+
+    return {
+      page: normalizePage(currentParams.get('page')),
+      keyword: (currentParams.get('keyword') || '').trim(),
+      sort: toUiSort(sortParam),
+      selectedCategory: canonicalCategory(getFirstParam(currentParams, ['category', 'productType', 'type'])),
+      selectedOccasions: readFirstListParam(currentParams, ['purpose', 'occasion'], purposeValues),
+      selectedFamilies: readFirstListParam(currentParams, ['family', 'fragranceFamily', 'fragrance_family'], familyValues),
+      selectedSeasons: readListParam(currentParams, 'season', seasonValues),
+      selectedGenders: readListParam(currentParams, 'gender', genderValues),
+      selectedDirections: readFirstListParam(currentParams, ['direction', 'fragranceDirection', 'fragrance_direction'], directionValues),
+      selectedSize: getFirstParam(currentParams, ['size', 'ml', 'pack', 'packSize']),
+      availability: normalizeAvailability(getFirstParam(currentParams, ['availability', 'stock'])),
+      bestSellerOnly: ['1', 'true', 'yes', 'on'].includes(bestSeller),
+      minPrice: normalizePriceDraft(currentParams.get('minPrice')),
+      maxPrice: normalizePriceDraft(currentParams.get('maxPrice')),
+    }
+  }, [currentParams, directionValues, familyValues, genderValues, purposeValues, seasonValues])
+
+  const {
+    page,
+    keyword,
+    sort,
+    selectedCategory,
+    selectedOccasions,
+    selectedFamilies,
+    selectedSeasons,
+    selectedGenders,
+    selectedDirections,
+    selectedSize,
+    availability,
+    bestSellerOnly,
+    minPrice,
+    maxPrice,
+  } = filters
+
   const [products, setProducts] = useState([])
+  const [facetProducts, setFacetProducts] = useState([])
   const [pages, setPages] = useState(1)
-  const [page, setPage] = useState(1)
-  const [keyword, setKeyword] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('')
-  const [sort, setSort] = useState('popular')
-  const [selectedOccasions, setSelectedOccasions] = useState([])
-  const [selectedFamilies, setSelectedFamilies] = useState([])
-  const [selectedSeasons, setSelectedSeasons] = useState([])
-  const [selectedGenders, setSelectedGenders] = useState([])
-  const [selectedDirections, setSelectedDirections] = useState([])
-  const [bestSellerOnly, setBestSellerOnly] = useState(false)
-  const [minPrice, setMinPrice] = useState('')
-  const [maxPrice, setMaxPrice] = useState('')
+  const [total, setTotal] = useState(0)
+  const [keywordDraft, setKeywordDraft] = useState(keyword)
+  const [minPriceDraft, setMinPriceDraft] = useState(minPrice)
+  const [maxPriceDraft, setMaxPriceDraft] = useState(maxPrice)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -96,23 +211,20 @@ function Products() {
   const [quickViewProduct, setQuickViewProduct] = useState(null)
   const [toast, setToast] = useState({ open: false, message: '' })
 
+  const facetSourceProducts = facetProducts.length > 0 ? facetProducts : products
+
   const categories = useMemo(() => {
-    const values = [...CATEGORY_DEFAULTS, ...products.map((item) => String(item?.category || '').trim())]
+    const values = [selectedCategory, ...CATEGORY_DEFAULTS, ...facetSourceProducts.map((item) => String(item?.category || '').trim())]
     return [...new Set(values.filter(Boolean))]
-  }, [products])
+  }, [facetSourceProducts, selectedCategory])
 
-  const familyChoices = useMemo(() => buildChoiceList(FAMILY_DEFAULTS, taxonomyFamilies), [taxonomyFamilies])
-  const seasonChoices = useMemo(() => buildChoiceList(SEASON_DEFAULTS, taxonomySeasons), [taxonomySeasons])
-  const genderChoices = useMemo(() => buildChoiceList(GENDER_DEFAULTS, taxonomyGenders), [taxonomyGenders])
-  const directionChoices = useMemo(() => buildChoiceList(DIRECTION_DEFAULTS, taxonomyDirections), [taxonomyDirections])
-  const occasionChoices = useMemo(() => buildChoiceList(OCCASION_DEFAULTS, taxonomyPurposes), [taxonomyPurposes])
+  const sizeChoices = useMemo(
+    () => buildSizeChoicesFromProducts(facetSourceProducts, selectedSize),
+    [facetSourceProducts, selectedSize]
+  )
 
-  const purposeValues = buildIdSet(occasionChoices)
-  const familyValues = buildIdSet(familyChoices)
-  const seasonValues = buildIdSet(seasonChoices)
-  const genderValues = buildIdSet(genderChoices)
-  const directionValues = buildIdSet(directionChoices)
   const activeFilterCount = countActiveFilters({
+    keyword,
     selectedCategory,
     minPrice,
     maxPrice,
@@ -121,6 +233,8 @@ function Products() {
     selectedGenders,
     selectedDirections,
     selectedOccasions,
+    selectedSize,
+    availability,
     bestSellerOnly,
   })
 
@@ -129,67 +243,205 @@ function Products() {
     ? getPurposeCollectionMeta(activePurposeId, purposeMap[activePurposeId] || activePurposeId)
     : null
   const pageMeta = collectionMeta || activePurposeMeta
+  const suggestions = useMemo(() => getSearchSuggestions(products, keywordDraft), [products, keywordDraft])
+  const resultLabel = loading
+    ? 'Updating products...'
+    : total === 0
+      ? 'No product available'
+      : `${total} product${total === 1 ? '' : 's'} available`
 
-  const suggestions = useMemo(() => getSearchSuggestions(products, keyword), [products, keyword])
+  const updateParams = (updates, options = {}) => {
+    const nextParams = new URLSearchParams(searchKey)
+    const resetPage = options.resetPage !== false
+
+    const setOrDelete = (key, value) => {
+      const normalized = Array.isArray(value) ? value.filter(Boolean).join(',') : String(value ?? '').trim()
+      if (key === 'sort' && (!normalized || normalized === 'latest')) {
+        nextParams.delete(key)
+        return
+      }
+      if (normalized) {
+        nextParams.set(key, normalized)
+      } else {
+        nextParams.delete(key)
+      }
+    }
+
+    Object.entries(updates).forEach(([key, value]) => setOrDelete(key, value))
+
+    if (Object.prototype.hasOwnProperty.call(updates, 'category')) {
+      nextParams.delete('productType')
+      nextParams.delete('type')
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, 'family')) {
+      nextParams.delete('fragranceFamily')
+      nextParams.delete('fragrance_family')
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, 'direction')) {
+      nextParams.delete('fragranceDirection')
+      nextParams.delete('fragrance_direction')
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, 'size')) {
+      nextParams.delete('ml')
+      nextParams.delete('pack')
+      nextParams.delete('packSize')
+    }
+    if (Object.prototype.hasOwnProperty.call(updates, 'availability')) {
+      nextParams.delete('stock')
+    }
+    if (resetPage && !Object.prototype.hasOwnProperty.call(updates, 'page')) {
+      nextParams.delete('page')
+    }
+
+    if (nextParams.toString() !== searchKey) {
+      setSearchParams(nextParams, { replace: options.replace === true })
+    }
+  }
+
+  const toggleListParam = (key, currentValues, id) => {
+    const nextValues = currentValues.includes(id)
+      ? currentValues.filter((item) => item !== id)
+      : [...currentValues, id]
+    updateParams({ [key]: nextValues.join(',') })
+  }
+
+  const clearFilters = () => {
+    const nextParams = new URLSearchParams(searchKey)
+    FILTER_PARAM_KEYS.forEach((key) => nextParams.delete(key))
+    setSearchParams(nextParams, { replace: false })
+    setFiltersOpen(false)
+    setSearchFocused(false)
+  }
 
   useEffect(() => {
-    const qpKeyword = (searchParams.get('keyword') || '').trim()
-    const qpSort = (searchParams.get('sort') || '').trim()
-    const qpCategory = (searchParams.get('category') || '').trim()
-    const qpMinPrice = (searchParams.get('minPrice') || '').trim()
-    const qpMaxPrice = (searchParams.get('maxPrice') || '').trim()
-    const qpBestSeller = (searchParams.get('bestSeller') || '').trim()
-    const qpPageRaw = (searchParams.get('page') || '').trim()
-    const nextPage = Number(qpPageRaw || 1)
-
-    setKeyword(qpKeyword)
-    setSort(toUiSort(qpSort))
-    setSelectedCategory(qpCategory)
-    setMinPrice(qpMinPrice)
-    setMaxPrice(qpMaxPrice)
-    setBestSellerOnly(['1', 'true', 'yes', 'on'].includes(qpBestSeller.toLowerCase()))
-    setSelectedOccasions(readListParam(searchParams, 'purpose', purposeValues))
-    setSelectedFamilies(readListParam(searchParams, 'family', familyValues))
-    setSelectedSeasons(readListParam(searchParams, 'season', seasonValues))
-    setSelectedGenders(readListParam(searchParams, 'gender', genderValues))
-    setSelectedDirections(readListParam(searchParams, 'direction', directionValues))
-    setPage(Number.isFinite(nextPage) && nextPage > 0 ? nextPage : 1)
-  }, [searchKey, taxonomyLoading, purposeValues.size, familyValues.size, seasonValues.size, genderValues.size, directionValues.size])
+    setKeywordDraft(keyword)
+    setMinPriceDraft(minPrice)
+    setMaxPriceDraft(maxPrice)
+  }, [keyword, minPrice, maxPrice])
 
   useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const nextKeyword = keywordDraft.trim()
+      const nextMinPrice = normalizePriceDraft(minPriceDraft)
+      const nextMaxPrice = normalizePriceDraft(maxPriceDraft)
+      if (nextKeyword === keyword && nextMinPrice === minPrice && nextMaxPrice === maxPrice) return
+
+      const nextParams = new URLSearchParams(searchKey)
+      const setOrDelete = (key, value) => {
+        if (value) nextParams.set(key, value)
+        else nextParams.delete(key)
+      }
+
+      setOrDelete('keyword', nextKeyword)
+      setOrDelete('minPrice', nextMinPrice)
+      setOrDelete('maxPrice', nextMaxPrice)
+      nextParams.delete('page')
+
+      if (nextParams.toString() !== searchKey) {
+        setSearchParams(nextParams, { replace: true })
+      }
+    }, 320)
+
+    return () => window.clearTimeout(timer)
+  }, [keyword, keywordDraft, maxPrice, maxPriceDraft, minPrice, minPriceDraft, searchKey, setSearchParams])
+
+  const productQuery = useMemo(
+    () => ({
+      page,
+      limit: PAGE_SIZE,
+      keyword,
+      sort: SORT_MAP[sort] || 'latest',
+      category: selectedCategory,
+      purpose: selectedOccasions.join(','),
+      family: selectedFamilies.join(','),
+      season: selectedSeasons.join(','),
+      gender: selectedGenders.join(','),
+      direction: selectedDirections.join(','),
+      bestSeller: bestSellerOnly ? 1 : '',
+      minPrice,
+      maxPrice,
+      size: selectedSize,
+      availability,
+      collection: activeCollection,
+    }),
+    [
+      activeCollection,
+      availability,
+      bestSellerOnly,
+      keyword,
+      maxPrice,
+      minPrice,
+      page,
+      selectedCategory,
+      selectedDirections,
+      selectedFamilies,
+      selectedGenders,
+      selectedOccasions,
+      selectedSeasons,
+      selectedSize,
+      sort,
+    ]
+  )
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadFacetProducts = async () => {
+      try {
+        const data = await api.getProducts({ page: 1, limit: 100, sort: 'latest' })
+        if (cancelled) return
+        setFacetProducts(Array.isArray(data) ? data : data.products || [])
+      } catch {
+        if (!cancelled) setFacetProducts([])
+      }
+    }
+
+    loadFacetProducts()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
     const load = async () => {
       setLoading(true)
       setError('')
       try {
-        const data = await api.getProducts({
-          page,
-          limit: 12,
-          keyword,
-          sort: SORT_MAP[sort] || 'rating_desc',
-          category: selectedCategory,
-          purpose: selectedOccasions.join(','),
-          family: selectedFamilies.join(','),
-          season: selectedSeasons.join(','),
-          gender: selectedGenders.join(','),
-          direction: selectedDirections.join(','),
-          bestSeller: bestSellerOnly ? 1 : '',
-          minPrice,
-          maxPrice,
-          collection: activeCollection,
-        })
+        const data = await api.getProducts(productQuery)
+        if (cancelled) return
+
         const list = Array.isArray(data) ? data : data.products || []
+        const nextPages = Array.isArray(data) ? 1 : data.pages || 1
+        const nextTotal = Array.isArray(data) ? list.length : data.total || 0
+
         setProducts(list)
-        setPages(Array.isArray(data) ? 1 : data.pages || 1)
+        setPages(nextPages)
+        setTotal(nextTotal)
+
+        if (nextTotal > 0 && page > nextPages) {
+          const nextParams = new URLSearchParams(searchKey)
+          nextParams.set('page', String(nextPages))
+          setSearchParams(nextParams, { replace: true })
+        }
       } catch (err) {
-        setError(err.message || 'Could not load products.')
-        setProducts([])
+        if (!cancelled) {
+          setError(err.message || 'Could not load products.')
+          setProducts([])
+          setTotal(0)
+          setPages(1)
+        }
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
 
     load()
-  }, [page, keyword, sort, selectedCategory, selectedOccasions, selectedFamilies, selectedSeasons, selectedGenders, selectedDirections, bestSellerOnly, minPrice, maxPrice, activeCollection])
+    return () => {
+      cancelled = true
+    }
+  }, [page, productQuery, searchKey, setSearchParams])
 
   useEffect(() => {
     if (!filtersOpen) return undefined
@@ -215,7 +467,7 @@ function Products() {
   }, [filtersOpen])
 
   useEffect(() => {
-    if (!filtersOpen || !window.matchMedia('(max-width: 767px)').matches) {
+    if (!filtersOpen || window.matchMedia('(min-width: 1280px)').matches) {
       return undefined
     }
 
@@ -242,78 +494,10 @@ function Products() {
 
   useEffect(() => () => window.clearTimeout(toastTimer.current), [])
 
-  useEffect(() => {
-    if (taxonomyLoading) return
-
-    const nextParams = new URLSearchParams(searchParams)
-    const setOrDelete = (key, value) => {
-      if (value) {
-        nextParams.set(key, value)
-      } else {
-        nextParams.delete(key)
-      }
-    }
-
-    setOrDelete('keyword', keyword.trim())
-    setOrDelete('sort', sort === 'popular' ? '' : SORT_MAP[sort] || '')
-    setOrDelete('category', selectedCategory)
-    setOrDelete('purpose', selectedOccasions.join(','))
-    setOrDelete('family', selectedFamilies.join(','))
-    setOrDelete('season', selectedSeasons.join(','))
-    setOrDelete('gender', selectedGenders.join(','))
-    setOrDelete('direction', selectedDirections.join(','))
-    setOrDelete('minPrice', minPrice)
-    setOrDelete('maxPrice', maxPrice)
-    setOrDelete('bestSeller', bestSellerOnly ? '1' : '')
-    setOrDelete('page', page > 1 ? String(page) : '')
-    setOrDelete('collection', activeCollection)
-
-    const nextString = nextParams.toString()
-    if (nextString !== searchParams.toString()) {
-      setSearchParams(nextParams, { replace: true })
-    }
-  }, [
-    activeCollection,
-    bestSellerOnly,
-    keyword,
-    maxPrice,
-    minPrice,
-    page,
-    searchParams,
-    selectedCategory,
-    selectedDirections,
-    selectedFamilies,
-    selectedGenders,
-    selectedOccasions,
-    selectedSeasons,
-    setSearchParams,
-    sort,
-    taxonomyLoading,
-  ])
-
   const showToast = (message) => {
     window.clearTimeout(toastTimer.current)
     setToast({ open: true, message })
     toastTimer.current = window.setTimeout(() => setToast({ open: false, message: '' }), 2600)
-  }
-
-  const clearFilters = () => {
-    const nextParams = new URLSearchParams(searchParams)
-    ;['category', 'purpose', 'family', 'season', 'gender', 'direction', 'minPrice', 'maxPrice', 'bestSeller', 'page'].forEach((key) =>
-      nextParams.delete(key)
-    )
-    setSearchParams(nextParams, { replace: true })
-    setPage(1)
-    setSelectedCategory('')
-    setSelectedOccasions([])
-    setSelectedFamilies([])
-    setSelectedSeasons([])
-    setSelectedGenders([])
-    setSelectedDirections([])
-    setBestSellerOnly(false)
-    setMinPrice('')
-    setMaxPrice('')
-    setFiltersOpen(false)
   }
 
   const handleCartConfirm = (selection) => {
@@ -365,8 +549,44 @@ function Products() {
     setCartModal({ open: true, product })
   }
 
+  const filterPanelProps = {
+    categories,
+    selectedCategory,
+    onSelectCategory: (value) => updateParams({ category: value }),
+    minPrice: minPriceDraft,
+    maxPrice: maxPriceDraft,
+    onMinPriceChange: setMinPriceDraft,
+    onMaxPriceChange: setMaxPriceDraft,
+    families: familyChoices,
+    selectedFamilies,
+    onToggleFamily: (id) => toggleListParam('family', selectedFamilies, id),
+    seasons: seasonChoices,
+    selectedSeasons,
+    onToggleSeason: (id) => toggleListParam('season', selectedSeasons, id),
+    genders: genderChoices,
+    selectedGenders,
+    onToggleGender: (id) => toggleListParam('gender', selectedGenders, id),
+    directions: directionChoices,
+    selectedDirections,
+    onToggleDirection: (id) => toggleListParam('direction', selectedDirections, id),
+    occasions: occasionChoices,
+    selectedOccasions,
+    onToggleOccasion: (id) => toggleListParam('purpose', selectedOccasions, id),
+    sizeOptions: sizeChoices,
+    selectedSize,
+    onSelectSize: (value) => updateParams({ size: value }),
+    availability,
+    availabilityOptions: AVAILABILITY_OPTIONS,
+    onSelectAvailability: (value) => updateParams({ availability: value }),
+    bestSellerOnly,
+    onToggleBestSeller: () => updateParams({ bestSeller: bestSellerOnly ? '' : '1' }),
+    onClear: clearFilters,
+    activeCount: activeFilterCount,
+    resultLabel,
+  }
+
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#FFFFFF_0%,#F7F2EA_52%,#FFFDF8_100%)] text-[#19213C]">
+    <div className="min-h-screen overflow-x-clip bg-[linear-gradient(180deg,#FFFFFF_0%,#F7F2EA_52%,#FFFDF8_100%)] text-[#19213C]">
       <section className="border-b border-[rgba(25,33,60,0.06)] px-4 pb-5 pt-5 sm:px-6 sm:pb-10 sm:pt-10 lg:px-8">
         <motion.div initial="hidden" animate="show" variants={fadeUp} className="mx-auto w-full max-w-[1480px]">
           {pageMeta ? (
@@ -392,21 +612,28 @@ function Products() {
 
       <section className="px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
         <div className="mx-auto w-full max-w-[1480px]">
-          <div className="sticky top-[calc(var(--ka-nav-height,80px)+0.35rem)] z-20 rounded-[1.5rem] border border-[rgba(25,33,60,0.08)] bg-[rgba(255,255,255,0.86)] p-2.5 shadow-[0_20px_52px_rgba(25,33,60,0.10)] backdrop-blur-xl sm:top-[calc(var(--ka-nav-height,80px)+0.75rem)] sm:rounded-[2rem] sm:p-4 sm:shadow-[0_24px_70px_rgba(25,33,60,0.10)]">
+          <div className="sticky top-[calc(var(--ka-nav-height,80px)+0.35rem)] z-20 rounded-[1.5rem] border border-[rgba(25,33,60,0.08)] bg-[rgba(255,255,255,0.88)] p-2.5 shadow-[0_20px_52px_rgba(25,33,60,0.10)] backdrop-blur-xl sm:top-[calc(var(--ka-nav-height,80px)+0.75rem)] sm:rounded-[2rem] sm:p-4 sm:shadow-[0_24px_70px_rgba(25,33,60,0.10)]">
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,0.92fr)]">
-              <div ref={searchRef} className="relative">
+              <div ref={searchRef} className="relative min-w-0">
                 <div className="flex items-center gap-2.5 rounded-[1.2rem] border border-[rgba(25,33,60,0.08)] bg-white px-3.5 py-2.5 shadow-[0_8px_24px_rgba(25,33,60,0.04)] sm:gap-3 sm:rounded-[1.4rem] sm:px-4 sm:py-3">
-                  <FiSearch className="text-[#8D7667]" size={17} />
+                  <FiSearch className="shrink-0 text-[#8D7667]" size={17} />
                   <input
-                    value={keyword}
+                    value={keywordDraft}
                     onFocus={() => setSearchFocused(true)}
-                    onChange={(event) => {
-                      setPage(1)
-                      setKeyword(event.target.value)
-                    }}
+                    onChange={(event) => setKeywordDraft(event.target.value)}
                     placeholder="Search attars, perfumes, rose water..."
-                    className="w-full bg-transparent text-[13px] text-[#19213C] outline-none placeholder:text-[#98A0B2] sm:text-sm"
+                    className="min-w-0 w-full bg-transparent text-[13px] text-[#19213C] outline-none placeholder:text-[#98A0B2] sm:text-sm"
                   />
+                  {keywordDraft ? (
+                    <button
+                      type="button"
+                      onClick={() => setKeywordDraft('')}
+                      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[rgba(25,33,60,0.06)] text-[#19213C] transition hover:bg-[rgba(25,33,60,0.1)]"
+                      aria-label="Clear search"
+                    >
+                      <FiX size={14} />
+                    </button>
+                  ) : null}
                 </div>
 
                 {searchFocused && suggestions.length > 0 ? (
@@ -421,25 +648,23 @@ function Products() {
                         }}
                         className="flex w-full items-center justify-between gap-4 border-b border-[rgba(25,33,60,0.06)] px-4 py-3 text-left last:border-b-0 hover:bg-[rgba(252,249,243,0.92)]"
                       >
-                        <div>
-                          <p className="text-sm font-semibold text-[#19213C]">{item.name}</p>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-[#19213C]">{item.name}</p>
                           <p className="mt-1 text-xs text-[#6B6F7A]">{item.category || 'Attar'}</p>
                         </div>
-                        <span className="text-xs font-semibold text-[#C9A24A]">View</span>
+                        <span className="shrink-0 text-xs font-semibold text-[#C9A24A]">View</span>
                       </button>
                     ))}
                   </div>
                 ) : null}
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-1">
                 <select
                   value={sort}
-                  onChange={(event) => {
-                    setPage(1)
-                    setSort(event.target.value)
-                  }}
-                  className="rounded-[1.2rem] border border-[rgba(25,33,60,0.08)] bg-white px-3 py-2.5 text-[13px] font-semibold text-[#19213C] outline-none sm:rounded-[1.4rem] sm:px-4 sm:py-3 sm:text-sm"
+                  onChange={(event) => updateParams({ sort: SORT_MAP[event.target.value] || 'latest' })}
+                  className="min-w-0 rounded-[1.2rem] border border-[rgba(25,33,60,0.08)] bg-white px-3 py-2.5 text-[13px] font-semibold text-[#19213C] outline-none sm:rounded-[1.4rem] sm:px-4 sm:py-3 sm:text-sm"
+                  aria-label="Sort products"
                 >
                   {SORT_OPTIONS.map((option) => (
                     <option key={option.id} value={option.id}>
@@ -448,17 +673,18 @@ function Products() {
                   ))}
                 </select>
 
-                <div ref={filtersRef} className="relative">
+                <div ref={filtersRef} className="relative min-w-0 xl:hidden">
                   <button
                     type="button"
                     onClick={() => setFiltersOpen((value) => !value)}
-                    className="inline-flex w-full items-center justify-between gap-2 rounded-[1.2rem] border border-[rgba(25,33,60,0.08)] bg-white px-3 py-2.5 text-[13px] font-semibold text-[#19213C] shadow-[0_8px_24px_rgba(25,33,60,0.04)] sm:gap-3 sm:rounded-[1.4rem] sm:px-4 sm:py-3 sm:text-sm"
+                    className="inline-flex w-full items-center justify-between gap-2 rounded-[1.2rem] border border-[rgba(25,33,60,0.08)] bg-white px-3 py-2.5 text-[13px] font-semibold text-[#19213C] shadow-[0_8px_24px_rgba(25,33,60,0.04)] sm:gap-3 sm:rounded-[1.4rem] sm:px-4 sm:py-3 sm:text-sm xl:hidden"
+                    aria-expanded={filtersOpen}
                   >
-                    <span className="inline-flex items-center gap-2">
-                      <FiFilter size={16} />
-                      Filters
+                    <span className="inline-flex min-w-0 items-center gap-2">
+                      <FiFilter className="shrink-0" size={16} />
+                      <span className="truncate">Filters</span>
                     </span>
-                    <span className="inline-flex items-center gap-2">
+                    <span className="inline-flex shrink-0 items-center gap-2">
                       {activeFilterCount > 0 ? (
                         <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-[#19213C] px-2 py-0.5 text-[10px] font-semibold text-white">
                           {activeFilterCount}
@@ -469,62 +695,9 @@ function Products() {
                   </button>
 
                   <FilterSidebar
+                    {...filterPanelProps}
                     open={filtersOpen}
                     onClose={() => setFiltersOpen(false)}
-                    categories={categories}
-                    selectedCategory={selectedCategory}
-                    onSelectCategory={(value) => {
-                      setPage(1)
-                      setSelectedCategory(value)
-                    }}
-                    minPrice={minPrice}
-                    maxPrice={maxPrice}
-                    onMinPriceChange={(value) => {
-                      setPage(1)
-                      setMinPrice(value)
-                    }}
-                    onMaxPriceChange={(value) => {
-                      setPage(1)
-                      setMaxPrice(value)
-                    }}
-                    families={familyChoices}
-                    selectedFamilies={selectedFamilies}
-                    onToggleFamily={(id) => {
-                      setPage(1)
-                      setSelectedFamilies((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
-                    }}
-                    seasons={seasonChoices}
-                    selectedSeasons={selectedSeasons}
-                    onToggleSeason={(id) => {
-                      setPage(1)
-                      setSelectedSeasons((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
-                    }}
-                    genders={genderChoices}
-                    selectedGenders={selectedGenders}
-                    onToggleGender={(id) => {
-                      setPage(1)
-                      setSelectedGenders((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
-                    }}
-                    directions={directionChoices}
-                    selectedDirections={selectedDirections}
-                    onToggleDirection={(id) => {
-                      setPage(1)
-                      setSelectedDirections((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
-                    }}
-                    occasions={occasionChoices}
-                    selectedOccasions={selectedOccasions}
-                    onToggleOccasion={(id) => {
-                      setPage(1)
-                      setSelectedOccasions((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
-                    }}
-                    bestSellerOnly={bestSellerOnly}
-                    onToggleBestSeller={() => {
-                      setPage(1)
-                      setBestSellerOnly((value) => !value)
-                    }}
-                    onClear={clearFilters}
-                    activeCount={activeFilterCount}
-                    resultLabel={loading ? 'Updating results…' : `${products.length} item${products.length === 1 ? '' : 's'} visible`}
                   />
                 </div>
               </div>
@@ -535,28 +708,63 @@ function Products() {
                 <div className="flex flex-nowrap gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible sm:pb-0">
                   {activeFilterCount > 0 ? (
                     <>
-                      {selectedCategory ? <FilterChip>{selectedCategory}</FilterChip> : null}
-                      {bestSellerOnly ? <FilterChip>Bestsellers</FilterChip> : null}
+                      {keyword ? <FilterChip onRemove={() => updateParams({ keyword: '' })}>Search: {keyword}</FilterChip> : null}
+                      {selectedCategory ? <FilterChip onRemove={() => updateParams({ category: '' })}>Type: {selectedCategory}</FilterChip> : null}
+                      {bestSellerOnly ? <FilterChip onRemove={() => updateParams({ bestSeller: '' })}>Bestsellers</FilterChip> : null}
                       {selectedFamilies.map((id) => (
-                        <FilterChip key={id}>{familyMap[id] || id}</FilterChip>
+                        <FilterChip key={id} onRemove={() => toggleListParam('family', selectedFamilies, id)}>
+                          {familyMap[id] || id}
+                        </FilterChip>
                       ))}
                       {selectedSeasons.map((id) => (
-                        <FilterChip key={id}>{seasonMap[id] || id}</FilterChip>
+                        <FilterChip key={id} onRemove={() => toggleListParam('season', selectedSeasons, id)}>
+                          {seasonMap[id] || id}
+                        </FilterChip>
                       ))}
                       {selectedGenders.map((id) => (
-                        <FilterChip key={id}>{genderMap[id] || id}</FilterChip>
+                        <FilterChip key={id} onRemove={() => toggleListParam('gender', selectedGenders, id)}>
+                          {genderMap[id] || id}
+                        </FilterChip>
                       ))}
                       {selectedDirections.map((id) => (
-                        <FilterChip key={id}>{directionMap[id] || id}</FilterChip>
+                        <FilterChip key={id} onRemove={() => toggleListParam('direction', selectedDirections, id)}>
+                          {directionMap[id] || id}
+                        </FilterChip>
                       ))}
                       {selectedOccasions.map((id) => (
-                        <FilterChip key={id}>{purposeMap[id] || id}</FilterChip>
+                        <FilterChip key={id} onRemove={() => toggleListParam('purpose', selectedOccasions, id)}>
+                          {purposeMap[id] || id}
+                        </FilterChip>
                       ))}
-                      {minPrice ? <FilterChip>From ₹{minPrice}</FilterChip> : null}
-                      {maxPrice ? <FilterChip>Up to ₹{maxPrice}</FilterChip> : null}
+                      {selectedSize ? <FilterChip onRemove={() => updateParams({ size: '' })}>Size: {selectedSize}</FilterChip> : null}
+                      {availability ? (
+                        <FilterChip onRemove={() => updateParams({ availability: '' })}>
+                          {AVAILABILITY_OPTIONS.find((item) => item.id === availability)?.label || availability}
+                        </FilterChip>
+                      ) : null}
+                      {minPrice ? (
+                        <FilterChip
+                          onRemove={() => {
+                            setMinPriceDraft('')
+                            updateParams({ minPrice: '' }, { replace: true })
+                          }}
+                        >
+                          From ₹{minPrice}
+                        </FilterChip>
+                      ) : null}
+                      {maxPrice ? (
+                        <FilterChip
+                          onRemove={() => {
+                            setMaxPriceDraft('')
+                            updateParams({ maxPrice: '' }, { replace: true })
+                          }}
+                        >
+                          Up to ₹{maxPrice}
+                        </FilterChip>
+                      ) : null}
                     </>
                   ) : (
-                    <p className="text-xs text-[#6B6F7A] sm:text-sm">Use filters to narrow by fragrance family, direction, category, season, gender, occasion, or price.</p>
+                    <p className="text-xs text-[#6B6F7A] sm:text-sm">Refine by product type, price, fragrance family, size, availability, season, gender, or occasion.</p>
                   )}
                 </div>
               </div>
@@ -567,11 +775,11 @@ function Products() {
                     onClick={clearFilters}
                     className="rounded-full border border-[rgba(25,33,60,0.1)] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#19213C] transition hover:border-[rgba(200,169,106,0.38)]"
                   >
-                    Clear all filters
+                    Clear all
                   </button>
                 ) : null}
                 <p className="text-sm font-medium text-[#5F6475] lg:text-right">
-                  {loading ? 'Curating products...' : `${products.length} items on this page`}
+                  {loading ? 'Curating products...' : `${products.length} shown of ${total}`}
                 </p>
               </div>
             </div>
@@ -580,58 +788,78 @@ function Products() {
       </section>
 
       <section className="px-4 pb-16 sm:px-6 lg:px-8">
-        <div className="mx-auto w-full max-w-[1480px]">
-          {error ? (
-            <div className="mb-6 rounded-[1.6rem] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
-              <p className="font-semibold">Could not load products.</p>
-              <p className="mt-1">{error}</p>
-            </div>
-          ) : null}
-
-          <ProductGrid
-            products={products}
-            loading={loading}
-            isAdmin={isAdmin}
-            onView={(product) => navigate(`/products/${product._id}`)}
-            onAdd={handleAddFromCard}
-            onQuickView={(product) => setQuickViewProduct(product)}
+        <div className="mx-auto grid w-full max-w-[1480px] gap-5 xl:grid-cols-[19rem_minmax(0,1fr)] xl:items-start">
+          <FilterSidebar
+            {...filterPanelProps}
+            variant="inline"
+            open
+            onClose={() => setFiltersOpen(false)}
           />
 
-          {!loading && products.length === 0 ? (
-            <div className="mt-6 rounded-[2rem] border border-[rgba(25,33,60,0.08)] bg-white/92 px-6 py-10 text-center shadow-[0_18px_50px_rgba(25,33,60,0.06)]">
-              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8D7667]">No matches</p>
-              <h2 className="mt-3 text-2xl font-semibold text-[#19213C]">Nothing matched this filter combination.</h2>
-              <p className="mt-3 text-sm leading-7 text-[#5F6475]">Try widening the price range, clearing a few filters, or exploring the complete collection.</p>
+          <div className="min-w-0">
+            {error ? (
+              <div className="mb-6 rounded-[1.6rem] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+                <p className="font-semibold">Could not load products.</p>
+                <p className="mt-1">{error}</p>
+              </div>
+            ) : null}
+
+            <ProductGrid
+              products={products}
+              loading={loading}
+              isAdmin={isAdmin}
+              onView={(product) => navigate(`/products/${product._id}`)}
+              onAdd={handleAddFromCard}
+              onQuickView={(product) => setQuickViewProduct(product)}
+            />
+
+            {!loading && products.length === 0 ? (
+              <div className="mt-6 rounded-[2rem] border border-[rgba(25,33,60,0.08)] bg-white/92 px-6 py-10 text-center shadow-[0_18px_50px_rgba(25,33,60,0.06)]">
+                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8D7667]">No product available</p>
+                <h2 className="mt-3 text-2xl font-semibold text-[#19213C]">No product available for these filters.</h2>
+                <p className="mt-3 text-sm leading-7 text-[#5F6475]">
+                  Try removing one filter, widening the price range, or clearing all filters to see the full collection.
+                </p>
+                <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => setFiltersOpen(true)}
+                    className="rounded-full border border-[rgba(25,33,60,0.12)] bg-white px-5 py-3 text-sm font-semibold text-[#19213C] xl:hidden"
+                  >
+                    Change filters
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="rounded-full bg-[#19213C] px-5 py-3 text-sm font-semibold text-white"
+                  >
+                    Reset filters
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
               <button
                 type="button"
-                onClick={clearFilters}
-                className="mt-5 rounded-full bg-[#19213C] px-5 py-3 text-sm font-semibold text-white"
+                onClick={() => updateParams({ page: String(Math.max(1, page - 1)) }, { resetPage: false })}
+                disabled={page <= 1}
+                className="rounded-full border border-[rgba(25,33,60,0.12)] bg-white px-5 py-2.5 text-sm font-semibold text-[#19213C] transition hover:border-[rgba(200,169,106,0.34)] disabled:cursor-not-allowed disabled:opacity-40"
               >
-                Reset filters
+                Prev
+              </button>
+              <span className="rounded-full border border-[rgba(25,33,60,0.08)] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#6B6F7A]">
+                Page {page} of {pages}
+              </span>
+              <button
+                type="button"
+                onClick={() => updateParams({ page: String(Math.min(pages, page + 1)) }, { resetPage: false })}
+                disabled={page >= pages}
+                className="rounded-full border border-[rgba(25,33,60,0.12)] bg-white px-5 py-2.5 text-sm font-semibold text-[#19213C] transition hover:border-[rgba(200,169,106,0.34)] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Next
               </button>
             </div>
-          ) : null}
-
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={() => setPage((value) => Math.max(1, value - 1))}
-              disabled={page <= 1}
-              className="rounded-full border border-[rgba(25,33,60,0.12)] bg-white px-5 py-2.5 text-sm font-semibold text-[#19213C] transition hover:border-[rgba(200,169,106,0.34)] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Prev
-            </button>
-            <span className="rounded-full border border-[rgba(25,33,60,0.08)] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#6B6F7A]">
-              Page {page} of {pages}
-            </span>
-            <button
-              type="button"
-              onClick={() => setPage((value) => Math.min(pages, value + 1))}
-              disabled={page >= pages}
-              className="rounded-full border border-[rgba(25,33,60,0.12)] bg-white px-5 py-2.5 text-sm font-semibold text-[#19213C] transition hover:border-[rgba(200,169,106,0.34)] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Next
-            </button>
           </div>
         </div>
       </section>
@@ -664,10 +892,20 @@ function Products() {
   )
 }
 
-function FilterChip({ children }) {
+function FilterChip({ children, onRemove }) {
   return (
-    <span className="rounded-full border border-[rgba(200,169,106,0.24)] bg-[rgba(255,251,243,0.92)] px-2.5 py-1 text-[11px] font-semibold text-[#C9A24A] sm:px-3 sm:py-1.5 sm:text-xs">
-      {children}
+    <span className="inline-flex max-w-[15rem] items-center gap-1.5 rounded-full border border-[rgba(200,169,106,0.24)] bg-[rgba(255,251,243,0.92)] px-2.5 py-1 text-[11px] font-semibold text-[#9D7A27] sm:px-3 sm:py-1.5 sm:text-xs">
+      <span className="truncate">{children}</span>
+      {onRemove ? (
+        <button
+          type="button"
+          onClick={onRemove}
+          className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[rgba(25,33,60,0.08)] text-[#19213C] transition hover:bg-[rgba(25,33,60,0.14)]"
+          aria-label="Remove filter"
+        >
+          <FiX size={11} />
+        </button>
+      ) : null}
     </span>
   )
 }

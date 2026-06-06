@@ -10,6 +10,7 @@ const getRazorpayFailureMessage = (error) =>
 
 const statusLabel = (status) => {
   const map = {
+    payment_pending: 'Payment pending',
     pending: 'Pending',
     confirmed: 'Confirmed',
     shipped: 'Shipped',
@@ -216,7 +217,7 @@ function OrderDetail() {
                           whatsapp: order?.shippingAddress?.whatsapp || '',
                         })
                         await openRazorpayCheckout({
-                          key: import.meta.env.VITE_RAZORPAY_KEY_ID || rzp.keyId,
+                          key: rzp.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID,
                           razorpayOrderId: rzp.razorpayOrderId,
                           amount: rzp.amount,
                           currency: rzp.currency,

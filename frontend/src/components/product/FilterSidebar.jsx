@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { FiSliders, FiX } from 'react-icons/fi'
+import { FiCheck, FiSliders, FiX } from 'react-icons/fi'
 
 function FilterSidebar({
+  variant = 'drawer',
   open,
   onClose,
   categories = [],
@@ -26,258 +27,192 @@ function FilterSidebar({
   occasions = [],
   selectedOccasions = [],
   onToggleOccasion,
+  sizeOptions = [],
+  selectedSize = '',
+  onSelectSize,
+  availability = '',
+  availabilityOptions = [],
+  onSelectAvailability,
   bestSellerOnly = false,
   onToggleBestSeller,
   onClear,
   activeCount = 0,
   resultLabel = 'View products',
 }) {
+  const isInline = variant === 'inline'
+
   const content = (
-    <div className="flex h-full w-full max-h-[min(100svh-0.5rem,860px)] flex-col overflow-hidden rounded-t-[2rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.995),rgba(252,249,243,0.985))] shadow-[0_32px_90px_rgba(25,33,60,0.16)] overscroll-contain md:max-h-[min(84vh,52rem)] md:rounded-[2rem] md:border md:border-[rgba(25,33,60,0.08)] xl:max-h-[min(80vh,46rem)]">
-      <div className="flex justify-center pt-3 md:hidden">
+    <div className={`flex w-full flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.995),rgba(252,249,243,0.985))] overscroll-contain ${
+      isInline
+        ? 'max-h-[calc(100svh-var(--ka-nav-height,80px)-2rem)] rounded-[18px] border border-[rgba(25,33,60,0.08)] shadow-[0_18px_50px_rgba(25,33,60,0.07)]'
+        : 'h-full max-h-[min(100svh-0.5rem,860px)] rounded-t-[2rem] shadow-[0_32px_90px_rgba(25,33,60,0.16)] md:max-h-[min(84vh,52rem)] md:rounded-[2rem] md:border md:border-[rgba(25,33,60,0.08)] xl:max-h-[min(80vh,46rem)]'
+    }`}>
+      <div className={`flex justify-center pt-3 md:hidden ${isInline ? 'hidden' : ''}`}>
         <span className="h-1.5 w-14 rounded-full bg-[rgba(25,33,60,0.12)]" />
       </div>
 
-      <div className="flex items-start justify-between gap-4 border-b border-[rgba(25,33,60,0.08)] px-4 py-4 sm:px-6 sm:py-5">
-        <div>
+      <div className={`flex items-start justify-between gap-4 border-b border-[rgba(25,33,60,0.08)] px-4 py-4 sm:px-6 sm:py-5 ${isInline ? 'xl:px-5 xl:py-4' : ''}`}>
+        <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8D7667]">Filter & refine</p>
-          <h3 className="mt-2 text-lg font-semibold text-[#19213C] sm:text-xl">Curate your fragrance view</h3>
+          <h3 className="mt-2 text-lg font-semibold text-[#19213C] sm:text-xl">{isInline ? 'Filters' : 'Curate your fragrance view'}</h3>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            {activeCount > 0 ? (
-              <span className="inline-flex items-center rounded-full bg-[rgba(25,33,60,0.08)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#19213C]">
-                {activeCount} active
-              </span>
-            ) : (
-              <span className="inline-flex items-center rounded-full bg-[rgba(25,33,60,0.05)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#6B6F7A]">
-                No filters yet
-              </span>
-            )}
+            <span className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
+              activeCount > 0
+                ? 'bg-[rgba(25,33,60,0.08)] text-[#19213C]'
+                : 'bg-[rgba(25,33,60,0.05)] text-[#6B6F7A]'
+            }`}>
+              {activeCount > 0 ? `${activeCount} active` : 'No filters yet'}
+            </span>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[rgba(25,33,60,0.10)] bg-white text-[#19213C] transition hover:border-[rgba(200,169,106,0.48)]"
-        >
-          <FiX size={18} />
-        </button>
+        {!isInline ? (
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[rgba(25,33,60,0.10)] bg-white text-[#19213C] transition hover:border-[rgba(200,169,106,0.48)]"
+            aria-label="Close filters"
+          >
+            <FiX size={18} />
+          </button>
+        ) : null}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
+      <div className={`flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 ${isInline ? 'xl:px-5 xl:py-4' : ''}`}>
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-1">
           <section className="md:col-span-2 xl:col-span-1">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8D7667]">Popular picks</p>
-              <button
-                type="button"
-                onClick={onToggleBestSeller}
-                className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                  bestSellerOnly
-                    ? 'bg-[rgba(200,169,106,0.18)] text-[#C9A24A]'
-                    : 'bg-[rgba(25,33,60,0.06)] text-[#47506A]'
-                }`}
-              >
-                {bestSellerOnly ? 'Bestseller on' : 'Bestseller off'}
-              </button>
+            <SectionTitle eyebrow="Category" title="Product type" />
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+              <PillChoice active={!selectedCategory} onClick={() => onSelectCategory?.('')}>
+                All types
+              </PillChoice>
+              {categories.map((category) => (
+                <PillChoice
+                  key={category}
+                  active={selectedCategory.toLowerCase() === category.toLowerCase()}
+                  onClick={() => onSelectCategory?.(category)}
+                >
+                  {category}
+                </PillChoice>
+              ))}
             </div>
+          </section>
+
+          <section className="md:col-span-2 xl:col-span-1">
+            <SectionTitle eyebrow="Price range" title="Set your budget" />
+            <div className="mt-3 grid gap-3 min-[480px]:grid-cols-2">
+              <PriceInput label="Min" value={minPrice} onChange={onMinPriceChange} placeholder="0" />
+              <PriceInput label="Max" value={maxPrice} onChange={onMaxPriceChange} placeholder="5000" />
+            </div>
+          </section>
+
+          <section>
+            <SectionTitle eyebrow="Fragrance family" title="Choose the profile" />
+            <OptionGrid
+              items={families}
+              selectedItems={selectedFamilies}
+              onToggle={onToggleFamily}
+            />
+          </section>
+
+          <section>
+            <SectionTitle eyebrow="Size / ml" title="Bottle or pack size" />
+            <div className="mt-3 grid gap-2 min-[480px]:grid-cols-2 md:grid-cols-1 xl:grid-cols-2">
+              <OptionButton active={!selectedSize} onClick={() => onSelectSize?.('')}>
+                All sizes
+              </OptionButton>
+              {sizeOptions.map((item) => (
+                <OptionButton
+                  key={item.id}
+                  active={selectedSize.toLowerCase() === item.id.toLowerCase()}
+                  onClick={() => onSelectSize?.(item.id)}
+                >
+                  {item.label}
+                </OptionButton>
+              ))}
+            </div>
+            {sizeOptions.length === 0 ? (
+              <p className="mt-3 rounded-[1.2rem] bg-[rgba(25,33,60,0.05)] px-4 py-3 text-xs leading-5 text-[#6B6F7A]">
+                Size choices are read from product pack labels once products load.
+              </p>
+            ) : null}
+          </section>
+
+          <section>
+            <SectionTitle eyebrow="Availability" title="Stock status" />
+            <div className="mt-3 grid gap-2 min-[480px]:grid-cols-2 md:grid-cols-1 xl:grid-cols-2">
+              <OptionButton active={!availability} onClick={() => onSelectAvailability?.('')}>
+                All stock
+              </OptionButton>
+              {availabilityOptions.map((item) => (
+                <OptionButton
+                  key={item.id}
+                  active={availability === item.id}
+                  onClick={() => onSelectAvailability?.(item.id)}
+                >
+                  {item.label}
+                </OptionButton>
+              ))}
+            </div>
+          </section>
+
+          <section className="md:col-span-2 xl:col-span-1">
+            <SectionTitle eyebrow="Popular picks" title="Bestseller edit" />
             <button
               type="button"
               onClick={onToggleBestSeller}
-              className={`flex w-full items-center justify-between rounded-[1.4rem] border px-4 py-4 text-left transition ${
+              className={`mt-3 flex w-full items-center justify-between gap-4 rounded-[1.4rem] border px-4 py-4 text-left transition ${
                 bestSellerOnly
                   ? 'border-[rgba(200,169,106,0.4)] bg-[rgba(200,169,106,0.10)]'
                   : 'border-[rgba(25,33,60,0.08)] bg-white hover:border-[rgba(200,169,106,0.3)]'
               }`}
             >
-              <div>
+              <div className="min-w-0">
                 <p className="text-[13px] font-semibold text-[#19213C] sm:text-sm">Only bestselling products</p>
-                <p className="mt-1 text-xs text-[#6B6F7A]">See the most-loved attars, oils, and floral waters first.</p>
+                <p className="mt-1 text-xs leading-5 text-[#6B6F7A]">See the most-loved attars, oils, and floral waters first.</p>
               </div>
-              <span className={`h-5 w-5 rounded-full border ${bestSellerOnly ? 'border-[#C8A96A] bg-[#C8A96A]' : 'border-[rgba(25,33,60,0.18)] bg-white'}`} />
+              <SelectionDot active={bestSellerOnly} />
             </button>
           </section>
 
-          <section className="md:col-span-2 xl:col-span-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8D7667]">Category</p>
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-              <button
-                type="button"
-                onClick={() => onSelectCategory('')}
-                className={`min-h-11 rounded-full border px-3 py-2 text-[13px] font-semibold transition sm:min-h-0 sm:px-4 sm:text-sm ${
-                  !selectedCategory
-                    ? 'border-[rgba(200,169,106,0.44)] bg-[rgba(200,169,106,0.12)] text-[#C9A24A]'
-                    : 'border-[rgba(25,33,60,0.08)] bg-white text-[#19213C] hover:border-[rgba(200,169,106,0.3)]'
-                }`}
-              >
-                All
-              </button>
-              {categories.map((category) => {
-                const active = selectedCategory === category
-                return (
-                  <button
-                    key={category}
-                    type="button"
-                    onClick={() => onSelectCategory(category)}
-                    className={`min-h-11 rounded-full border px-3 py-2 text-[13px] font-semibold transition sm:min-h-0 sm:px-4 sm:text-sm ${
-                      active
-                        ? 'border-[rgba(200,169,106,0.44)] bg-[rgba(200,169,106,0.12)] text-[#C9A24A]'
-                        : 'border-[rgba(25,33,60,0.08)] bg-white text-[#19213C] hover:border-[rgba(200,169,106,0.3)]'
-                    }`}
-                  >
-                    {category}
-                  </button>
-                )
-              })}
-            </div>
+          <section>
+            <SectionTitle eyebrow="Occasion" title="Purpose-led shopping" />
+            <OptionGrid
+              items={occasions}
+              selectedItems={selectedOccasions}
+              onToggle={onToggleOccasion}
+            />
           </section>
 
-          <section className="md:col-span-2 xl:col-span-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8D7667]">Price range</p>
-            <div className="mt-3 grid gap-3 min-[480px]:grid-cols-2">
-              <label className="rounded-[1.4rem] border border-[rgba(25,33,60,0.08)] bg-white px-4 py-3">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8D7667]">Min</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={minPrice}
-                  onChange={(e) => onMinPriceChange(e.target.value)}
-                  placeholder="0"
-                  className="mt-2 w-full bg-transparent text-sm font-semibold text-[#19213C] outline-none placeholder:text-[#9AA0AE]"
-                />
-              </label>
-              <label className="rounded-[1.4rem] border border-[rgba(25,33,60,0.08)] bg-white px-4 py-3">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8D7667]">Max</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={maxPrice}
-                  onChange={(e) => onMaxPriceChange(e.target.value)}
-                  placeholder="5000"
-                  className="mt-2 w-full bg-transparent text-sm font-semibold text-[#19213C] outline-none placeholder:text-[#9AA0AE]"
-                />
-              </label>
-            </div>
+          <section>
+            <SectionTitle eyebrow="Fragrance direction" title="Scent character" />
+            <OptionGrid
+              items={directions}
+              selectedItems={selectedDirections}
+              onToggle={onToggleDirection}
+            />
           </section>
 
-        <section>
-          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8D7667]">Fragrance family</p>
-          <div className="mt-3 grid gap-2 min-[480px]:grid-cols-2 md:grid-cols-1 xl:grid-cols-2">
-            {families.map((item) => {
-              const active = selectedFamilies.includes(item.id)
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => onToggleFamily(item.id)}
-                  className={`flex items-center justify-between rounded-[1.4rem] border px-4 py-3 text-left transition ${
-                    active
-                      ? 'border-[rgba(200,169,106,0.44)] bg-[rgba(200,169,106,0.10)]'
-                      : 'border-[rgba(25,33,60,0.08)] bg-white hover:border-[rgba(200,169,106,0.3)]'
-                  }`}
-                >
-                  <span className="text-[13px] font-semibold text-[#19213C] sm:text-sm">{item.label}</span>
-                  <span className={`h-4 w-4 rounded-full ${active ? 'bg-[#C9A24A]' : 'bg-[rgba(25,33,60,0.12)]'}`} />
-                </button>
-              )
-            })}
-          </div>
-        </section>
+          <section>
+            <SectionTitle eyebrow="Season" title="Weather mood" />
+            <OptionGrid
+              items={seasons}
+              selectedItems={selectedSeasons}
+              onToggle={onToggleSeason}
+            />
+          </section>
 
-        <section>
-          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8D7667]">Fragrance direction</p>
-          <div className="mt-3 grid gap-2 min-[480px]:grid-cols-2 md:grid-cols-1 xl:grid-cols-2">
-            {directions.map((item) => {
-              const active = selectedDirections.includes(item.id)
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => onToggleDirection(item.id)}
-                  className={`rounded-[1.4rem] border px-4 py-3 text-left text-[13px] font-semibold transition sm:text-sm ${
-                    active
-                      ? 'border-[rgba(200,169,106,0.44)] bg-[rgba(200,169,106,0.10)] text-[#C9A24A]'
-                      : 'border-[rgba(25,33,60,0.08)] bg-white text-[#19213C] hover:border-[rgba(200,169,106,0.3)]'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              )
-            })}
-          </div>
-        </section>
-
-        <section>
-          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8D7667]">Season</p>
-          <div className="mt-3 grid gap-2 min-[480px]:grid-cols-2 md:grid-cols-1 xl:grid-cols-2">
-            {seasons.map((item) => {
-              const active = selectedSeasons.includes(item.id)
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => onToggleSeason(item.id)}
-                  className={`rounded-[1.4rem] border px-4 py-3 text-left text-[13px] font-semibold transition sm:text-sm ${
-                    active
-                      ? 'border-[rgba(200,169,106,0.44)] bg-[rgba(200,169,106,0.10)] text-[#C9A24A]'
-                      : 'border-[rgba(25,33,60,0.08)] bg-white text-[#19213C] hover:border-[rgba(200,169,106,0.3)]'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              )
-            })}
-          </div>
-        </section>
-
-        <section>
-          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8D7667]">Gender</p>
-          <div className="mt-3 grid gap-2 min-[480px]:grid-cols-2 md:grid-cols-1 xl:grid-cols-2">
-            {genders.map((item) => {
-              const active = selectedGenders.includes(item.id)
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => onToggleGender(item.id)}
-                  className={`rounded-[1.4rem] border px-4 py-3 text-left text-[13px] font-semibold transition sm:text-sm ${
-                    active
-                      ? 'border-[rgba(200,169,106,0.44)] bg-[rgba(200,169,106,0.10)] text-[#C9A24A]'
-                      : 'border-[rgba(25,33,60,0.08)] bg-white text-[#19213C] hover:border-[rgba(200,169,106,0.3)]'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              )
-            })}
-          </div>
-        </section>
-
-        <section>
-          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8D7667]">Occasion</p>
-          <div className="mt-3 grid gap-2 min-[480px]:grid-cols-2 md:grid-cols-1 xl:grid-cols-2">
-            {occasions.map((item) => {
-              const active = selectedOccasions.includes(item.id)
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => onToggleOccasion(item.id)}
-                  className={`rounded-[1.4rem] border px-4 py-3 text-left text-[13px] font-semibold transition sm:text-sm ${
-                    active
-                      ? 'border-[rgba(200,169,106,0.44)] bg-[rgba(200,169,106,0.10)] text-[#C9A24A]'
-                      : 'border-[rgba(25,33,60,0.08)] bg-white text-[#19213C] hover:border-[rgba(200,169,106,0.3)]'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              )
-            })}
-          </div>
-        </section>
+          <section>
+            <SectionTitle eyebrow="Gender" title="Audience" />
+            <OptionGrid
+              items={genders}
+              selectedItems={selectedGenders}
+              onToggle={onToggleGender}
+            />
+          </section>
         </div>
       </div>
 
-      <div className="border-t border-[rgba(25,33,60,0.08)] bg-white/88 px-4 py-4 sm:px-6">
+      <div className={`border-t border-[rgba(25,33,60,0.08)] bg-white/88 px-4 py-4 sm:px-6 ${isInline ? 'xl:px-5' : ''}`}>
         <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           <p className="text-xs font-medium text-[#6B6F7A]">{resultLabel}</p>
           {activeCount > 0 ? (
@@ -296,22 +231,34 @@ function FilterSidebar({
             type="button"
             onClick={onClear}
             disabled={activeCount === 0}
-            className="w-full rounded-full border border-[rgba(25,33,60,0.1)] bg-white px-4 py-2.5 text-sm font-semibold text-[#19213C] transition hover:border-[rgba(200,169,106,0.38)] disabled:cursor-not-allowed disabled:opacity-45 sm:w-auto"
+            className={`w-full rounded-full border border-[rgba(25,33,60,0.1)] bg-white px-4 py-2.5 text-sm font-semibold text-[#19213C] transition hover:border-[rgba(200,169,106,0.38)] disabled:cursor-not-allowed disabled:opacity-45 ${isInline ? '' : 'sm:w-auto'}`}
           >
             Clear all
           </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#19213C] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(25,33,60,0.18)] transition hover:bg-[#11172B] sm:w-auto"
-          >
-            <FiSliders size={16} />
-            Apply filters
-          </button>
+          {!isInline ? (
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#19213C] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(25,33,60,0.18)] transition hover:bg-[#11172B] sm:w-auto"
+            >
+              <FiSliders size={16} />
+              Apply filters
+            </button>
+          ) : null}
         </div>
       </div>
     </div>
   )
+
+  if (isInline) {
+    return (
+      <aside className="hidden xl:block">
+        <div className="sticky top-[calc(var(--ka-nav-height,80px)+1rem)]">
+          {content}
+        </div>
+      </aside>
+    )
+  }
 
   return (
     <AnimatePresence>
@@ -324,6 +271,7 @@ function FilterSidebar({
             exit={{ opacity: 0 }}
             onClick={onClose}
             className="fixed inset-0 z-[70] bg-[rgba(15,18,30,0.36)] backdrop-blur-[2px]"
+            aria-label="Close filters"
           />
 
           <div className="hidden md:flex xl:hidden fixed inset-0 z-[75] items-center justify-center p-4 lg:p-6">
@@ -332,7 +280,7 @@ function FilterSidebar({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 12, scale: 0.985 }}
               transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-              className="w-[min(44rem,calc(100vw-3rem))]"
+              className="w-[min(48rem,calc(100vw-3rem))]"
             >
               {content}
             </motion.div>
@@ -344,7 +292,7 @@ function FilterSidebar({
               animate={{ opacity: 1, x: 0, y: 0 }}
               exit={{ opacity: 0, x: 16, y: 8 }}
               transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute right-0 top-[calc(100%+1rem)] z-[75] w-[min(36rem,calc(100vw-3rem))]"
+              className="absolute right-0 top-[calc(100%+1rem)] z-[75] w-[min(38rem,calc(100vw-3rem))]"
             >
               {content}
             </motion.div>
@@ -364,6 +312,91 @@ function FilterSidebar({
         </>
       ) : null}
     </AnimatePresence>
+  )
+}
+
+function SectionTitle({ eyebrow, title }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8D7667]">{eyebrow}</p>
+      <h4 className="mt-1 text-sm font-semibold text-[#19213C]">{title}</h4>
+    </div>
+  )
+}
+
+function PriceInput({ label, value, onChange, placeholder }) {
+  return (
+    <label className="rounded-[1.4rem] border border-[rgba(25,33,60,0.08)] bg-white px-4 py-3">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8D7667]">{label}</span>
+      <input
+        type="number"
+        min="0"
+        inputMode="numeric"
+        value={value}
+        onChange={(e) => onChange?.(e.target.value)}
+        placeholder={placeholder}
+        className="mt-2 w-full bg-transparent text-sm font-semibold text-[#19213C] outline-none placeholder:text-[#9AA0AE]"
+      />
+    </label>
+  )
+}
+
+function PillChoice({ active = false, onClick, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`min-h-11 rounded-full border px-3 py-2 text-[13px] font-semibold transition sm:min-h-0 sm:px-4 sm:text-sm ${
+        active
+          ? 'border-[rgba(200,169,106,0.44)] bg-[rgba(200,169,106,0.12)] text-[#9D7A27]'
+          : 'border-[rgba(25,33,60,0.08)] bg-white text-[#19213C] hover:border-[rgba(200,169,106,0.3)]'
+      }`}
+    >
+      {children}
+    </button>
+  )
+}
+
+function OptionGrid({ items = [], selectedItems = [], onToggle }) {
+  return (
+    <div className="mt-3 grid gap-2 min-[480px]:grid-cols-2 md:grid-cols-1 xl:grid-cols-2">
+      {items.map((item) => (
+        <OptionButton
+          key={item.id}
+          active={selectedItems.includes(item.id)}
+          onClick={() => onToggle?.(item.id)}
+        >
+          {item.label}
+        </OptionButton>
+      ))}
+    </div>
+  )
+}
+
+function OptionButton({ active = false, onClick, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex min-h-12 items-center justify-between gap-3 rounded-[1.4rem] border px-4 py-3 text-left text-[13px] font-semibold transition sm:text-sm ${
+        active
+          ? 'border-[rgba(200,169,106,0.44)] bg-[rgba(200,169,106,0.10)] text-[#9D7A27]'
+          : 'border-[rgba(25,33,60,0.08)] bg-white text-[#19213C] hover:border-[rgba(200,169,106,0.3)]'
+      }`}
+    >
+      <span className="min-w-0 truncate">{children}</span>
+      <SelectionDot active={active} />
+    </button>
+  )
+}
+
+function SelectionDot({ active = false }) {
+  return active ? (
+    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#C9A24A] text-white">
+      <FiCheck size={12} />
+    </span>
+  ) : (
+    <span className="h-5 w-5 shrink-0 rounded-full border border-[rgba(25,33,60,0.16)] bg-white" />
   )
 }
 

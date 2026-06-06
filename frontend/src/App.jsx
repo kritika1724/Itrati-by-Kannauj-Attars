@@ -145,7 +145,7 @@ function AppShell() {
   const [headerHeight, setHeaderHeight] = useState(88)
   const inAdminArea = isAdmin && location.pathname.startsWith('/admin')
   const { scrollYProgress } = useScroll()
-  const routeKey = `${location.pathname}${location.search}`
+  const routeKey = location.pathname
   const progressScaleX = useSpring(scrollYProgress, {
     stiffness: 120,
     damping: 24,
@@ -265,7 +265,7 @@ function AppShell() {
     }, 0)
 
     return () => window.clearTimeout(timer)
-  }, [location.pathname, location.search, location.hash])
+  }, [location.pathname, location.hash])
 
   return (
     <div className="relative min-h-screen overflow-x-clip">

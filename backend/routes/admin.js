@@ -8,6 +8,15 @@ const FragranceClubCampaign = require('../models/FragranceClubCampaign')
 const asyncHandler = require('../utils/asyncHandler')
 
 const router = express.Router()
+const RAZORPAY_METHODS = ['RAZORPAY', 'Razorpay', 'razorpay']
+
+const placedOrderQuery = (extra = {}) => ({
+  ...extra,
+  $or: [
+    { paymentMethod: { $nin: RAZORPAY_METHODS } },
+    { isPaid: true },
+  ],
+})
 
 router.get(
   '/stats',
@@ -16,10 +25,10 @@ router.get(
   asyncHandler(async (req, res) => {
     const [products, orders, contactMessages, newContactMessages, newOrders, lowStockCount, lowStockProducts, fragranceClubMembers, queuedCampaigns] = await Promise.all([
       Product.estimatedDocumentCount(),
-      Order.estimatedDocumentCount(),
+      Order.countDocuments(placedOrderQuery()),
       ContactMessage.estimatedDocumentCount(),
       ContactMessage.countDocuments({ status: 'new' }),
-      Order.countDocuments({ status: 'pending' }),
+      Order.countDocuments(placedOrderQuery({ status: 'pending' })),
       Product.countDocuments({ stock: { $lte: 5 } }),
       Product.find({ stock: { $lte: 5 } })
         .select('_id name stock category updatedAt')
@@ -31,7 +40,7 @@ router.get(
     ])
 
     const [recentOrders, recentContactMessages, recentFragranceClubMembers] = await Promise.all([
-      Order.find({})
+      Order.find(placedOrderQuery())
         .select('_id publicOrderId user shippingAddress.fullName totalPrice status createdAt')
         .populate('user', 'name email')
         .sort({ createdAt: -1 })

@@ -1,17 +1,19 @@
 import { DIRECTION_TAGS, GENDER_TAGS, SEASON_TAGS } from '../config/taxonomy'
 
 export const SORT_MAP = {
-  popular: 'rating_desc',
+  latest: 'latest',
+  popularity: 'popularity',
   price_asc: 'price_asc',
   price_desc: 'price_desc',
-  new_arrivals: 'newest',
+  popular: 'popularity',
+  new_arrivals: 'latest',
 }
 
 export const SORT_OPTIONS = [
-  { id: 'popular', label: 'Popular' },
+  { id: 'latest', label: 'Latest' },
   { id: 'price_asc', label: 'Price: Low to High' },
   { id: 'price_desc', label: 'Price: High to Low' },
-  { id: 'new_arrivals', label: 'New Arrivals' },
+  { id: 'popularity', label: 'Popularity' },
 ]
 
 export const CATEGORY_DEFAULTS = ['Attar', 'Perfume', 'Rose Water', 'Essential Oil']
@@ -32,6 +34,10 @@ export const OCCASION_DEFAULTS = [
 export const SEASON_DEFAULTS = SEASON_TAGS
 export const GENDER_DEFAULTS = GENDER_TAGS
 export const DIRECTION_DEFAULTS = DIRECTION_TAGS
+export const AVAILABILITY_OPTIONS = [
+  { id: 'in_stock', label: 'In stock' },
+  { id: 'out_of_stock', label: 'Out of stock' },
+]
 
 export const COLLECTION_MAP = {
   signature: {
@@ -47,8 +53,8 @@ export const COLLECTION_MAP = {
 export const toUiSort = (value) => {
   if (value === 'price_asc') return 'price_asc'
   if (value === 'price_desc') return 'price_desc'
-  if (value === 'newest') return 'new_arrivals'
-  return 'popular'
+  if (['popularity', 'popular', 'rating_desc'].includes(value)) return 'popularity'
+  return 'latest'
 }
 
 export const buildChoiceList = (defaults = [], items = []) => {
@@ -63,6 +69,34 @@ export const buildChoiceList = (defaults = [], items = []) => {
 
 export const buildIdSet = (items = []) => new Set(items.map((item) => item.id))
 
+export const buildSizeChoicesFromProducts = (products = [], selectedSize = '') => {
+  const labels = []
+  const pushLabel = (value) => {
+    const label = String(value || '').trim()
+    if (label) labels.push(label)
+  }
+
+  pushLabel(selectedSize)
+  products.forEach((product) => {
+    ;(Array.isArray(product?.packs) ? product.packs : []).forEach((pack) => pushLabel(pack?.label))
+    String(product?.availableSizesText || '')
+      .split(/[|,]/)
+      .map((item) => item.trim())
+      .filter((item) => /\d/.test(item) && item.length <= 32)
+      .forEach(pushLabel)
+  })
+
+  const seen = new Set()
+  return labels
+    .filter((label) => {
+      const key = label.toLowerCase()
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    .map((label) => ({ id: label, label }))
+}
+
 export const readListParam = (searchParams, key, allowedIds) => {
   const raw = (searchParams.get(key) || '').trim()
   if (!raw) return []
@@ -72,7 +106,13 @@ export const readListParam = (searchParams, key, allowedIds) => {
     .filter((id) => allowedIds.has(id))
 }
 
+export const readFirstListParam = (searchParams, keys = [], allowedIds) => {
+  const key = keys.find((item) => (searchParams.get(item) || '').trim())
+  return key ? readListParam(searchParams, key, allowedIds) : []
+}
+
 export const countActiveFilters = ({
+  keyword = '',
   selectedCategory = '',
   minPrice = '',
   maxPrice = '',
@@ -81,8 +121,11 @@ export const countActiveFilters = ({
   selectedGenders = [],
   selectedDirections = [],
   selectedOccasions = [],
+  selectedSize = '',
+  availability = '',
   bestSellerOnly = false,
 }) =>
+  Number(Boolean(String(keyword || '').trim())) +
   Number(Boolean(selectedCategory)) +
   Number(Boolean(minPrice)) +
   Number(Boolean(maxPrice)) +
@@ -91,4 +134,6 @@ export const countActiveFilters = ({
   selectedGenders.length +
   selectedDirections.length +
   selectedOccasions.length +
+  Number(Boolean(selectedSize)) +
+  Number(Boolean(availability)) +
   Number(bestSellerOnly)

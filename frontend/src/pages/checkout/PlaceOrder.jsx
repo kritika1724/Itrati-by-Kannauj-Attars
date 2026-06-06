@@ -75,7 +75,7 @@ function PlaceOrder() {
       phone: normalizedShippingAddress.phone,
       whatsapp: normalizedShippingAddress.whatsapp,
     })
-    const checkoutKey = import.meta.env.VITE_RAZORPAY_KEY_ID || rzp.keyId
+    const checkoutKey = rzp.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID
 
     await openRazorpayCheckout({
       key: checkoutKey,

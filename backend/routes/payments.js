@@ -5,10 +5,11 @@ const Order = require('../models/Order')
 const { paymentActionLimiter } = require('../utils/rateLimit')
 const { getRazorpayClient, mustGetRazorpayConfig, mustGetRazorpayWebhookSecret } = require('../config/razorpay')
 const { optionalProtect, adminOnly } = require('../middleware/auth')
+const { reserveOrderStock, restoreOrderStock, stockWasReserved } = require('../utils/orderStock')
 
 const router = express.Router()
 const ORDER_PAYMENT_SELECT =
-  'publicOrderId user shippingAddress.fullName shippingAddress.email shippingAddress.phone shippingAddress.whatsapp shippingAddress.addressLine1 shippingAddress.addressLine2 shippingAddress.city shippingAddress.state shippingAddress.postalCode shippingAddress.country paymentMethod totalPrice isPaid status paymentResult paidAt'
+  'publicOrderId user orderItems shippingAddress.fullName shippingAddress.email shippingAddress.phone shippingAddress.whatsapp shippingAddress.addressLine1 shippingAddress.addressLine2 shippingAddress.city shippingAddress.state shippingAddress.postalCode shippingAddress.country paymentMethod totalPrice isPaid status paymentResult paidAt stockReserved'
 const MINIMUM_RAZORPAY_AMOUNT_PAISE = 100
 
 const normalizePhone = (value) => {
@@ -106,15 +107,13 @@ const findOrderForWebhook = async (paymentEntity = {}, orderEntity = {}) => {
   return order
 }
 
-const markOrderPaid = async (order, { razorpayOrderId, razorpayPaymentId, razorpaySignature = '', paymentEntity = {}, webhookEventId = '' }) => {
-  const existingPaymentId = String(order.paymentResult?.razorpayPaymentId || order.paymentResult?.id || '').trim()
-  if (order.isPaid && existingPaymentId && razorpayPaymentId && existingPaymentId !== razorpayPaymentId) {
-    return order
-  }
-
+const applyPaidPaymentState = (order, { razorpayOrderId, razorpayPaymentId, razorpaySignature = '', paymentEntity = {}, webhookEventId = '' }) => {
   order.isPaid = true
   order.paidAt = order.paidAt || new Date()
-  if (order.status === 'pending') order.status = 'confirmed'
+  if (['pending', 'payment_pending'].includes(String(order.status || '').toLowerCase())) {
+    order.status = 'confirmed'
+  }
+  order.cancelledAt = null
   order.paymentResult = buildPaymentResult({
     order,
     status: 'paid',
@@ -124,13 +123,114 @@ const markOrderPaid = async (order, { razorpayOrderId, razorpayPaymentId, razorp
     paymentEntity,
     webhookEventId,
   })
+}
 
-  return order.save()
+const assertPayableOrder = (order) => {
+  if (String(order.status || '').toLowerCase() === 'cancelled') {
+    const err = new Error('Order is cancelled')
+    err.statusCode = 400
+    throw err
+  }
+}
+
+const markOrderPaid = async (order, paymentData) => {
+  const session = await mongoose.startSession()
+
+  try {
+    let updatedOrder
+    await session.withTransaction(async () => {
+      const currentOrder = await Order.findById(order._id)
+        .select(ORDER_PAYMENT_SELECT)
+        .populate('user', 'email')
+        .session(session)
+
+      if (!currentOrder) {
+        const err = new Error('Order not found')
+        err.statusCode = 404
+        throw err
+      }
+
+      const existingPaymentId = String(currentOrder.paymentResult?.razorpayPaymentId || currentOrder.paymentResult?.id || '').trim()
+      if (currentOrder.isPaid) {
+        if (existingPaymentId && paymentData.razorpayPaymentId && existingPaymentId !== paymentData.razorpayPaymentId) {
+          updatedOrder = currentOrder
+          return
+        }
+
+        updatedOrder = currentOrder
+        return
+      }
+
+      assertPayableOrder(currentOrder)
+
+      if (!stockWasReserved(currentOrder)) {
+        await reserveOrderStock(currentOrder, session)
+      }
+
+      currentOrder.stockReserved = true
+      applyPaidPaymentState(currentOrder, paymentData)
+      updatedOrder = await currentOrder.save({ session })
+    })
+
+    return updatedOrder
+  } finally {
+    await session.endSession()
+  }
 }
 
 const updatePaymentAttempt = async (order, { status, razorpayOrderId = '', razorpayPaymentId = '', paymentEntity = {}, webhookEventId = '' }) => {
   if (order.isPaid && status !== 'paid') {
     return order
+  }
+
+  if (status === 'failed') {
+    const session = await mongoose.startSession()
+
+    try {
+      let updatedOrder
+      await session.withTransaction(async () => {
+        const currentOrder = await Order.findById(order._id)
+          .select(ORDER_PAYMENT_SELECT)
+          .populate('user', 'email')
+          .session(session)
+
+        if (!currentOrder) {
+          const err = new Error('Order not found')
+          err.statusCode = 404
+          throw err
+        }
+
+        if (currentOrder.isPaid) {
+          updatedOrder = currentOrder
+          return
+        }
+
+        if (stockWasReserved(currentOrder)) {
+          await restoreOrderStock(currentOrder, session)
+          currentOrder.stockReserved = false
+        }
+
+        if (String(currentOrder.status || '').toLowerCase() !== 'cancelled') {
+          currentOrder.status = 'payment_pending'
+          currentOrder.cancelledAt = null
+        }
+
+        currentOrder.paymentResult = buildPaymentResult({
+          order: currentOrder,
+          status,
+          razorpayOrderId,
+          razorpayPaymentId,
+          paymentEntity,
+          webhookEventId,
+        })
+
+        updatedOrder = await currentOrder.save({ session })
+      })
+
+      return updatedOrder
+    } finally {
+      await session.endSession()
+    }
   }
 
   order.paymentResult = buildPaymentResult({
@@ -143,6 +243,53 @@ const updatePaymentAttempt = async (order, { status, razorpayOrderId = '', razor
   })
 
   return order.save()
+}
+
+const ensureOrderStockReserved = async (order) => {
+  if (stockWasReserved(order)) return order
+
+  const session = await mongoose.startSession()
+
+  try {
+    let updatedOrder
+    await session.withTransaction(async () => {
+      const currentOrder = await Order.findById(order._id)
+        .select(ORDER_PAYMENT_SELECT)
+        .populate('user', 'email')
+        .session(session)
+
+      if (!currentOrder) {
+        const err = new Error('Order not found')
+        err.statusCode = 404
+        throw err
+      }
+
+      if (currentOrder.isPaid) {
+        const err = new Error('Order is already paid')
+        err.statusCode = 400
+        throw err
+      }
+
+      if (String(currentOrder.status || '').toLowerCase() === 'cancelled') {
+        const err = new Error('Order is cancelled')
+        err.statusCode = 400
+        throw err
+      }
+
+      if (!stockWasReserved(currentOrder)) {
+        await reserveOrderStock(currentOrder, session)
+        currentOrder.stockReserved = true
+        updatedOrder = await currentOrder.save({ session })
+        return
+      }
+
+      updatedOrder = currentOrder
+    })
+
+    return updatedOrder
+  } finally {
+    await session.endSession()
+  }
 }
 
 router.post('/razorpay/webhook', async (req, res) => {
@@ -212,7 +359,7 @@ router.post('/razorpay/order', optionalProtect, paymentActionLimiter, async (req
     const orderId = String(req.body?.orderId || '').trim()
     if (!orderId) return res.status(400).json({ message: 'orderId is required' })
 
-    const order = await getOrderOr404(orderId)
+    let order = await getOrderOr404(orderId)
     if (!canAccessPaymentOrder(req, order)) {
       return res.status(403).json({ message: 'Not authorized to start payment for this order' })
     }
@@ -221,9 +368,15 @@ router.post('/razorpay/order', optionalProtect, paymentActionLimiter, async (req
       return res.status(400).json({ message: 'Order payment method is not Razorpay' })
     }
 
+    if (String(order.status || '').toLowerCase() === 'cancelled') {
+      return res.status(400).json({ message: 'Order is cancelled' })
+    }
+
     if (order.isPaid) {
       return res.status(400).json({ message: 'Order is already paid' })
     }
+
+    order = await ensureOrderStockReserved(order)
 
     const amountPaise = Math.round(Number(order.totalPrice || 0) * 100)
     if (!Number.isFinite(amountPaise) || amountPaise < MINIMUM_RAZORPAY_AMOUNT_PAISE) {

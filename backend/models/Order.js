@@ -46,11 +46,12 @@ const orderSchema = new mongoose.Schema(
     totalPrice: { type: Number, required: true },
     isPaid: { type: Boolean, required: true, default: false },
     paidAt: { type: Date },
+    stockReserved: { type: Boolean },
     isDelivered: { type: Boolean, required: true, default: false },
     deliveredAt: { type: Date },
     status: {
       type: String,
-      enum: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'],
+      enum: ['payment_pending', 'pending', 'confirmed', 'shipped', 'delivered', 'cancelled'],
       default: 'pending',
     },
     cancelledAt: { type: Date },

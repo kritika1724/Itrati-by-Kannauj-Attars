@@ -6,10 +6,20 @@ const { protect, optionalProtect, adminOnly } = require('../middleware/auth')
 const asyncHandler = require('../utils/asyncHandler')
 const { orderCreateLimiter, orderTrackLimiter, orderMutationLimiter } = require('../utils/rateLimit')
 const { getWelcomeDiscount } = require('../config/cartOffers')
+const { reserveOrderStock, restoreOrderStock, stockWasReserved } = require('../utils/orderStock')
 
 const router = express.Router()
 const TRACK_ORDER_SELECT =
   'publicOrderId status createdAt updatedAt paymentMethod isPaid paidAt totalPrice itemsPrice shippingPrice taxPrice discountCode discountPercent discountAmount orderItems shippingAddress.fullName shippingAddress.phone shippingAddress.whatsapp shippingAddress.email shippingAddress.city shippingAddress.state shippingAddress.postalCode shippingAddress.country'
+const RAZORPAY_METHODS = ['RAZORPAY', 'Razorpay', 'razorpay']
+
+const placedOrderQuery = (extra = {}) => ({
+  ...extra,
+  $or: [
+    { paymentMethod: { $nin: RAZORPAY_METHODS } },
+    { isPaid: true },
+  ],
+})
 
 const packToGrams = (label) => {
   const str = String(label || '').toLowerCase().replace(/,/g, '').trim()
@@ -46,9 +56,9 @@ const findTrackableOrder = async (publicOrderId, { lean = true } = {}) => {
     return lean ? query.lean() : query.exec()
   }
 
-  let order = await findBy(Order.findOne({ publicOrderId }))
+  let order = await findBy(Order.findOne(placedOrderQuery({ publicOrderId })))
   if (!order && mongoose.isValidObjectId(publicOrderId)) {
-    order = await findBy(Order.findById(publicOrderId))
+    order = await findBy(Order.findOne(placedOrderQuery({ _id: publicOrderId })))
   }
   return order
 }
@@ -93,74 +103,6 @@ const getEffectivePackPrice = (pack) => {
     return salePrice
   }
   return regularPrice
-}
-
-const getOrderStockAdjustments = (orderItems = []) => {
-  const totals = new Map()
-  orderItems.forEach((item) => {
-    const productId = String(item?.product || '')
-    if (!productId) return
-    const qty = Math.max(1, Number(item?.qty || 1))
-    totals.set(productId, (totals.get(productId) || 0) + qty)
-  })
-  return totals
-}
-
-const restoreOrderStock = async (order, session = null) => {
-  const adjustments = getOrderStockAdjustments(order?.orderItems || [])
-  if (!adjustments.size) return
-
-  const ops = [...adjustments.entries()].map(([productId, qty]) => ({
-    updateOne: {
-      filter: { _id: productId },
-      update: { $inc: { stock: qty } },
-    },
-  }))
-
-  const options = {}
-  if (session) options.session = session
-  await Product.bulkWrite(ops, options)
-}
-
-const reserveOrderStock = async (order, session = null) => {
-  const adjustments = getOrderStockAdjustments(order?.orderItems || [])
-  if (!adjustments.size) return
-
-  const query = Product.find({ _id: { $in: [...adjustments.keys()] } }).select('name stock')
-  if (session) query.session(session)
-  const inventoryProducts = await query
-  const inventoryMap = new Map(inventoryProducts.map((product) => [String(product._id), product]))
-
-  for (const [productId, qtyNeeded] of adjustments.entries()) {
-    const product = inventoryMap.get(productId)
-    if (!product) {
-      throw new Error('Invalid product in order')
-    }
-
-    const availableStock = Math.max(0, Number(product.stock || 0))
-    if (availableStock < qtyNeeded) {
-      throw new Error(`${product.name} has only ${availableStock} item(s) left in stock`)
-    }
-  }
-
-  const ops = inventoryProducts
-    .map((product) => {
-      const qtyNeeded = adjustments.get(String(product._id)) || 0
-      if (!qtyNeeded) return null
-      return {
-        updateOne: {
-          filter: { _id: product._id },
-          update: { $inc: { stock: -qtyNeeded } },
-        },
-      }
-    })
-    .filter(Boolean)
-
-  if (!ops.length) return
-
-  const options = {}
-  if (session) options.session = session
-  await Product.bulkWrite(ops, options)
 }
 
 // Create order
@@ -266,12 +208,17 @@ router.post(
     const totalPrice = Math.max(0, subtotal - discountAmount)
 
     const method = String(paymentMethod || 'COD').trim().toUpperCase()
+    if (!['COD', 'RAZORPAY'].includes(method)) {
+      return res.status(400).json({ message: 'Invalid payment method' })
+    }
+
     const COD_LIMIT = Number(process.env.COD_LIMIT || 2000)
     if (method === 'COD' && Number.isFinite(COD_LIMIT) && totalPrice > COD_LIMIT) {
       return res.status(400).json({
         message: `Cash on Delivery is not available for orders above ₹${COD_LIMIT}. Please choose online payment.`,
       })
     }
+    const isRazorpayOrder = method === 'RAZORPAY'
 
     const session = await mongoose.startSession()
 
@@ -294,7 +241,8 @@ router.post(
               discountPercent,
               discountAmount,
               totalPrice,
-              status: 'pending',
+              status: isRazorpayOrder ? 'payment_pending' : 'pending',
+              stockReserved: true,
             },
           ],
           { session }
@@ -374,7 +322,10 @@ router.put(
       return res.status(400).json({ message: 'Order can only be cancelled before confirmation' })
     }
 
-    await restoreOrderStock(order)
+    if (stockWasReserved(order)) {
+      await restoreOrderStock(order)
+      order.stockReserved = false
+    }
     order.status = 'cancelled'
     order.cancelledAt = new Date()
     order.isDelivered = false
@@ -392,7 +343,7 @@ router.get(
   '/mine',
   protect,
   asyncHandler(async (req, res) => {
-    const orders = await Order.find({ user: req.user._id })
+    const orders = await Order.find(placedOrderQuery({ user: req.user._id }))
       .select('_id publicOrderId totalPrice createdAt status')
       .sort({ createdAt: -1 })
       .lean()
@@ -406,7 +357,7 @@ router.get(
   protect,
   adminOnly,
   asyncHandler(async (req, res) => {
-    const orders = await Order.find({})
+    const orders = await Order.find(placedOrderQuery())
       .select(
         '_id publicOrderId user shippingAddress.fullName shippingAddress.email shippingAddress.whatsapp totalPrice paymentMethod status createdAt'
       )
@@ -453,6 +404,9 @@ router.put(
 
     order.isPaid = true
     order.paidAt = new Date()
+    if (stockWasReserved(order)) {
+      order.stockReserved = true
+    }
     order.paymentResult = {
       id: req.body?.id || 'manual',
       status: req.body?.status || 'paid',
@@ -486,11 +440,17 @@ router.put(
       return res.status(404).json({ message: 'Order not found' })
     }
 
+    if ((order.paymentMethod || '').toUpperCase() === 'RAZORPAY' && !order.isPaid && status !== 'cancelled') {
+      return res.status(400).json({ message: 'Razorpay orders can be updated only after successful payment' })
+    }
+
     const previousStatus = order.status
-    if (previousStatus !== 'cancelled' && status === 'cancelled') {
+    if (previousStatus !== 'cancelled' && status === 'cancelled' && stockWasReserved(order)) {
       await restoreOrderStock(order)
+      order.stockReserved = false
     } else if (previousStatus === 'cancelled' && status !== 'cancelled') {
       await reserveOrderStock(order)
+      order.stockReserved = true
     }
 
     order.status = status
@@ -526,7 +486,7 @@ router.delete(
       return res.status(404).json({ message: 'Order not found' })
     }
 
-    if (order.status !== 'cancelled') {
+    if (order.status !== 'cancelled' && stockWasReserved(order)) {
       await restoreOrderStock(order)
     }
     await order.deleteOne()
@@ -557,7 +517,10 @@ router.put(
       return res.status(400).json({ message: 'Order can only be cancelled before confirmation' })
     }
 
-    await restoreOrderStock(order)
+    if (stockWasReserved(order)) {
+      await restoreOrderStock(order)
+      order.stockReserved = false
+    }
     order.status = 'cancelled'
     order.cancelledAt = new Date()
     order.isDelivered = false

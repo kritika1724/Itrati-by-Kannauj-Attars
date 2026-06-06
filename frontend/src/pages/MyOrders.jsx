@@ -4,6 +4,7 @@ import { api } from '../services/api'
 
 const statusLabel = (status) => {
   const map = {
+    payment_pending: 'Payment pending',
     pending: 'Pending',
     confirmed: 'Confirmed',
     shipped: 'Shipped',

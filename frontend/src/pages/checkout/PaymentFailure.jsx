@@ -47,7 +47,7 @@ function PaymentFailure() {
         whatsapp: order?.shippingAddress?.whatsapp || '',
       })
       await openRazorpayCheckout({
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || rzp.keyId,
+        key: rzp.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID,
         razorpayOrderId: rzp.razorpayOrderId,
         amount: rzp.amount,
         currency: rzp.currency,

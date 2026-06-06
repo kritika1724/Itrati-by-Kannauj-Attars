@@ -26,12 +26,27 @@ const PUBLIC_PRODUCT_LIST_SELECT =
 const ADMIN_PRODUCT_LIST_SELECT = `${PUBLIC_PRODUCT_LIST_SELECT} stock`
 const RELATED_PRODUCTS_POPULATE_SELECT =
   'name description shortDescription category purposeTags familyTags seasonTags genderTags directionTags featuredCollections isBestSeller isNewArrival sample availableSizesText price packs.label packs.price packs.salePrice images imageZoom highlights fragranceNotes rating numReviews createdAt'
+const DEFAULT_PRODUCT_LIMIT = 12
+const MAX_PRODUCT_LIMIT = 100
+const MAX_LIST_FILTER_VALUES = 24
+const TRUTHY_QUERY_VALUES = new Set(['1', 'true', 'yes', 'on'])
+const VALID_BUYER_TYPES = new Set(['personal', 'industrial', 'both'])
+const SORT_MAP = {
+  latest: { createdAt: -1, _id: -1 },
+  newest: { createdAt: -1, _id: -1 },
+  new_arrivals: { createdAt: -1, _id: -1 },
+  price_asc: { price: 1, createdAt: -1, _id: -1 },
+  price_desc: { price: -1, createdAt: -1, _id: -1 },
+  popularity: { isBestSeller: -1, rating: -1, numReviews: -1, createdAt: -1, _id: -1 },
+  popular: { isBestSeller: -1, rating: -1, numReviews: -1, createdAt: -1, _id: -1 },
+  rating_desc: { isBestSeller: -1, rating: -1, numReviews: -1, createdAt: -1, _id: -1 },
+  name_asc: { name: 1, _id: 1 },
+}
 
 const normalizeCollections = (value) => {
   if (!Array.isArray(value)) return []
   return [...new Set(value.map((item) => String(item || '').trim().toLowerCase()).filter(Boolean))]
 }
-const VALID_BUYER_TYPES = new Set(['personal', 'industrial', 'both'])
 const normalizeProductText = (value) => String(value || '').trim()
 const normalizeProductPrice = (value) => {
   const price = Number(value)
@@ -146,6 +161,204 @@ const normalizeRelatedProducts = (value, selfId = '') =>
       ].slice(0, 6)
     : []
 
+const getQueryValue = (query, ...keys) => {
+  for (const key of keys) {
+    const value = query[key]
+    if (value !== undefined) return value
+  }
+  return undefined
+}
+
+const normalizeQueryText = (value, maxLength = 120) => {
+  const raw = Array.isArray(value) ? value[0] : value
+  return String(raw ?? '').trim().slice(0, maxLength)
+}
+
+const normalizeQueryList = (value, { lowercase = true, maxItems = MAX_LIST_FILTER_VALUES } = {}) => {
+  const values = Array.isArray(value) ? value : [value]
+  const seen = new Set()
+  const normalized = []
+
+  values
+    .flatMap((item) => String(item ?? '').split(','))
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .forEach((item) => {
+      const next = lowercase ? item.toLowerCase() : item
+      if (!seen.has(next)) {
+        seen.add(next)
+        normalized.push(next)
+      }
+    })
+
+  return normalized.slice(0, maxItems)
+}
+
+const parsePositiveInteger = (value, fallback, max = Number.MAX_SAFE_INTEGER) => {
+  const parsed = Number(normalizeQueryText(value, 12))
+  if (!Number.isFinite(parsed) || parsed < 1) return fallback
+  return Math.min(Math.floor(parsed), max)
+}
+
+const parsePriceFilter = (value) => {
+  const text = normalizeQueryText(value, 24)
+  if (!text) return null
+  const parsed = Number(text)
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null
+}
+
+const makeExactTextRegex = (value) => new RegExp(`^${escapeRegex(value)}$`, 'i')
+
+const makeLooseSizeRegex = (value) => {
+  const normalized = normalizeQueryText(value, 48)
+    .replace(/[^a-zA-Z0-9.]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!normalized) return null
+
+  const flexible = escapeRegex(normalized).replace(/\\ /g, '\\s*')
+  return new RegExp(flexible, 'i')
+}
+
+const addTagClause = (clauses, field, values) => {
+  if (values.length) clauses.push({ [field]: { $in: values } })
+}
+
+const getProductsQueryParts = (query) => {
+  const page = parsePositiveInteger(query.page, 1)
+  const limit = parsePositiveInteger(query.limit, DEFAULT_PRODUCT_LIMIT, MAX_PRODUCT_LIMIT)
+  const keyword = normalizeQueryText(query.keyword, 120)
+  const buyer = normalizeQueryText(getQueryValue(query, 'buyer', 'buyerType'), 32).toLowerCase()
+  const bestSeller = normalizeQueryText(query.bestSeller, 12).toLowerCase()
+  const availability = normalizeQueryText(getQueryValue(query, 'availability', 'stock'), 32)
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_')
+  const sortKey = normalizeQueryText(query.sort || 'latest', 32).toLowerCase()
+
+  const categoryValues = normalizeQueryList(getQueryValue(query, 'category', 'productType', 'type'), {
+    lowercase: false,
+  })
+  const purposeValues = normalizeQueryList(getQueryValue(query, 'purpose', 'occasion'))
+  const familyValues = normalizeQueryList(getQueryValue(query, 'family', 'fragranceFamily', 'fragrance_family'))
+  const seasonValues = normalizeQueryList(query.season)
+  const genderValues = normalizeQueryList(query.gender)
+  const directionValues = normalizeQueryList(getQueryValue(query, 'direction', 'fragranceDirection', 'fragrance_direction'))
+  const collectionValues = normalizeQueryList(query.collection)
+  const sizeValues = normalizeQueryList(getQueryValue(query, 'size', 'ml', 'pack', 'packSize'), {
+    lowercase: false,
+  })
+
+  let minPrice = parsePriceFilter(query.minPrice)
+  let maxPrice = parsePriceFilter(query.maxPrice)
+  if (minPrice !== null && maxPrice !== null && minPrice > maxPrice) {
+    ;[minPrice, maxPrice] = [maxPrice, minPrice]
+  }
+
+  return {
+    page,
+    limit,
+    keyword,
+    buyer,
+    bestSeller,
+    availability,
+    sortObj: SORT_MAP[sortKey] || SORT_MAP.latest,
+    categoryValues,
+    purposeValues,
+    familyValues,
+    seasonValues,
+    genderValues,
+    directionValues,
+    collectionValues,
+    sizeValues,
+    minPrice,
+    maxPrice,
+  }
+}
+
+const buildProductsFilter = (parts) => {
+  const clauses = []
+
+  if (parts.keyword) {
+    const safeKeyword = escapeRegex(parts.keyword)
+    clauses.push({
+      $or: [
+        { name: { $regex: safeKeyword, $options: 'i' } },
+        { shortDescription: { $regex: safeKeyword, $options: 'i' } },
+        { description: { $regex: safeKeyword, $options: 'i' } },
+      ],
+    })
+  }
+
+  if (parts.categoryValues.length) {
+    clauses.push({ category: { $in: parts.categoryValues.map(makeExactTextRegex) } })
+  }
+
+  if (parts.buyer === 'personal') {
+    clauses.push({ buyerType: { $in: ['personal', 'both'] } })
+  } else if (parts.buyer === 'industrial') {
+    clauses.push({ buyerType: { $in: ['industrial', 'both'] } })
+  } else if (parts.buyer === 'both') {
+    clauses.push({ buyerType: 'both' })
+  }
+
+  addTagClause(clauses, 'purposeTags', parts.purposeValues)
+  addTagClause(clauses, 'familyTags', parts.familyValues)
+  addTagClause(clauses, 'seasonTags', parts.seasonValues)
+  addTagClause(clauses, 'genderTags', parts.genderValues)
+  addTagClause(clauses, 'directionTags', parts.directionValues)
+  addTagClause(clauses, 'featuredCollections', parts.collectionValues)
+
+  if (parts.bestSeller && TRUTHY_QUERY_VALUES.has(parts.bestSeller)) {
+    clauses.push({ isBestSeller: true })
+  }
+
+  if (parts.minPrice !== null || parts.maxPrice !== null) {
+    const priceClause = {}
+    if (parts.minPrice !== null) priceClause.$gte = parts.minPrice
+    if (parts.maxPrice !== null) priceClause.$lte = parts.maxPrice
+    clauses.push({ price: priceClause })
+  }
+
+  if (parts.sizeValues.length) {
+    const sizeRegexes = parts.sizeValues.map(makeLooseSizeRegex).filter(Boolean)
+    if (sizeRegexes.length) {
+      clauses.push({
+        $or: [
+          { 'packs.label': { $in: sizeRegexes } },
+          { availableSizesText: { $in: sizeRegexes } },
+        ],
+      })
+    }
+  }
+
+  if (['in_stock', 'available'].includes(parts.availability)) {
+    clauses.push({
+      $or: [
+        { stock: { $gt: 0 } },
+        { packs: { $elemMatch: { stock: { $gt: 0 } } } },
+      ],
+    })
+  } else if (['out_of_stock', 'sold_out', 'unavailable'].includes(parts.availability)) {
+    clauses.push({
+      $and: [
+        {
+          $or: [{ stock: { $lte: 0 } }, { stock: { $exists: false } }],
+        },
+        {
+          $or: [
+            { packs: { $exists: false } },
+            { packs: { $size: 0 } },
+            { packs: { $not: { $elemMatch: { stock: { $gt: 0 } } } } },
+          ],
+        },
+      ],
+    })
+  }
+
+  return clauses.length ? { $and: clauses } : {}
+}
+
 const findReviewOrder = async (orderId) => {
   const value = String(orderId || '').trim()
   if (!value) return null
@@ -178,109 +391,16 @@ router.get(
       }
     }
 
-    const page = Math.max(1, Number(req.query.page) || 1)
-    const limit = Math.min(Math.max(Number(req.query.limit) || 12, 1), 100)
+    const queryParts = getProductsQueryParts(req.query)
+    const { page, limit } = queryParts
     const skip = (page - 1) * limit
-
-    const keyword = (req.query.keyword || '').trim()
-    const category = (req.query.category || '').trim()
-    const buyer = (req.query.buyer || '').trim()
-    const purposeRaw = (req.query.purpose || '').trim()
-    const familyRaw = (req.query.family || '').trim()
-    const seasonRaw = (req.query.season || '').trim()
-    const genderRaw = (req.query.gender || '').trim()
-    const directionRaw = (req.query.direction || '').trim()
-    const collectionRaw = (req.query.collection || '').trim()
-    const bestSeller = (req.query.bestSeller || '').toString().trim()
-    const minPrice = req.query.minPrice !== undefined ? Number(req.query.minPrice) : undefined
-    const maxPrice = req.query.maxPrice !== undefined ? Number(req.query.maxPrice) : undefined
-    const sort = (req.query.sort || 'newest').trim()
-
-    const filter = {}
-    if (keyword) {
-      const safeKeyword = escapeRegex(keyword)
-      filter.$or = [
-        { name: { $regex: safeKeyword, $options: 'i' } },
-        { shortDescription: { $regex: safeKeyword, $options: 'i' } },
-        { description: { $regex: safeKeyword, $options: 'i' } },
-      ]
-    }
-    if (category) {
-      filter.category = category
-    }
-    if (buyer === 'personal') {
-      filter.buyerType = { $in: ['personal', 'both'] }
-    } else if (buyer === 'industrial') {
-      filter.buyerType = { $in: ['industrial', 'both'] }
-    }
-
-    const purposes = purposeRaw
-      ? purposeRaw
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean)
-      : []
-    const families = familyRaw
-      ? familyRaw
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean)
-      : []
-    const seasons = seasonRaw
-      ? seasonRaw
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean)
-      : []
-    const genders = genderRaw
-      ? genderRaw
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean)
-      : []
-    const directions = directionRaw
-      ? directionRaw
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean)
-      : []
-    const collections = collectionRaw
-      ? collectionRaw
-          .split(',')
-          .map((s) => s.trim().toLowerCase())
-          .filter(Boolean)
-      : []
-
-    if (purposes.length) filter.purposeTags = { $in: purposes }
-    if (families.length) filter.familyTags = { $in: families }
-    if (seasons.length) filter.seasonTags = { $in: seasons }
-    if (genders.length) filter.genderTags = { $in: genders }
-    if (directions.length) filter.directionTags = { $in: directions }
-    if (collections.length) filter.featuredCollections = { $in: collections }
-    if (bestSeller && ['1', 'true', 'yes', 'on'].includes(bestSeller.toLowerCase())) {
-      filter.isBestSeller = true
-    }
-    if (minPrice !== undefined || maxPrice !== undefined) {
-      filter.price = {}
-      if (minPrice !== undefined && !Number.isNaN(minPrice)) filter.price.$gte = minPrice
-      if (maxPrice !== undefined && !Number.isNaN(maxPrice)) filter.price.$lte = maxPrice
-    }
-
-    const sortMap = {
-      newest: { createdAt: -1 },
-      price_asc: { price: 1 },
-      price_desc: { price: -1 },
-      rating_desc: { rating: -1 },
-      name_asc: { name: 1 },
-    }
-
-    const sortObj = sortMap[sort] || sortMap.newest
+    const filter = buildProductsFilter(queryParts)
 
     const [total, products] = await Promise.all([
       Product.countDocuments(filter),
       Product.find(filter)
         .select(req.user?.isAdmin === true ? ADMIN_PRODUCT_LIST_SELECT : PUBLIC_PRODUCT_LIST_SELECT)
-        .sort(sortObj)
+        .sort(queryParts.sortObj)
         .skip(skip)
         .limit(limit)
         .lean(),

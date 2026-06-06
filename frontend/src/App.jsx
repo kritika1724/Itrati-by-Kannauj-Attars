@@ -13,6 +13,7 @@ import SiteFooter from './components/SiteFooter'
 import SitePopupBanner from './components/banners/SitePopupBanner'
 import LeadCouponModal from './components/LeadCouponModal'
 import { BUSINESS } from './config/business'
+import { useGlobalAutoplayVideos } from './hooks/useAutoplayVideo'
 import { pageShell } from './lib/motion'
 import { wishlistStorage } from './components/product/wishlist'
 
@@ -20,6 +21,7 @@ const Home = lazy(() => import('./pages/Home'))
 const Collections = lazy(() => import('./pages/Collections'))
 const Contact = lazy(() => import('./pages/Contact'))
 const Products = lazy(() => import('./pages/Products'))
+const ProductFilters = lazy(() => import('./pages/ProductFilters'))
 const Wishlist = lazy(() => import('./pages/Wishlist'))
 const ProductDetail = lazy(() => import('./pages/ProductDetail'))
 const TrackOrder = lazy(() => import('./pages/TrackOrder'))
@@ -146,11 +148,15 @@ function AppShell() {
   const inAdminArea = isAdmin && location.pathname.startsWith('/admin')
   const { scrollYProgress } = useScroll()
   const routeKey = location.pathname
+  const isProductFiltersPage = location.pathname === '/products/filters'
+  const hideSiteChrome = !inAdminArea && isProductFiltersPage
   const progressScaleX = useSpring(scrollYProgress, {
     stiffness: 120,
     damping: 24,
     mass: 0.55,
   })
+
+  useGlobalAutoplayVideos()
 
   useEffect(() => {
     const onAuth = () => setUser(auth.getUser())
@@ -275,8 +281,8 @@ function AppShell() {
         style={{ scaleX: progressScaleX }}
       />
       <CursorGlow />
-      {!inAdminArea ? <SitePopupBanner /> : null}
-      {!inAdminArea ? <LeadCouponModal /> : null}
+      {!inAdminArea && !hideSiteChrome ? <SitePopupBanner /> : null}
+      {!inAdminArea && !hideSiteChrome ? <LeadCouponModal /> : null}
       {inAdminArea ? (
         <header className="sticky top-0 z-20 border-b border-gold/20 bg-[linear-gradient(135deg,#070B18,#111B3A)] shadow-[0_18px_40px_rgba(7,11,24,0.35)]">
           <div className="ka-container flex flex-wrap items-center justify-between gap-4 py-4">
@@ -323,7 +329,7 @@ function AppShell() {
             </nav>
           </div>
         </header>
-      ) : (
+      ) : hideSiteChrome ? null : (
         <header
           ref={headerRef}
           className="ka-nav-shell sticky top-0 z-40 relative border-b border-white/45 bg-[linear-gradient(180deg,rgba(255,250,244,0.76),rgba(255,250,244,0.58))] shadow-[0_18px_50px_rgba(37,25,16,0.10)] backdrop-blur-2xl"
@@ -559,6 +565,7 @@ function AppShell() {
         <Route path="/explore" element={<Navigate to="/" replace />} />
         <Route path="/discovery-set" element={<Navigate to="/products?keyword=Discovery%20Set" replace />} />
         <Route path="/products" element={<Products />} />
+        <Route path="/products/filters" element={<ProductFilters />} />
         <Route
           path="/wishlist"
           element={
@@ -745,7 +752,7 @@ function AppShell() {
         </motion.main>
       </AnimatePresence>
 
-      {!inAdminArea ? <SiteFooter /> : null}
+      {!inAdminArea && !hideSiteChrome ? <SiteFooter /> : null}
     </div>
   )
 }

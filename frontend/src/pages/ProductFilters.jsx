@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { FiCheck, FiChevronDown, FiChevronLeft, FiFilter } from 'react-icons/fi'
+import { FiCheck, FiChevronDown, FiFilter, FiX } from 'react-icons/fi'
 import { useTaxonomy } from '../components/TaxonomyProvider'
 import {
   buildChoiceList,
@@ -36,6 +36,26 @@ const createSectionState = ({
   occasion: selectedOccasions.length > 0,
 })
 
+const APPLIED_FILTER_KEYS = [
+  'category',
+  'productType',
+  'type',
+  'purpose',
+  'occasion',
+  'family',
+  'fragranceFamily',
+  'fragrance_family',
+  'season',
+  'gender',
+  'direction',
+  'fragranceDirection',
+  'fragrance_direction',
+  'minPrice',
+  'maxPrice',
+  'bestSeller',
+  'page',
+]
+
 function ProductFilters() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -61,11 +81,11 @@ function ProductFilters() {
   const directionChoices = useMemo(() => buildChoiceList(DIRECTION_DEFAULTS, taxonomyDirections), [taxonomyDirections])
   const occasionChoices = useMemo(() => buildChoiceList(OCCASION_DEFAULTS, taxonomyPurposes), [taxonomyPurposes])
 
-  const purposeValues = buildIdSet(occasionChoices)
-  const familyValues = buildIdSet(familyChoices)
-  const seasonValues = buildIdSet(seasonChoices)
-  const genderValues = buildIdSet(genderChoices)
-  const directionValues = buildIdSet(directionChoices)
+  const purposeValues = useMemo(() => buildIdSet(occasionChoices), [occasionChoices])
+  const familyValues = useMemo(() => buildIdSet(familyChoices), [familyChoices])
+  const seasonValues = useMemo(() => buildIdSet(seasonChoices), [seasonChoices])
+  const genderValues = useMemo(() => buildIdSet(genderChoices), [genderChoices])
+  const directionValues = useMemo(() => buildIdSet(directionChoices), [directionChoices])
 
   const [selectedCategory, setSelectedCategory] = useState('')
   const [minPrice, setMinPrice] = useState('')
@@ -76,6 +96,7 @@ function ProductFilters() {
   const [selectedGenders, setSelectedGenders] = useState([])
   const [selectedOccasions, setSelectedOccasions] = useState([])
   const [bestSellerOnly, setBestSellerOnly] = useState(false)
+
   const [openSections, setOpenSections] = useState({
     popular: true,
     category: false,
@@ -98,7 +119,10 @@ function ProductFilters() {
     const nextCategory = (searchParams.get('category') || '').trim()
     const nextMinPrice = (searchParams.get('minPrice') || '').trim()
     const nextMaxPrice = (searchParams.get('maxPrice') || '').trim()
-    const nextBestSeller = ['1', 'true', 'yes', 'on'].includes((searchParams.get('bestSeller') || '').trim().toLowerCase())
+    const nextBestSeller = ['1', 'true', 'yes', 'on'].includes(
+      (searchParams.get('bestSeller') || '').trim().toLowerCase()
+    )
+
     const nextFamilies = readListParam(searchParams, 'family', familyValues)
     const nextDirections = readListParam(searchParams, 'direction', directionValues)
     const nextSeasons = readListParam(searchParams, 'season', seasonValues)
@@ -114,6 +138,7 @@ function ProductFilters() {
     setSelectedSeasons(nextSeasons)
     setSelectedGenders(nextGenders)
     setSelectedOccasions(nextOccasions)
+
     setOpenSections((current) => {
       const derived = createSectionState({
         bestSellerOnly: nextBestSeller,
@@ -129,9 +154,28 @@ function ProductFilters() {
 
       return Object.values(derived).some(Boolean)
         ? derived
-        : { ...current, popular: true, category: false, price: false, family: false, direction: false, season: false, gender: false, occasion: false }
+        : {
+            ...current,
+            popular: true,
+            category: false,
+            price: false,
+            family: false,
+            direction: false,
+            season: false,
+            gender: false,
+            occasion: false,
+          }
     })
-  }, [searchKey, taxonomyLoading, familyValues.size, directionValues.size, seasonValues.size, genderValues.size, purposeValues.size])
+  }, [
+    searchKey,
+    taxonomyLoading,
+    familyValues,
+    directionValues,
+    seasonValues,
+    genderValues,
+    purposeValues,
+    searchParams,
+  ])
 
   const activeFilterCount = countActiveFilters({
     selectedCategory,
@@ -161,6 +205,7 @@ function ProductFilters() {
     setSelectedGenders([])
     setSelectedOccasions([])
     setBestSellerOnly(false)
+
     setOpenSections({
       popular: true,
       category: false,
@@ -175,13 +220,13 @@ function ProductFilters() {
 
   const applyFilters = () => {
     const nextParams = new URLSearchParams(searchParams)
+
     const setOrDelete = (key, value) => {
-      if (value) {
-        nextParams.set(key, value)
-      } else {
-        nextParams.delete(key)
-      }
+      if (value) nextParams.set(key, value)
+      else nextParams.delete(key)
     }
+
+    APPLIED_FILTER_KEYS.forEach((key) => nextParams.delete(key))
 
     setOrDelete('category', selectedCategory)
     setOrDelete('purpose', selectedOccasions.join(','))
@@ -192,50 +237,50 @@ function ProductFilters() {
     setOrDelete('minPrice', minPrice)
     setOrDelete('maxPrice', maxPrice)
     setOrDelete('bestSeller', bestSellerOnly ? '1' : '')
-    nextParams.delete('page')
 
     const nextQuery = nextParams.toString()
     navigate(`/products${nextQuery ? `?${nextQuery}` : ''}`)
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#FCFBF8_0%,#F5EEE3_100%)] text-[#19213C]">
-      <header className="sticky top-0 z-20 border-b border-[rgba(25,33,60,0.08)] bg-[rgba(252,251,248,0.92)] backdrop-blur-xl">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <div className="flex items-center gap-3">
-            <Link
-              to={productsHref}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[rgba(25,33,60,0.1)] bg-white text-[#19213C] shadow-[0_12px_30px_rgba(25,33,60,0.08)]"
-            >
-              <FiChevronLeft size={18} />
-            </Link>
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#8D7667]">Filter products</p>
-              <h1 className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-[#19213C] sm:text-3xl">Choose what to show</h1>
-            </div>
+    <div className="min-h-[100dvh] w-full overflow-x-hidden bg-[linear-gradient(180deg,#FCFBF8_0%,#F5EEE3_100%)] text-[#19213C]">
+      <header className="sticky top-0 z-40 border-b border-[rgba(25,33,60,0.08)] bg-[rgba(252,251,248,0.96)] backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-5xl min-w-0 items-center justify-between gap-3 px-4 py-4 sm:px-6">
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-semibold text-[#19213C] sm:text-3xl">
+              Product Filters
+            </h1>
+            <p className="mt-1 truncate text-xs font-medium text-[#6B6F7A]">
+              {activeFilterCount > 0 ? `${activeFilterCount} selected` : 'All products'}
+            </p>
           </div>
-          <button
-            type="button"
-            onClick={clearAll}
-            disabled={activeFilterCount === 0}
-            className="rounded-full border border-[rgba(25,33,60,0.1)] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#19213C] transition hover:border-[rgba(200,169,106,0.38)] disabled:cursor-not-allowed disabled:opacity-40"
+
+          <Link
+            to={productsHref}
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[rgba(25,33,60,0.1)] bg-white text-[#19213C] shadow-[0_12px_28px_rgba(25,33,60,0.08)]"
+            aria-label="Close filters"
           >
-            Clear all
-          </button>
+            <FiX size={20} />
+          </Link>
         </div>
       </header>
 
-      <main className="px-4 pb-36 pt-6 sm:px-6">
-        <div className="mx-auto w-full max-w-5xl space-y-4">
-          <section className="rounded-[1.8rem] border border-[rgba(25,33,60,0.08)] bg-white/92 p-5 shadow-[0_20px_60px_rgba(25,33,60,0.06)]">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+      <main className="px-3 pb-[calc(8.5rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pt-6">
+        <div className="w-full max-w-5xl mx-auto space-y-3 sm:space-y-4">
+          <section className="rounded-[1.4rem] border border-[rgba(25,33,60,0.08)] bg-white/95 p-4 shadow-[0_16px_45px_rgba(25,33,60,0.06)] sm:rounded-[1.8rem] sm:p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#8D7667]">Current selection</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#8D7667] sm:text-xs">
+                  Current selection
+                </p>
                 <p className="mt-2 text-sm text-[#5F6475]">
-                  {activeFilterCount > 0 ? `${activeFilterCount} filters ready to apply` : 'No filters selected yet. Open any heading below.'}
+                  {activeFilterCount > 0
+                    ? `${activeFilterCount} filters ready to apply`
+                    : 'No filters selected yet. Open any heading below.'}
                 </p>
               </div>
-              <span className="inline-flex items-center gap-2 rounded-full bg-[rgba(25,33,60,0.06)] px-4 py-2 text-sm font-semibold text-[#19213C]">
+
+              <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[rgba(25,33,60,0.06)] px-4 py-2 text-sm font-semibold text-[#19213C]">
                 <FiFilter size={16} />
                 {activeFilterCount > 0 ? `${activeFilterCount} active` : 'All products'}
               </span>
@@ -251,15 +296,17 @@ function ProductFilters() {
             <button
               type="button"
               onClick={() => setBestSellerOnly((value) => !value)}
-              className={`flex w-full items-center justify-between rounded-[1.3rem] border px-4 py-4 text-left transition ${
+              className={`flex w-full items-center justify-between gap-3 rounded-[1.15rem] border px-4 py-4 text-left transition ${
                 bestSellerOnly
                   ? 'border-[rgba(200,169,106,0.42)] bg-[rgba(200,169,106,0.10)]'
                   : 'border-[rgba(25,33,60,0.08)] bg-white hover:border-[rgba(200,169,106,0.28)]'
               }`}
             >
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-semibold text-[#19213C]">Only bestselling products</p>
-                <p className="mt-1 text-xs text-[#6B6F7A]">Keep the top-performing fragrances at the front.</p>
+                <p className="mt-1 text-xs leading-relaxed text-[#6B6F7A]">
+                  Keep the top-performing fragrances at the front.
+                </p>
               </div>
               <SelectionDot active={bestSellerOnly} />
             </button>
@@ -275,6 +322,7 @@ function ProductFilters() {
               <ChoiceChip active={!selectedCategory} onClick={() => setSelectedCategory('')}>
                 All
               </ChoiceChip>
+
               {categories.map((category) => (
                 <ChoiceChip
                   key={category}
@@ -293,29 +341,9 @@ function ProductFilters() {
             open={openSections.price}
             onToggle={() => toggleSection('price')}
           >
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="rounded-[1.3rem] border border-[rgba(25,33,60,0.08)] bg-white px-4 py-3">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8D7667]">Min price</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={minPrice}
-                  onChange={(event) => setMinPrice(event.target.value)}
-                  placeholder="0"
-                  className="mt-2 w-full bg-transparent text-sm font-semibold text-[#19213C] outline-none placeholder:text-[#9AA0AE]"
-                />
-              </label>
-              <label className="rounded-[1.3rem] border border-[rgba(25,33,60,0.08)] bg-white px-4 py-3">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8D7667]">Max price</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={maxPrice}
-                  onChange={(event) => setMaxPrice(event.target.value)}
-                  placeholder="5000"
-                  className="mt-2 w-full bg-transparent text-sm font-semibold text-[#19213C] outline-none placeholder:text-[#9AA0AE]"
-                />
-              </label>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <PriceInput label="Min price" value={minPrice} onChange={setMinPrice} placeholder="0" />
+              <PriceInput label="Max price" value={maxPrice} onChange={setMaxPrice} placeholder="5000" />
             </div>
           </FilterSection>
 
@@ -329,7 +357,9 @@ function ProductFilters() {
               items={familyChoices}
               selectedItems={selectedFamilies}
               onToggle={(id) =>
-                setSelectedFamilies((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
+                setSelectedFamilies((prev) =>
+                  prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+                )
               }
             />
           </FilterSection>
@@ -344,7 +374,9 @@ function ProductFilters() {
               items={directionChoices}
               selectedItems={selectedDirections}
               onToggle={(id) =>
-                setSelectedDirections((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
+                setSelectedDirections((prev) =>
+                  prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+                )
               }
             />
           </FilterSection>
@@ -359,7 +391,9 @@ function ProductFilters() {
               items={seasonChoices}
               selectedItems={selectedSeasons}
               onToggle={(id) =>
-                setSelectedSeasons((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
+                setSelectedSeasons((prev) =>
+                  prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+                )
               }
             />
           </FilterSection>
@@ -374,7 +408,9 @@ function ProductFilters() {
               items={genderChoices}
               selectedItems={selectedGenders}
               onToggle={(id) =>
-                setSelectedGenders((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
+                setSelectedGenders((prev) =>
+                  prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+                )
               }
             />
           </FilterSection>
@@ -389,35 +425,37 @@ function ProductFilters() {
               items={occasionChoices}
               selectedItems={selectedOccasions}
               onToggle={(id) =>
-                setSelectedOccasions((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
+                setSelectedOccasions((prev) =>
+                  prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+                )
               }
             />
           </FilterSection>
         </div>
       </main>
 
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[rgba(25,33,60,0.08)] bg-[rgba(252,251,248,0.94)] px-4 py-4 backdrop-blur-xl sm:px-6">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3">
-          <p className="text-sm text-[#5F6475]">
-            {activeFilterCount > 0 ? `${activeFilterCount} filters selected` : 'Showing all products'}
-          </p>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={clearAll}
-              disabled={activeFilterCount === 0}
-              className="rounded-full border border-[rgba(25,33,60,0.1)] bg-white px-4 py-2.5 text-sm font-semibold text-[#19213C] transition hover:border-[rgba(200,169,106,0.38)] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Clear all
-            </button>
-            <button
-              type="button"
-              onClick={applyFilters}
-              className="rounded-full bg-[#19213C] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(25,33,60,0.18)] transition hover:bg-[#10162A]"
-            >
-              Apply filters
-            </button>
-          </div>
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-[rgba(25,33,60,0.08)] bg-[rgba(252,251,248,0.97)] px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-xl">
+        <p className="mb-3 text-center text-xs text-[#5F6475]">
+          {activeFilterCount > 0 ? `${activeFilterCount} filters selected` : 'Showing all products'}
+        </p>
+
+        <div className="grid w-full max-w-5xl grid-cols-2 gap-3 mx-auto">
+          <button
+            type="button"
+            onClick={clearAll}
+            disabled={activeFilterCount === 0}
+            className="rounded-full border border-[rgba(25,33,60,0.12)] bg-white px-4 py-3 text-sm font-semibold text-[#19213C] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Clear all
+          </button>
+
+          <button
+            type="button"
+            onClick={applyFilters}
+            className="rounded-full bg-[#19213C] px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(25,33,60,0.18)]"
+          >
+            Apply filters
+          </button>
         </div>
       </div>
     </div>
@@ -426,40 +464,52 @@ function ProductFilters() {
 
 function FilterSection({ title, summary, open, onToggle, children }) {
   return (
-    <section className="overflow-hidden rounded-[1.8rem] border border-[rgba(25,33,60,0.08)] bg-white/92 shadow-[0_18px_50px_rgba(25,33,60,0.05)]">
+    <section className="overflow-hidden rounded-[1.4rem] border border-[rgba(25,33,60,0.08)] bg-white/95 shadow-[0_14px_40px_rgba(25,33,60,0.05)] sm:rounded-[1.8rem]">
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left sm:px-6"
+        className="flex items-center justify-between w-full gap-4 px-4 py-4 text-left sm:px-6 sm:py-5"
       >
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8D7667]">{title}</p>
-          <p className="mt-2 text-sm text-[#5F6475]">{summary}</p>
+        <div className="min-w-0">
+          <p className="truncate text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8D7667] sm:text-xs">
+            {title}
+          </p>
+          <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-[#5F6475]">{summary}</p>
         </div>
-        <FiChevronDown className={`shrink-0 text-[#19213C] transition ${open ? 'rotate-180' : ''}`} size={18} />
+
+        <FiChevronDown
+          className={`shrink-0 text-[#19213C] transition ${open ? 'rotate-180' : ''}`}
+          size={18}
+        />
       </button>
-      {open ? <div className="border-t border-[rgba(25,33,60,0.06)] px-5 py-5 sm:px-6">{children}</div> : null}
+
+      {open ? (
+        <div className="border-t border-[rgba(25,33,60,0.06)] px-4 py-4 sm:px-6 sm:py-5">
+          {children}
+        </div>
+      ) : null}
     </section>
   )
 }
 
 function OptionGrid({ items = [], selectedItems = [], onToggle }) {
   return (
-    <div className="grid gap-2 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
       {items.map((item) => {
         const active = selectedItems.includes(item.id)
+
         return (
           <button
             key={item.id}
             type="button"
             onClick={() => onToggle(item.id)}
-            className={`flex items-center justify-between rounded-[1.3rem] border px-4 py-3 text-left transition ${
+            className={`flex min-w-0 items-center justify-between gap-3 rounded-[1.15rem] border px-4 py-3 text-left transition ${
               active
                 ? 'border-[rgba(200,169,106,0.42)] bg-[rgba(200,169,106,0.10)]'
                 : 'border-[rgba(25,33,60,0.08)] bg-white hover:border-[rgba(200,169,106,0.28)]'
             }`}
           >
-            <span className="text-sm font-semibold text-[#19213C]">{item.label}</span>
+            <span className="min-w-0 truncate text-sm font-semibold text-[#19213C]">{item.label}</span>
             <SelectionDot active={active} />
           </button>
         )
@@ -473,24 +523,44 @@ function ChoiceChip({ active = false, onClick, children }) {
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
+      className={`max-w-full rounded-full border px-4 py-2 text-sm font-semibold transition ${
         active
           ? 'border-[rgba(200,169,106,0.44)] bg-[rgba(200,169,106,0.12)] text-[#C9A24A]'
           : 'border-[rgba(25,33,60,0.08)] bg-white text-[#19213C] hover:border-[rgba(200,169,106,0.3)]'
       }`}
     >
-      {children}
+      <span className="block max-w-[220px] truncate sm:max-w-none">{children}</span>
     </button>
+  )
+}
+
+function PriceInput({ label, value, onChange, placeholder }) {
+  return (
+    <label className="block rounded-[1.15rem] border border-[rgba(25,33,60,0.08)] bg-white px-4 py-3">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#8D7667]">
+        {label}
+      </span>
+
+      <input
+        type="number"
+        min="0"
+        inputMode="numeric"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="mt-2 block w-full min-w-0 bg-transparent text-base font-semibold text-[#19213C] outline-none placeholder:text-[#9AA0AE] sm:text-sm"
+      />
+    </label>
   )
 }
 
 function SelectionDot({ active = false }) {
   return active ? (
-    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#C9A24A] text-white">
+    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#C9A24A] text-white">
       <FiCheck size={12} />
     </span>
   ) : (
-    <span className="h-5 w-5 rounded-full border border-[rgba(25,33,60,0.16)] bg-white" />
+    <span className="h-5 w-5 shrink-0 rounded-full border border-[rgba(25,33,60,0.16)] bg-white" />
   )
 }
 

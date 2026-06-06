@@ -2,11 +2,33 @@ import { useEffect, useMemo, useState } from 'react'
 import { getMediaAccept, isVideoAssetUrl, toAssetUrl } from '../utils/media'
 import { useSiteAssets } from '../components/SiteAssetsProvider'
 import { SITE_ASSET_KEYS } from '../config/siteAssets'
+import { useAutoplayVideo } from '../hooks/useAutoplayVideo'
 
 const clampZoom = (value) => {
   const n = Number(value)
   if (!Number.isFinite(n)) return 1
   return Math.min(Math.max(n, 1), 2.5)
+}
+
+function AutoplayVideoPreview({ src, className = '' }) {
+  const videoRef = useAutoplayVideo(src)
+
+  return (
+    <video
+      ref={videoRef}
+      src={src}
+      className={className}
+      autoPlay
+      muted
+      defaultMuted
+      loop
+      playsInline
+      controls
+      disablePictureInPicture
+      disableRemotePlayback
+      preload="auto"
+    />
+  )
 }
 
 function AdminMedia() {
@@ -115,11 +137,9 @@ function AdminMedia() {
                 <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
                   {row.url ? (
                     isVideoRow(row) ? (
-                      <video
+                      <AutoplayVideoPreview
                         src={toAssetUrl(row.url, import.meta.env.VITE_API_ASSET)}
                         className="h-44 w-full object-cover"
-                        controls
-                        preload="metadata"
                       />
                     ) : (
                       <img

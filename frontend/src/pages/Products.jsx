@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useDispatch } from 'react-redux'
-import { FiChevronDown, FiFilter, FiSearch, FiX } from 'react-icons/fi'
+import { FiFilter, FiSearch, FiX } from 'react-icons/fi'
 import AddToCartModal from '../components/AddToCartModal'
 import RecentlyViewedStrip from '../components/RecentlyViewedStrip'
 import { useTaxonomy } from '../components/TaxonomyProvider'
@@ -105,6 +105,7 @@ const canonicalCategory = (value) => {
 }
 
 function Products() {
+  const location = useLocation()
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -112,7 +113,6 @@ function Products() {
   const currentParams = useMemo(() => new URLSearchParams(searchKey), [searchKey])
   const user = auth.getUser()
   const isAdmin = user?.isAdmin === true
-  const filtersRef = useRef(null)
   const searchRef = useRef(null)
   const toastTimer = useRef(0)
 
@@ -203,7 +203,6 @@ function Products() {
   const [keywordDraft, setKeywordDraft] = useState(keyword)
   const [minPriceDraft, setMinPriceDraft] = useState(minPrice)
   const [maxPriceDraft, setMaxPriceDraft] = useState(maxPrice)
-  const [filtersOpen, setFiltersOpen] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -249,6 +248,7 @@ function Products() {
     : total === 0
       ? 'No product available'
       : `${total} product${total === 1 ? '' : 's'} available`
+  const filtersHref = `/products/filters${location.search || ''}`
 
   const updateParams = (updates, options = {}) => {
     const nextParams = new URLSearchParams(searchKey)
@@ -309,7 +309,6 @@ function Products() {
     const nextParams = new URLSearchParams(searchKey)
     FILTER_PARAM_KEYS.forEach((key) => nextParams.delete(key))
     setSearchParams(nextParams, { replace: false })
-    setFiltersOpen(false)
     setSearchFocused(false)
   }
 
@@ -444,45 +443,6 @@ function Products() {
   }, [page, productQuery, searchKey, setSearchParams])
 
   useEffect(() => {
-    if (!filtersOpen) return undefined
-
-    const handlePointerOutside = (event) => {
-      if (filtersRef.current && !filtersRef.current.contains(event.target)) {
-        setFiltersOpen(false)
-      }
-    }
-
-    const handleEscape = (event) => {
-      if (event.key === 'Escape') {
-        setFiltersOpen(false)
-      }
-    }
-
-    document.addEventListener('pointerdown', handlePointerOutside)
-    document.addEventListener('keydown', handleEscape)
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerOutside)
-      document.removeEventListener('keydown', handleEscape)
-    }
-  }, [filtersOpen])
-
-  useEffect(() => {
-    if (!filtersOpen || window.matchMedia('(min-width: 1280px)').matches) {
-      return undefined
-    }
-
-    const previousBodyOverflow = document.body.style.overflow
-    const previousHtmlOverflow = document.documentElement.style.overflow
-    document.body.style.overflow = 'hidden'
-    document.documentElement.style.overflow = 'hidden'
-
-    return () => {
-      document.body.style.overflow = previousBodyOverflow
-      document.documentElement.style.overflow = previousHtmlOverflow
-    }
-  }, [filtersOpen])
-
-  useEffect(() => {
     const closeSuggestions = (event) => {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
         setSearchFocused(false)
@@ -586,7 +546,7 @@ function Products() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-clip bg-[linear-gradient(180deg,#FFFFFF_0%,#F7F2EA_52%,#FFFDF8_100%)] text-[#19213C]">
+    <div className="min-h-screen overflow-x-hidden bg-[linear-gradient(180deg,#FFFFFF_0%,#F7F2EA_52%,#FFFDF8_100%)] text-[#19213C]">
       <section className="border-b border-[rgba(25,33,60,0.06)] px-4 pb-5 pt-5 sm:px-6 sm:pb-10 sm:pt-10 lg:px-8">
         <motion.div initial="hidden" animate="show" variants={fadeUp} className="mx-auto w-full max-w-[1480px]">
           {pageMeta ? (
@@ -659,7 +619,7 @@ function Products() {
                 ) : null}
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-1">
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-1">
                 <select
                   value={sort}
                   onChange={(event) => updateParams({ sort: SORT_MAP[event.target.value] || 'latest' })}
@@ -673,33 +633,26 @@ function Products() {
                   ))}
                 </select>
 
-                <div ref={filtersRef} className="relative min-w-0 xl:hidden">
-                  <button
-                    type="button"
-                    onClick={() => setFiltersOpen((value) => !value)}
-                    className="inline-flex w-full items-center justify-between gap-2 rounded-[1.2rem] border border-[rgba(25,33,60,0.08)] bg-white px-3 py-2.5 text-[13px] font-semibold text-[#19213C] shadow-[0_8px_24px_rgba(25,33,60,0.04)] sm:gap-3 sm:rounded-[1.4rem] sm:px-4 sm:py-3 sm:text-sm xl:hidden"
-                    aria-expanded={filtersOpen}
-                  >
+                <Link
+                  to={filtersHref}
+                  className="inline-flex w-full min-w-0 items-center justify-between gap-2 rounded-[1.2rem] border border-[rgba(25,33,60,0.08)] bg-white px-3 py-2.5 text-[13px] font-semibold text-[#19213C] shadow-[0_8px_24px_rgba(25,33,60,0.04)] transition hover:border-[rgba(200,169,106,0.34)] sm:gap-3 sm:rounded-[1.4rem] sm:px-4 sm:py-3 sm:text-sm lg:hidden"
+                  aria-label="Filters"
+                >
                     <span className="inline-flex min-w-0 items-center gap-2">
                       <FiFilter className="shrink-0" size={16} />
                       <span className="truncate">Filters</span>
                     </span>
-                    <span className="inline-flex shrink-0 items-center gap-2">
-                      {activeFilterCount > 0 ? (
-                        <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-[#19213C] px-2 py-0.5 text-[10px] font-semibold text-white">
+                    {activeFilterCount > 0 ? (
+                      <span className="inline-flex shrink-0 items-center gap-2">
+                        <span
+                          className="inline-flex min-w-6 items-center justify-center rounded-full bg-[#19213C] px-2 py-0.5 text-[10px] font-semibold text-white"
+                          aria-hidden="true"
+                        >
                           {activeFilterCount}
                         </span>
-                      ) : null}
-                      <FiChevronDown className={`transition ${filtersOpen ? 'rotate-180' : ''}`} size={16} />
-                    </span>
-                  </button>
-
-                  <FilterSidebar
-                    {...filterPanelProps}
-                    open={filtersOpen}
-                    onClose={() => setFiltersOpen(false)}
-                  />
-                </div>
+                      </span>
+                    ) : null}
+                </Link>
               </div>
             </div>
 
@@ -788,12 +741,11 @@ function Products() {
       </section>
 
       <section className="px-4 pb-16 sm:px-6 lg:px-8">
-        <div className="mx-auto grid w-full max-w-[1480px] gap-5 xl:grid-cols-[19rem_minmax(0,1fr)] xl:items-start">
+        <div className="mx-auto grid w-full max-w-[1480px] gap-5 lg:grid-cols-[19rem_minmax(0,1fr)] lg:items-start">
           <FilterSidebar
             {...filterPanelProps}
             variant="inline"
             open
-            onClose={() => setFiltersOpen(false)}
           />
 
           <div className="min-w-0">
@@ -821,13 +773,6 @@ function Products() {
                   Try removing one filter, widening the price range, or clearing all filters to see the full collection.
                 </p>
                 <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                  <button
-                    type="button"
-                    onClick={() => setFiltersOpen(true)}
-                    className="rounded-full border border-[rgba(25,33,60,0.12)] bg-white px-5 py-3 text-sm font-semibold text-[#19213C] xl:hidden"
-                  >
-                    Change filters
-                  </button>
                   <button
                     type="button"
                     onClick={clearFilters}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
@@ -14,6 +14,7 @@ import { BUSINESS } from '../config/business'
 import { KNOWLEDGE_PAGE_LIST } from '../config/knowledge'
 import { normalizeYoutubeEmbedUrl } from '../config/siteContent'
 import { useHomeYoutubeContent, useSiteContactProfile } from '../hooks/useSiteContentBlocks'
+import { useAutoplayVideo } from '../hooks/useAutoplayVideo'
 import { fadeLeft, fadeUp, heroStagger, revealCard, staggerGrid, viewportOnce } from '../lib/motion'
 import { auth } from '../services/api'
 import { applySeo, resetSeo } from '../utils/seo'
@@ -88,6 +89,26 @@ const clientVoices = [
   },
 ]
 
+const buildAutoplayYoutubeEmbedUrl = (value) => {
+  const embedUrl = normalizeYoutubeEmbedUrl(value)
+  if (!embedUrl) return ''
+
+  try {
+    const url = new URL(embedUrl)
+    const videoId = url.pathname.split('/').filter(Boolean).pop() || ''
+    url.searchParams.set('autoplay', '1')
+    url.searchParams.set('mute', '1')
+    url.searchParams.set('playsinline', '1')
+    url.searchParams.set('loop', '1')
+    url.searchParams.set('rel', '0')
+    url.searchParams.set('modestbranding', '1')
+    if (videoId) url.searchParams.set('playlist', videoId)
+    return url.toString()
+  } catch {
+    return embedUrl
+  }
+}
+
 function Home() {
   useEffect(() => {
     applySeo()
@@ -98,7 +119,6 @@ function Home() {
   const contactProfile = useSiteContactProfile()
   const homeYoutube = useHomeYoutubeContent()
   const [user, setUser] = useState(auth.getUser())
-  const heroVideoRef = useRef(null)
   const [videoBusy, setVideoBusy] = useState(false)
   const [videoMessage, setVideoMessage] = useState('')
   const [deferredReady, setDeferredReady] = useState(false)
@@ -106,7 +126,8 @@ function Home() {
   const homeVideo = assets?.['home.top.video']
     ? toAssetUrl(assets['home.top.video'], import.meta.env.VITE_API_ASSET)
     : ''
-  const homeYoutubeEmbedUrl = normalizeYoutubeEmbedUrl(homeYoutube.youtubeUrl)
+  const homeYoutubeEmbedUrl = buildAutoplayYoutubeEmbedUrl(homeYoutube.youtubeUrl)
+  const heroVideoRef = useAutoplayVideo(homeVideo)
 
   useEffect(() => {
     const onAuth = () => setUser(auth.getUser())
@@ -139,36 +160,6 @@ function Home() {
     }
   }, [])
 
-  useEffect(() => {
-    const video = heroVideoRef.current
-    if (!video || !homeVideo) return undefined
-
-    const ensurePlayback = () => {
-      video.muted = true
-      video.defaultMuted = true
-      video.loop = true
-      video.playsInline = true
-      if (document.visibilityState === 'hidden') return
-      const playPromise = video.play()
-      if (playPromise && typeof playPromise.catch === 'function') {
-        playPromise.catch(() => {})
-      }
-    }
-
-    ensurePlayback()
-    video.addEventListener('loadedmetadata', ensurePlayback)
-    video.addEventListener('canplay', ensurePlayback)
-    window.addEventListener('pageshow', ensurePlayback)
-    document.addEventListener('visibilitychange', ensurePlayback)
-
-    return () => {
-      video.removeEventListener('loadedmetadata', ensurePlayback)
-      video.removeEventListener('canplay', ensurePlayback)
-      window.removeEventListener('pageshow', ensurePlayback)
-      document.removeEventListener('visibilitychange', ensurePlayback)
-    }
-  }, [homeVideo])
-
   const uploadHomeBackgroundVideo = async (file) => {
     setVideoBusy(true)
     setVideoMessage('')
@@ -200,7 +191,7 @@ function Home() {
               disablePictureInPicture
               disableRemotePlayback
               tabIndex={-1}
-              preload="metadata"
+              preload="auto"
             />
           ) : (
             <div className="h-full w-full bg-[radial-gradient(circle_at_28%_18%,rgba(232,208,176,0.26),transparent_30%),radial-gradient(circle_at_72%_26%,rgba(255,255,255,0.14),transparent_34%),linear-gradient(140deg,#1C140F_0%,#5A4430_36%,#C19A61_82%,#F6EFE5_100%)]" />

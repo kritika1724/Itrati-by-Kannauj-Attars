@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { auth } from '../services/api'
 import { useSiteAssets } from './SiteAssetsProvider'
+import { useAutoplayVideo } from '../hooks/useAutoplayVideo'
 import { getMediaAccept, isVideoAssetUrl, toAssetUrl } from '../utils/media'
 
 const parseAspect = (value) => {
@@ -41,6 +42,7 @@ function AdminAssetImage({
   const url = assets?.[assetKey] || ''
   const src = useMemo(() => (url ? toAssetUrl(url, import.meta.env.VITE_API_ASSET) : ''), [url])
   const isVideo = allowVideo && isVideoAssetUrl(url)
+  const videoRef = useAutoplayVideo(isVideo ? src : '')
   const imageZoom = Math.min(Math.max(Number(assets?.[`${assetKey}.zoom`]) || 1, 1), 2.5)
 
   const upload = async (file) => {
@@ -64,14 +66,18 @@ function AdminAssetImage({
       {src ? (
         isVideo ? (
           <video
+            ref={videoRef}
             src={src}
             className={`h-full w-full bg-white ${fit === 'cover' ? 'object-cover' : 'object-contain'} ${imgClassName}`}
             autoPlay
             muted
+            defaultMuted
             loop
             playsInline
             controls={user?.isAdmin === true}
-            preload="metadata"
+            disablePictureInPicture
+            disableRemotePlayback
+            preload="auto"
           />
         ) : (
           <a href={src} target="_blank" rel="noreferrer" className="block h-full w-full">

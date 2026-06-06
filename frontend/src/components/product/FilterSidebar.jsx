@@ -45,16 +45,17 @@ function FilterSidebar({
     <div className={`flex w-full flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.995),rgba(252,249,243,0.985))] overscroll-contain ${
       isInline
         ? 'max-h-[calc(100svh-var(--ka-nav-height,80px)-2rem)] rounded-[18px] border border-[rgba(25,33,60,0.08)] shadow-[0_18px_50px_rgba(25,33,60,0.07)]'
-        : 'h-full max-h-[min(100svh-0.5rem,860px)] rounded-t-[2rem] shadow-[0_32px_90px_rgba(25,33,60,0.16)] md:max-h-[min(84vh,52rem)] md:rounded-[2rem] md:border md:border-[rgba(25,33,60,0.08)] xl:max-h-[min(80vh,46rem)]'
+        : 'h-[calc(100dvh-0.5rem)] max-h-[calc(100svh-0.5rem)] rounded-t-[1.65rem] shadow-[0_32px_90px_rgba(25,33,60,0.16)] md:h-auto md:max-h-[min(84vh,52rem)] md:rounded-[2rem] md:border md:border-[rgba(25,33,60,0.08)] xl:max-h-[min(80vh,46rem)]'
     }`}>
       <div className={`flex justify-center pt-3 md:hidden ${isInline ? 'hidden' : ''}`}>
         <span className="h-1.5 w-14 rounded-full bg-[rgba(25,33,60,0.12)]" />
       </div>
 
-      <div className={`flex items-start justify-between gap-4 border-b border-[rgba(25,33,60,0.08)] px-4 py-4 sm:px-6 sm:py-5 ${isInline ? 'xl:px-5 xl:py-4' : ''}`}>
+      <div className={`shrink-0 border-b border-[rgba(25,33,60,0.08)] px-4 pb-3 pt-3 sm:px-6 sm:py-5 ${isInline ? 'xl:px-5 xl:py-4' : ''}`}>
+        <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8D7667]">Filter & refine</p>
-          <h3 className="mt-2 text-lg font-semibold text-[#19213C] sm:text-xl">{isInline ? 'Filters' : 'Curate your fragrance view'}</h3>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#8D7667] sm:text-xs sm:tracking-[0.32em]">Filter & refine</p>
+          <h3 className="mt-1.5 text-lg font-semibold leading-tight text-[#19213C] sm:mt-2 sm:text-xl">Filters</h3>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${
               activeCount > 0
@@ -75,11 +76,12 @@ function FilterSidebar({
             <FiX size={18} />
           </button>
         ) : null}
+        </div>
       </div>
 
-      <div className={`flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5 ${isInline ? 'xl:px-5 xl:py-4' : ''}`}>
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-1">
-          <section className="md:col-span-2 xl:col-span-1">
+      <div className={`flex-1 overflow-y-auto px-4 py-4 [-webkit-overflow-scrolling:touch] sm:px-6 sm:py-5 ${isInline ? 'lg:px-5 lg:py-4' : ''}`}>
+        <div className={`grid gap-4 sm:gap-5 ${isInline ? 'grid-cols-1' : 'md:grid-cols-2 xl:grid-cols-1'}`}>
+          <section className={isInline ? '' : 'md:col-span-2 xl:col-span-1'}>
             <SectionTitle eyebrow="Category" title="Product type" />
             <div className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
               <PillChoice active={!selectedCategory} onClick={() => onSelectCategory?.('')}>
@@ -97,7 +99,7 @@ function FilterSidebar({
             </div>
           </section>
 
-          <section className="md:col-span-2 xl:col-span-1">
+          <section className={isInline ? '' : 'md:col-span-2 xl:col-span-1'}>
             <SectionTitle eyebrow="Price range" title="Set your budget" />
             <div className="mt-3 grid gap-3 min-[480px]:grid-cols-2">
               <PriceInput label="Min" value={minPrice} onChange={onMinPriceChange} placeholder="0" />
@@ -155,7 +157,7 @@ function FilterSidebar({
             </div>
           </section>
 
-          <section className="md:col-span-2 xl:col-span-1">
+          <section className={isInline ? '' : 'md:col-span-2 xl:col-span-1'}>
             <SectionTitle eyebrow="Popular picks" title="Bestseller edit" />
             <button
               type="button"
@@ -212,8 +214,8 @@ function FilterSidebar({
         </div>
       </div>
 
-      <div className={`border-t border-[rgba(25,33,60,0.08)] bg-white/88 px-4 py-4 sm:px-6 ${isInline ? 'xl:px-5' : ''}`}>
-        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+      <div className={`shrink-0 border-t border-[rgba(25,33,60,0.08)] bg-white/92 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 sm:px-6 sm:pb-4 ${isInline ? 'lg:px-5' : ''}`}>
+        <div className="mb-2.5 flex items-center justify-between gap-3">
           <p className="text-xs font-medium text-[#6B6F7A]">{resultLabel}</p>
           {activeCount > 0 ? (
             <button
@@ -226,12 +228,12 @@ function FilterSidebar({
           ) : null}
         </div>
 
-        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <div className="grid grid-cols-[0.9fr_1.1fr] gap-2.5 sm:flex sm:items-center sm:justify-between sm:gap-3">
           <button
             type="button"
             onClick={onClear}
             disabled={activeCount === 0}
-            className={`w-full rounded-full border border-[rgba(25,33,60,0.1)] bg-white px-4 py-2.5 text-sm font-semibold text-[#19213C] transition hover:border-[rgba(200,169,106,0.38)] disabled:cursor-not-allowed disabled:opacity-45 ${isInline ? '' : 'sm:w-auto'}`}
+            className={`w-full rounded-full border border-[rgba(25,33,60,0.1)] bg-white px-4 py-3 text-sm font-semibold text-[#19213C] transition hover:border-[rgba(200,169,106,0.38)] disabled:cursor-not-allowed disabled:opacity-45 sm:py-2.5 ${isInline ? '' : 'sm:w-auto'}`}
           >
             Clear all
           </button>
@@ -239,10 +241,10 @@ function FilterSidebar({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#19213C] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(25,33,60,0.18)] transition hover:bg-[#11172B] sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#19213C] px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(25,33,60,0.18)] transition hover:bg-[#11172B] sm:w-auto sm:py-2.5"
             >
               <FiSliders size={16} />
-              Apply filters
+              <span className="truncate">Apply</span>
             </button>
           ) : null}
         </div>
@@ -252,7 +254,7 @@ function FilterSidebar({
 
   if (isInline) {
     return (
-      <aside className="hidden xl:block">
+      <aside className="hidden lg:block">
         <div className="sticky top-[calc(var(--ka-nav-height,80px)+1rem)]">
           {content}
         </div>
@@ -304,7 +306,10 @@ function FilterSidebar({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 24 }}
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-              className="fixed inset-x-0 bottom-0 z-[75] px-2 pb-2"
+              className="fixed inset-x-0 bottom-0 z-[75] px-1.5 pb-0"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Product filters"
             >
               {content}
             </motion.div>

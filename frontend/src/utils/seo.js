@@ -1,6 +1,6 @@
-export const DEFAULT_SEO_TITLE = 'ITRATI by Kannauj Attars | Pure Attars, Rose Water & Essential Oils'
+export const DEFAULT_SEO_TITLE = 'ITRATI by Kannauj Attars | Pure Attars, Perfumes, Rose Water & Essential Oils'
 export const DEFAULT_SEO_DESCRIPTION =
-  'Shop pure attars, rose water, essential oils, and heritage fragrances handcrafted in Kannauj by ITRATI by Kannauj Attars.'
+  'Shop pure attars, perfumes, rose water, essential oils, and heritage fragrances handcrafted in Kannauj by ITRATI by Kannauj Attars.'
 
 const ensureMetaTag = (name) => {
   if (typeof document === 'undefined') return null

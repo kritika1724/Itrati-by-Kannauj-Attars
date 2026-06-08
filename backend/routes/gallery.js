@@ -6,6 +6,19 @@ const asyncHandler = require('../utils/asyncHandler')
 
 const router = express.Router()
 
+const VIDEO_EXTS = ['.mp4', '.webm', '.mov', '.m4v', '.ogg']
+
+const inferMediaKind = (url) => {
+  const clean = String(url || '').split('#')[0].split('?')[0].toLowerCase()
+  return VIDEO_EXTS.some((ext) => clean.endsWith(ext)) ? 'video' : 'image'
+}
+
+const normalizeMediaKind = (value, url) => {
+  const kind = String(value || '').trim().toLowerCase()
+  if (kind === 'video' || kind === 'image') return kind
+  return inferMediaKind(url)
+}
+
 // Public: all sections with photos
 router.get(
   '/',
@@ -16,12 +29,18 @@ router.get(
       .lean()
 
     const sectionIds = sections.map((s) => s._id)
-    const photos = sectionIds.length
-      ? await GalleryPhoto.find({ section: { $in: sectionIds } })
-          .select('section url caption order createdAt')
-          .sort({ order: 1, createdAt: 1 })
-          .lean()
-      : []
+    const [photos, standaloneMedia] = await Promise.all([
+      sectionIds.length
+        ? GalleryPhoto.find({ section: { $in: sectionIds } })
+            .select('section url kind caption order createdAt')
+            .sort({ order: 1, createdAt: 1 })
+            .lean()
+        : [],
+      GalleryPhoto.find({ $or: [{ section: null }, { section: { $exists: false } }] })
+        .select('section url kind caption order createdAt')
+        .sort({ order: 1, createdAt: 1 })
+        .lean(),
+    ])
 
     const bySection = photos.reduce((acc, p) => {
       const id = String(p.section)
@@ -31,6 +50,7 @@ router.get(
     }, {})
 
     res.json({
+      standaloneMedia,
       sections: sections.map((s) => ({
         ...s,
         photos: bySection[String(s._id)] || [],
@@ -106,18 +126,60 @@ router.post(
     const section = await GallerySection.findById(req.params.id)
     if (!section) return res.status(404).json({ message: 'Section not found' })
 
-    const { url, caption = '', order = 0 } = req.body || {}
+    const { url, kind, caption = '', order = 0 } = req.body || {}
     const u = String(url || '').trim()
     if (!u) return res.status(400).json({ message: 'url is required' })
 
     const photo = await GalleryPhoto.create({
       section: section._id,
       url: u,
+      kind: normalizeMediaKind(kind, u),
       caption: String(caption || '').trim(),
       order: Number.isFinite(Number(order)) ? Number(order) : 0,
     })
 
     res.status(201).json(photo)
+  })
+)
+
+// Admin: add standalone photo/media without a topic
+router.post(
+  '/photos',
+  protect,
+  adminOnly,
+  asyncHandler(async (req, res) => {
+    const { url, kind, caption = '', order = 0 } = req.body || {}
+    const u = String(url || '').trim()
+    if (!u) return res.status(400).json({ message: 'url is required' })
+
+    const photo = await GalleryPhoto.create({
+      section: null,
+      url: u,
+      kind: normalizeMediaKind(kind, u),
+      caption: String(caption || '').trim(),
+      order: Number.isFinite(Number(order)) ? Number(order) : 0,
+    })
+
+    res.status(201).json(photo)
+  })
+)
+
+// Admin: update photo/media metadata
+router.put(
+  '/photos/:id',
+  protect,
+  adminOnly,
+  asyncHandler(async (req, res) => {
+    const photo = await GalleryPhoto.findById(req.params.id)
+    if (!photo) return res.status(404).json({ message: 'Photo not found' })
+
+    const { caption, order, kind } = req.body || {}
+    if (caption !== undefined) photo.caption = String(caption || '').trim()
+    if (order !== undefined && Number.isFinite(Number(order))) photo.order = Number(order)
+    if (kind !== undefined) photo.kind = normalizeMediaKind(kind, photo.url)
+
+    const updated = await photo.save()
+    res.json(updated)
   })
 )
 

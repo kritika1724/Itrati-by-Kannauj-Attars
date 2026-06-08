@@ -5,10 +5,12 @@ const galleryPhotoSchema = new mongoose.Schema(
     section: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'GallerySection',
-      required: true,
+      required: false,
+      default: null,
       index: true,
     },
     url: { type: String, required: true, trim: true },
+    kind: { type: String, enum: ['image', 'video'], default: 'image' },
     caption: { type: String, default: '', trim: true, maxlength: 120 },
     order: { type: Number, default: 0 },
   },

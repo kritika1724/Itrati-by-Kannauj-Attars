@@ -34,7 +34,8 @@ export function SiteContentProvider({ children }) {
   }, [])
 
   const refresh = useCallback(async () => {
-    setLoading(true)
+    const hasContent = Object.keys(readCachedContent()).length > 0
+    if (!hasContent) setLoading(true)
     try {
       const list = await api.getSiteContent()
       const map = (list || []).reduce((acc, item) => {
@@ -43,6 +44,8 @@ export function SiteContentProvider({ children }) {
       }, {})
       setContents(map)
       persist(map)
+    } catch {
+      // Keep cached copy visible while a slow refresh retries on next navigation/reload.
     } finally {
       setLoading(false)
     }

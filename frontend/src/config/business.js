@@ -33,6 +33,12 @@ export const BUSINESS = {
         'The tradition of crafting natural fragrances continued with care, discipline, and a strong respect for Kannauj’s artisan methods.',
     },
     {
+      year: '1960',
+      title: 'Maya Udhyog Shala',
+      copy:
+        'Maya Udhyog Shala carried the family legacy forward, strengthening its connection with Kannauj perfumery and natural aromatic craft.',
+    },
+    {
       year: '1998',
       title: 'Kannauj Attars',
       copy:
@@ -54,7 +60,7 @@ export const BUSINESS = {
   craftNote:
     'Every fragrance we create is handcrafted in Kannauj using the ancient Deg-Bhapka distillation technique, a traditional method that has remained respected for over 1000 years.',
   giNote:
-    "Our products are GI-tagged, reinforcing authenticity, purity, and a genuine connection to India's perfume heritage.",
+    "Our products are GI-tagged under Reg. No. -157, reinforcing authenticity, purity, and a genuine connection to India's perfume heritage.",
   associations: [
     { name: 'PRESIDENT, THE ATTARS & PERFUMERS ASSOCIATION KANNAUJ', location: '' },
     { name: 'MEMBER, ESSENTIAL ASSOCIATION OF INDIA', location: '' },

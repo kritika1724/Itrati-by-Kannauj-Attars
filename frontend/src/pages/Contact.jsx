@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
 import * as yup from 'yup'
-import { FiMail, FiMapPin, FiPhone } from 'react-icons/fi'
+import { FiCalendar, FiMail, FiMapPin, FiMessageCircle, FiPhone } from 'react-icons/fi'
 import { api, auth } from '../services/api'
 import { useLocation } from 'react-router-dom'
 import { useContactPageContent, useSiteContactProfile } from '../hooks/useSiteContentBlocks'
@@ -10,9 +10,35 @@ import { useContactPageContent, useSiteContactProfile } from '../hooks/useSiteCo
 const schema = yup.object({
   name: yup.string().required('Please enter your name.'),
   email: yup.string().email('Enter a valid email.').required('Email is required.'),
+  phone: yup.string().default(''),
+  contactPreference: yup.string().default('message'),
+  visitOffice: yup.string().default(''),
   requiredQuantity: yup.string().default(''),
   message: yup.string().required('Tell us what you are looking for.'),
 })
+
+const contactPreferenceOptions = [
+  {
+    value: 'message',
+    label: 'Send message',
+    description: 'We will reply with details.',
+    icon: FiMessageCircle,
+  },
+  {
+    value: 'call',
+    label: 'Call me',
+    description: 'Share your number for a callback.',
+    icon: FiPhone,
+  },
+  {
+    value: 'visit',
+    label: 'Visit office',
+    description: 'Request a meeting before coming.',
+    icon: FiCalendar,
+  },
+]
+
+const getCleanPhone = (phone) => String(phone || '').replace(/\s+/g, '')
 
 function Contact() {
   const location = useLocation()
@@ -20,9 +46,12 @@ function Contact() {
   const isAdmin = user?.isAdmin === true
   const contactPageContent = useContactPageContent()
   const contactProfile = useSiteContactProfile()
+  const formRef = useRef(null)
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
+  const [contactPreference, setContactPreference] = useState('message')
+  const [visitOffice, setVisitOffice] = useState('kannauj')
   const {
     register,
     handleSubmit,
@@ -34,6 +63,10 @@ function Contact() {
     clearErrors,
   } = useForm({
     resolver: yupResolver(schema),
+    defaultValues: {
+      contactPreference: 'message',
+      visitOffice: 'kannauj',
+    },
   })
 
   const bulkProductIntent =
@@ -143,6 +176,7 @@ function Contact() {
         if (remembered && typeof remembered === 'object') {
           if (!currentName && remembered.name) setValue('name', String(remembered.name))
           if (!currentEmail && remembered.email) setValue('email', String(remembered.email))
+          if (remembered.phone) setValue('phone', String(remembered.phone))
         }
       } catch {
         // ignore
@@ -156,10 +190,42 @@ function Contact() {
     }
   }, [prefill?.message, user, setValue, getValues])
 
+  const applyContactIntent = (preference) => {
+    setContactPreference(preference)
+    setValue('contactPreference', preference)
+
+    const currentMsg = String(getValues('message') || '').trim()
+    if (!currentMsg) {
+      if (preference === 'call') {
+        setValue('message', 'Hi, I would like to talk on call about my fragrance requirement.')
+      } else if (preference === 'visit') {
+        setValue('message', 'Hi, I would like to visit your office. Please call me to confirm a suitable time.')
+      }
+    }
+
+    window.setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 0)
+  }
+
   const onSubmit = async (data) => {
     try {
       setLoading(true)
       setStatus('')
+      const selectedPreference = String(data.contactPreference || contactPreference || 'message')
+      const selectedPhone = String(data.phone || '').trim()
+      const selectedOfficeKey = String(data.visitOffice || visitOffice || 'kannauj')
+      const selectedOffice = contactProfile.offices?.[selectedOfficeKey]
+
+      if ((selectedPreference === 'call' || selectedPreference === 'visit') && !selectedPhone) {
+        setError('phone', {
+          type: 'manual',
+          message: 'Please share your phone number so we can call you.',
+        })
+        setLoading(false)
+        return
+      }
+
       if (bulkProductIntent && !String(data.requiredQuantity || '').trim()) {
         setError('requiredQuantity', {
           type: 'manual',
@@ -170,16 +236,27 @@ function Contact() {
       }
 
       clearErrors('requiredQuantity')
+      clearErrors('phone')
 
-      const finalMessage = bulkProductIntent
-        ? [
-            `Required quantity: ${String(data.requiredQuantity || '').trim()}`,
-            '',
-            String(data.message || '').trim(),
-          ]
-            .filter(Boolean)
-            .join('\n')
-        : data.message
+      const preferenceLabel =
+        selectedPreference === 'visit'
+          ? 'Wants to visit office'
+          : selectedPreference === 'call'
+            ? 'Wants a phone call'
+            : 'Message inquiry'
+
+      const finalMessage = [
+        `Contact preference: ${preferenceLabel}`,
+        selectedPhone ? `Phone: ${selectedPhone}` : '',
+        selectedPreference === 'visit' && selectedOffice
+          ? `Preferred office: ${selectedOffice.label} - ${selectedOffice.address}`
+          : '',
+        bulkProductIntent ? `Required quantity: ${String(data.requiredQuantity || '').trim()}` : '',
+        '',
+        String(data.message || '').trim(),
+      ]
+        .filter(Boolean)
+        .join('\n')
 
       await api.submitContact({
         ...data,
@@ -192,6 +269,7 @@ function Contact() {
           JSON.stringify({
             name: data.name,
             email: data.email,
+            phone: data.phone,
           })
         )
       } catch {
@@ -242,6 +320,54 @@ function Contact() {
       </header>
 
       <section className="px-6 py-16 bg-sand">
+        <div className="mx-auto mb-10 grid w-full max-w-6xl gap-5 md:grid-cols-2">
+          <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-lg shadow-black/10">
+            <div className="flex items-start gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gold/15 text-emberDark">
+                <FiPhone size={18} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-ink">Call before ordering</p>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  Talk directly for product selection, bulk pricing, or visit timing.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {contactProfile.phones.map((phone) => (
+                    <a
+                      key={phone}
+                      href={`tel:${getCleanPhone(phone)}`}
+                      className="ka-btn-primary px-4 py-2 text-xs"
+                    >
+                      Call {phone}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-lg shadow-black/10">
+            <div className="flex items-start gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gold/15 text-emberDark">
+                <FiMapPin size={18} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-ink">Come and meet us</p>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  Choose a preferred office and we will confirm a suitable meeting time.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => applyContactIntent('visit')}
+                  className="ka-btn-ghost mt-4 px-4 py-2 text-xs"
+                >
+                  Request a visit
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="mx-auto grid w-full max-w-6xl gap-10 lg:grid-cols-[1.05fr_0.95fr]">
           {prefill ? (
             <div className="lg:col-span-2">
@@ -254,6 +380,7 @@ function Contact() {
             </div>
           ) : null}
           <form
+            ref={formRef}
             onSubmit={handleSubmit(onSubmit)}
             className="p-8 border shadow-sm rounded-3xl border-slate-200/80 bg-clay/70"
           >
@@ -276,6 +403,65 @@ function Contact() {
                 />
                 {errors.email && <p className="mt-2 text-xs text-red-600">{errors.email.message}</p>}
               </div>
+              <div>
+                <label className="text-sm font-semibold text-ink">Phone / WhatsApp</label>
+                <input
+                  {...register('phone')}
+                  placeholder="+91..."
+                  className="w-full px-4 py-3 mt-2 text-sm bg-white border rounded-xl border-slate-200 text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/20"
+                />
+                {errors.phone && <p className="mt-2 text-xs text-red-600">{errors.phone.message}</p>}
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-ink">How should we connect?</label>
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  {contactPreferenceOptions.map((option) => {
+                    const Icon = option.icon
+                    const active = contactPreference === option.value
+                    return (
+                      <label
+                        key={option.value}
+                        className={`cursor-pointer rounded-2xl border p-4 transition ${
+                          active
+                            ? 'border-gold/45 bg-white shadow-[0_18px_45px_rgba(201,162,74,0.14)]'
+                            : 'border-slate-200 bg-white/70 hover:border-gold/35'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          value={option.value}
+                          {...register('contactPreference')}
+                          checked={active}
+                          onChange={() => applyContactIntent(option.value)}
+                          className="sr-only"
+                        />
+                        <span className="grid h-9 w-9 place-items-center rounded-full bg-gold/15 text-emberDark">
+                          <Icon size={16} />
+                        </span>
+                        <span className="mt-3 block text-sm font-semibold text-ink">{option.label}</span>
+                        <span className="mt-1 block text-xs leading-5 text-muted">{option.description}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </div>
+              {contactPreference === 'visit' ? (
+                <div>
+                  <label className="text-sm font-semibold text-ink">Preferred office</label>
+                  <select
+                    {...register('visitOffice')}
+                    value={visitOffice}
+                    onChange={(e) => {
+                      setVisitOffice(e.target.value)
+                      setValue('visitOffice', e.target.value)
+                    }}
+                    className="w-full px-4 py-3 mt-2 text-sm bg-white border rounded-xl border-slate-200 text-ink focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/20"
+                  >
+                    <option value="kannauj">{contactProfile.offices.kannauj.label}</option>
+                    <option value="mumbai">{contactProfile.offices.mumbai.label}</option>
+                  </select>
+                </div>
+              ) : null}
               {bulkProductIntent ? (
                 <div>
                   <label className="text-sm font-semibold text-ink">How much do you need?</label>

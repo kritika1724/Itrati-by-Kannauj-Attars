@@ -170,7 +170,7 @@ function FilterSidebar({
             >
               <div className="min-w-0">
                 <p className="text-[13px] font-semibold text-[#19213C] sm:text-sm">Only bestselling products</p>
-                <p className="mt-1 text-xs leading-5 text-[#6B6F7A]">See the most-loved attars, oils, and floral waters first.</p>
+                <p className="mt-1 text-xs leading-5 text-[#6B6F7A]">See the most-loved attars, perfumes, oils, and floral waters first.</p>
               </div>
               <SelectionDot active={bestSellerOnly} />
             </button>

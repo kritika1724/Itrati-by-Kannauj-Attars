@@ -164,7 +164,7 @@ function ProductDetail() {
     const category = String(product.category || 'attar').trim().toLowerCase()
     const description = shortDescription
       ? `${shortDescription} Shop this ${category} from ITRATI by Kannauj Attars.`
-      : `Shop ${product.name} from ITRATI by Kannauj Attars. Explore pure attars, rose water, and essential oils crafted in Kannauj.`
+      : `Shop ${product.name} from ITRATI by Kannauj Attars. Explore pure attars, perfumes, rose water, and essential oils crafted in Kannauj.`
 
     applySeo({ title, description })
     return () => resetSeo()

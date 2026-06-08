@@ -1,8 +1,34 @@
 const API_BASE = import.meta.env.VITE_API_BASE || '/api'
+const PUBLIC_CACHE_TTL_MS = 45_000
+const STATIC_DATA_CACHE_TTL_MS = 5 * 60_000
 
-const withCacheBust = (path) => {
-  const separator = path.includes('?') ? '&' : '?'
-  return `${path}${separator}_=${Date.now()}`
+const responseCache = new Map()
+const inflightRequests = new Map()
+
+const getCacheKey = (path, options = {}) => `${options.method || 'GET'} ${path}`
+
+const getCachedResponse = (key, allowExpired = false) => {
+  const entry = responseCache.get(key)
+  if (!entry) return null
+  if (!allowExpired && entry.expiresAt <= Date.now()) {
+    responseCache.delete(key)
+    return null
+  }
+  return entry.data
+}
+
+const setCachedResponse = (key, data, ttlMs) => {
+  responseCache.set(key, {
+    data,
+    expiresAt: Date.now() + ttlMs,
+  })
+}
+
+const invalidateCache = (pathPrefix = '') => {
+  const needle = ` ${pathPrefix}`
+  responseCache.forEach((_value, key) => {
+    if (!pathPrefix || key.includes(needle)) responseCache.delete(key)
+  })
 }
 
 let memoryToken = null
@@ -34,9 +60,28 @@ const sessionRefresh = async () => {
 }
 
 const request = async (path, options = {}, _retried = false) => {
+  const { cacheTtlMs = 0, forceFresh = false, ...fetchOptions } = options
+  const method = fetchOptions.method || 'GET'
+  const shouldCache = method === 'GET' && cacheTtlMs > 0
+  const cacheKey = shouldCache ? getCacheKey(path, fetchOptions) : ''
+
+  if (shouldCache && !forceFresh) {
+    const cached = getCachedResponse(cacheKey)
+    if (cached) return cached
+
+    const pending = inflightRequests.get(cacheKey)
+    if (pending) return pending
+
+    const next = request(path, { ...options, forceFresh: true }, _retried).finally(() => {
+      inflightRequests.delete(cacheKey)
+    })
+    inflightRequests.set(cacheKey, next)
+    return next
+  }
+
   const headers = {
     'Content-Type': 'application/json',
-    ...(options.headers || {}),
+    ...(fetchOptions.headers || {}),
   }
 
   const token = getToken()
@@ -47,10 +92,14 @@ const request = async (path, options = {}, _retried = false) => {
   let response
   try {
     response = await fetch(`${API_BASE}${path}`, {
-      ...options,
+      ...fetchOptions,
       headers,
     })
   } catch (e) {
+    if (shouldCache) {
+      const stale = getCachedResponse(cacheKey, true)
+      if (stale) return stale
+    }
     // Network error / CORS / backend not running.
     throw new Error(e?.message || 'Network error (backend not reachable)')
   }
@@ -102,7 +151,12 @@ const request = async (path, options = {}, _retried = false) => {
     return null
   }
 
-  return response.json()
+  const data = await response.json()
+  if (shouldCache) {
+    setCachedResponse(cacheKey, data, cacheTtlMs)
+    inflightRequests.delete(cacheKey)
+  }
+  return data
 }
 
 export const api = {
@@ -115,36 +169,65 @@ export const api = {
     return res.json()
   },
   getProducts: (params = {}) => {
+    const { forceFresh = false, ...queryParams } = params
     const qs = new URLSearchParams(
-      Object.entries(params).filter(([, value]) => value !== undefined && value !== '')
+      Object.entries(queryParams).filter(([, value]) => value !== undefined && value !== '')
     ).toString()
-    return request(`/products${qs ? `?${qs}` : ''}`)
+    return request(`/products${qs ? `?${qs}` : ''}`, {
+      cacheTtlMs: PUBLIC_CACHE_TTL_MS,
+      forceFresh,
+    })
   },
   getTaxonomy: () =>
     request('/taxonomy', {
-      cache: 'no-store',
+      cacheTtlMs: STATIC_DATA_CACHE_TTL_MS,
     }),
   createTaxonomyTerm: (payload) =>
-    request('/taxonomy', { method: 'POST', body: JSON.stringify(payload) }),
+    request('/taxonomy', { method: 'POST', body: JSON.stringify(payload) }).then((data) => {
+      invalidateCache('/taxonomy')
+      return data
+    }),
   updateTaxonomyTerm: (group, slug, payload) =>
     request(`/taxonomy/${encodeURIComponent(group)}/${encodeURIComponent(slug)}`, {
       method: 'PUT',
       body: JSON.stringify(payload),
+    }).then((data) => {
+      invalidateCache('/taxonomy')
+      return data
     }),
   deleteTaxonomyTerm: (group, slug) =>
     request(`/taxonomy/${encodeURIComponent(group)}/${encodeURIComponent(slug)}`, {
       method: 'DELETE',
+    }).then((data) => {
+      invalidateCache('/taxonomy')
+      return data
     }),
-  getProduct: (id) => request(`/products/${id}`),
+  getProduct: (id) => request(`/products/${id}`, { cacheTtlMs: PUBLIC_CACHE_TTL_MS }),
   createProduct: (payload) =>
-    request('/products', { method: 'POST', body: JSON.stringify(payload) }),
+    request('/products', { method: 'POST', body: JSON.stringify(payload) }).then((data) => {
+      invalidateCache('/products')
+      return data
+    }),
   updateProduct: (id, payload) =>
-    request(`/products/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
-  deleteProduct: (id) => request(`/products/${id}`, { method: 'DELETE' }),
+    request(`/products/${id}`, { method: 'PUT', body: JSON.stringify(payload) }).then((data) => {
+      invalidateCache('/products')
+      return data
+    }),
+  deleteProduct: (id) =>
+    request(`/products/${id}`, { method: 'DELETE' }).then((data) => {
+      invalidateCache('/products')
+      return data
+    }),
   addReview: (id, payload) =>
-    request(`/products/${id}/reviews`, { method: 'POST', body: JSON.stringify(payload) }),
+    request(`/products/${id}/reviews`, { method: 'POST', body: JSON.stringify(payload) }).then((data) => {
+      invalidateCache('/products')
+      return data
+    }),
   deleteReview: (id, reviewId) =>
-    request(`/products/${id}/reviews/${encodeURIComponent(reviewId)}`, { method: 'DELETE' }),
+    request(`/products/${id}/reviews/${encodeURIComponent(reviewId)}`, { method: 'DELETE' }).then((data) => {
+      invalidateCache('/products')
+      return data
+    }),
   createOrder: (payload) => request('/orders', { method: 'POST', body: JSON.stringify(payload) }),
   getMyOrders: () => request('/orders/mine'),
   getOrder: (id) => request(`/orders/${id}`),
@@ -210,23 +293,38 @@ export const api = {
 
   // Site media (admin)
   getAssets: () =>
-    request(withCacheBust('/assets'), {
-      cache: 'no-store',
+    request('/assets', {
+      cacheTtlMs: STATIC_DATA_CACHE_TTL_MS,
     }),
-  setAsset: (key, url) => request(`/assets/${encodeURIComponent(key)}`, { method: 'PUT', body: JSON.stringify({ url }) }),
-  deleteAsset: (key) => request(`/assets/${encodeURIComponent(key)}`, { method: 'DELETE' }),
+  setAsset: (key, url) =>
+    request(`/assets/${encodeURIComponent(key)}`, { method: 'PUT', body: JSON.stringify({ url }) }).then((data) => {
+      invalidateCache('/assets')
+      return data
+    }),
+  deleteAsset: (key) =>
+    request(`/assets/${encodeURIComponent(key)}`, { method: 'DELETE' }).then((data) => {
+      invalidateCache('/assets')
+      return data
+    }),
 
   // Site content (admin-editable important text blocks)
   getSiteContent: () =>
-    request(withCacheBust('/site-content'), {
-      cache: 'no-store',
+    request('/site-content', {
+      cacheTtlMs: STATIC_DATA_CACHE_TTL_MS,
     }),
   setSiteContent: (key, value) =>
     request(`/site-content/${encodeURIComponent(key)}`, {
       method: 'PUT',
       body: JSON.stringify({ value }),
+    }).then((data) => {
+      invalidateCache('/site-content')
+      return data
     }),
-  deleteSiteContent: (key) => request(`/site-content/${encodeURIComponent(key)}`, { method: 'DELETE' }),
+  deleteSiteContent: (key) =>
+    request(`/site-content/${encodeURIComponent(key)}`, { method: 'DELETE' }).then((data) => {
+      invalidateCache('/site-content')
+      return data
+    }),
 
   // Contact form
   submitContact: (payload) => request('/contact', { method: 'POST', body: JSON.stringify(payload) }),
@@ -260,13 +358,37 @@ export const api = {
   deleteContactMessage: (id) => request(`/contact/${id}`, { method: 'DELETE' }),
 
   // Gallery (dynamic sections)
-  getGallery: () => request('/gallery'),
+  getGallery: () => request('/gallery', { cacheTtlMs: PUBLIC_CACHE_TTL_MS }),
   createGallerySection: (payload) =>
-    request('/gallery/sections', { method: 'POST', body: JSON.stringify(payload) }),
-  deleteGallerySection: (id) => request(`/gallery/sections/${id}`, { method: 'DELETE' }),
+    request('/gallery/sections', { method: 'POST', body: JSON.stringify(payload) }).then((data) => {
+      invalidateCache('/gallery')
+      return data
+    }),
+  deleteGallerySection: (id) =>
+    request(`/gallery/sections/${id}`, { method: 'DELETE' }).then((data) => {
+      invalidateCache('/gallery')
+      return data
+    }),
+  addGalleryMedia: (payload) =>
+    request('/gallery/photos', { method: 'POST', body: JSON.stringify(payload) }).then((data) => {
+      invalidateCache('/gallery')
+      return data
+    }),
   addGalleryPhoto: (sectionId, payload) =>
-    request(`/gallery/sections/${sectionId}/photos`, { method: 'POST', body: JSON.stringify(payload) }),
-  deleteGalleryPhoto: (id) => request(`/gallery/photos/${id}`, { method: 'DELETE' }),
+    request(`/gallery/sections/${sectionId}/photos`, { method: 'POST', body: JSON.stringify(payload) }).then((data) => {
+      invalidateCache('/gallery')
+      return data
+    }),
+  updateGalleryPhoto: (id, payload) =>
+    request(`/gallery/photos/${id}`, { method: 'PUT', body: JSON.stringify(payload) }).then((data) => {
+      invalidateCache('/gallery')
+      return data
+    }),
+  deleteGalleryPhoto: (id) =>
+    request(`/gallery/photos/${id}`, { method: 'DELETE' }).then((data) => {
+      invalidateCache('/gallery')
+      return data
+    }),
 }
 
 export const auth = {

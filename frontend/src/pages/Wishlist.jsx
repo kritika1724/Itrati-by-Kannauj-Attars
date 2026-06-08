@@ -144,7 +144,7 @@ function Wishlist() {
                 Saved for later
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-8 text-[#5F6475] sm:text-lg">
-                Keep your favorite attars, rose waters, and oils in one calm place, then return whenever you are ready to explore more.
+                Keep your favorite attars, perfumes, rose waters, and oils in one calm place, then return whenever you are ready to explore more.
               </p>
             </div>
 

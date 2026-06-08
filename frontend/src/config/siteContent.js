@@ -76,7 +76,7 @@ export const DEFAULT_CONTACT_PAGE_CONTENT = {
   heroKicker: 'Get in touch',
   heroTitle: 'Talk to us about attars and aromatics.',
   heroDescription:
-    'Reach out for wholesale inquiries, private labeling, custom blends, or gifting options tailored for special occasions.',
+    'Reach out for wholesale inquiries, private labeling, custom blends, gifting options, phone calls, or office visit appointments.',
 }
 
 export const DEFAULT_POPUP_BANNER_CONTENT = {
@@ -122,7 +122,7 @@ export const DEFAULT_LEGAL_CONTENT = {
   [SITE_CONTENT_KEYS.legalRefund]: {
     title: 'Refund Policy',
     intro:
-      'This policy outlines when refund requests may be reviewed for fragrance, attar, floral water, and essential oil orders.',
+      'This policy outlines when refund requests may be reviewed for fragrance, attar, perfume, floral water, and essential oil orders.',
     sections: [
       {
         title: 'Eligibility',

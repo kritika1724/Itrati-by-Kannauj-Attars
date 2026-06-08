@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   FiAward,
+  FiImage,
   FiMail,
   FiPhone,
   FiUser,
@@ -55,7 +56,7 @@ const heritagePillars = [
   },
   {
     title: 'GI-tagged authenticity',
-    copy: 'The legacy is protected by Geographical Indication recognition, reinforcing a genuine connection to place and method.',
+    copy: 'The legacy is protected by Geographical Indication recognition, Reg. No. -157, reinforcing a genuine connection to place and method.',
   },
 ]
 
@@ -255,8 +256,8 @@ function Home() {
               variants={fadeUp}
               className="relative mx-auto mt-6 max-w-3xl text-sm leading-7 text-white/92 drop-shadow-[0_8px_22px_rgba(7,16,36,0.44)] sm:mt-7 sm:text-lg sm:leading-8"
             >
-              {BUSINESS.fullDisplayName} brings the art of Indian perfumery into a modern luxury expression —
-              attars, floral waters, and essential oils shaped by Deg-Bhapka tradition and refined with timeless character.
+              {BUSINESS.fullDisplayName} brings the art of Indian perfumery into a traditional luxury expression —
+              attars, perfumes, floral waters, and essential oils shaped by Deg-Bhapka tradition and refined with timeless character.
             </motion.p>
 
             <motion.div variants={fadeUp} className="mt-10 flex flex-wrap items-center justify-center gap-4">
@@ -266,11 +267,15 @@ function Home() {
               <Link to="/products" className="ka-btn-primary px-8 py-4 text-sm sm:text-base">
                 Explore products
               </Link>
+              <Link to="/gallery" className="ka-btn-primary gap-2 px-8 py-4 text-sm sm:text-base">
+                <FiImage size={17} />
+                Gallery
+              </Link>
             </motion.div>
 
             <motion.div variants={fadeUp} className="relative mt-12 flex flex-wrap items-center justify-center gap-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/90">
               <span className="rounded-full border border-white/22 bg-[rgba(7,16,36,0.24)] px-4 py-2 backdrop-blur-md">Since 1998</span>
-              <span className="rounded-full border border-white/22 bg-[rgba(7,16,36,0.24)] px-4 py-2 backdrop-blur-md">Deg-Bhapka distilled</span>
+              <span className="rounded-full border border-white/22 bg-[rgba(7,16,36,0.24)] px-4 py-2 backdrop-blur-md">Deg-Bhapka hydro distilled</span>
               <span className="rounded-full border border-white/22 bg-[rgba(7,16,36,0.24)] px-4 py-2 backdrop-blur-md">Kannauj crafted</span>
             </motion.div>
           </motion.div>
@@ -286,6 +291,8 @@ function Home() {
               <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-sm font-medium text-white/88">
                 <span>Attars</span>
                 <span className="h-1 w-1 rounded-full bg-gold" />
+                <span>Perfumes</span>
+                <span className="h-1 w-1 rounded-full bg-gold" />
                 <span>Floral waters</span>
                 <span className="h-1 w-1 rounded-full bg-gold" />
                 <span>Essential oils</span>
@@ -293,9 +300,12 @@ function Home() {
             </div>
             <div className="relative mt-4 overflow-hidden rounded-[1.7rem] border border-[#F6D27A]/32 bg-transparent px-5 py-5 text-center shadow-[0_24px_60px_rgba(0,0,0,0.2)] backdrop-blur-2xl">
               <div className="relative">
-                <div className="flex justify-center">
+                <div className="flex flex-wrap justify-center gap-2">
                   <span className="inline-flex items-center rounded-full border border-[#F6D27A]/55 bg-[rgba(246,210,122,0.12)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.32em] text-[#FFF0C5] shadow-[0_10px_24px_rgba(246,210,122,0.12)] backdrop-blur-md sm:text-xs">
                     GI Tagged
+                  </span>
+                  <span className="inline-flex items-center rounded-full border border-[#F6D27A]/55 bg-[rgba(246,210,122,0.12)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#FFF0C5] shadow-[0_10px_24px_rgba(246,210,122,0.12)] backdrop-blur-md sm:text-xs">
+                    Reg. No. -157
                   </span>
                 </div>
                 <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.36em] text-[#F7DE9A]/82 sm:text-[11px]">
@@ -327,7 +337,7 @@ function Home() {
                 Inspired by centuries of fragrance craftsmanship
               </h2>
               <p className="mt-6 text-base leading-8 text-[#2C446A] sm:text-lg">
-                Explore signature attars, floral waters, and essential oils.
+                Explore signature attars, perfumes, floral waters, and essential oils.
               </p>
             </motion.div>
 
@@ -678,7 +688,7 @@ function Home() {
                   Ancient Indian fragrance heritage, presented with a modern luxury eye.
                 </h2>
                 <p className="mt-5 max-w-3xl text-sm leading-8 text-white/72 sm:text-base">
-                  Whether you are discovering a personal attar, sourcing floral waters, or looking for dependable trade support, {BUSINESS.fullDisplayName} brings the city’s legacy forward with restraint and refinement.
+                  Whether you are discovering a personal attar or perfume, sourcing floral waters, or looking for dependable trade support, {BUSINESS.fullDisplayName} brings the city’s legacy forward with restraint and refinement.
                 </p>
               </div>
 

@@ -84,12 +84,14 @@ export function TaxonomyProvider({ children }) {
       }
     } catch (err) {
       setError(err.message || 'Unable to load filters')
-      setPurposes(PURPOSE_TAGS)
-      setFamilies(FAMILY_TAGS)
-      setSeasons(SEASON_TAGS)
-      setGenders(GENDER_TAGS)
-      setDirections(DIRECTION_TAGS)
-      setCollections([])
+      if (!readCachedTaxonomy()) {
+        setPurposes(PURPOSE_TAGS)
+        setFamilies(FAMILY_TAGS)
+        setSeasons(SEASON_TAGS)
+        setGenders(GENDER_TAGS)
+        setDirections(DIRECTION_TAGS)
+        setCollections([])
+      }
     } finally {
       setLoading(false)
     }

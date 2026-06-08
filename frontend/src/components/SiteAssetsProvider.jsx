@@ -30,7 +30,8 @@ export function SiteAssetsProvider({ children }) {
   const [loading, setLoading] = useState(() => Object.keys(readCachedAssets()).length === 0)
 
   const refresh = useCallback(async () => {
-    setLoading(true)
+    const hasAssets = Object.keys(readCachedAssets()).length > 0
+    if (!hasAssets) setLoading(true)
     try {
       const list = await api.getAssets()
       const map = (list || []).reduce((acc, item) => {
@@ -41,6 +42,8 @@ export function SiteAssetsProvider({ children }) {
       if (typeof window !== 'undefined') {
         window.sessionStorage.setItem(ASSETS_CACHE_KEY, JSON.stringify(map))
       }
+    } catch {
+      // Keep the last cached asset map on screen if the network is slow or offline.
     } finally {
       setLoading(false)
     }

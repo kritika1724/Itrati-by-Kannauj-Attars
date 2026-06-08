@@ -112,6 +112,13 @@ const mobileQuickActions = [
     isActive: (pathname) => pathname === '/track-order',
   },
   {
+    key: 'gallery',
+    label: 'Gallery',
+    to: '/gallery',
+    symbol: '▧',
+    isActive: (pathname) => pathname === '/gallery',
+  },
+  {
     key: 'contact',
     label: 'Contact',
     to: '/contact',
@@ -404,6 +411,9 @@ function AppShell() {
                   Track Order
                 </NavLink>
               ) : null}
+              <NavLink to="/gallery" className={navLinkClass}>
+                Gallery
+              </NavLink>
               {!isAdmin ? (
                 <NavLink to="/contact" className={navLinkClass}>
                   Contact
@@ -533,6 +543,10 @@ function AppShell() {
                           Track Order
                         </NavLink>
                       ) : null}
+
+                      <NavLink to="/gallery" className={mobileNavLinkClass} onClick={() => setMobileOpen(false)}>
+                        Gallery
+                      </NavLink>
 
                       {!isAdmin ? (
                         <NavLink to="/contact" className={mobileNavLinkClass} onClick={() => setMobileOpen(false)}>

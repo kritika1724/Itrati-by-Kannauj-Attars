@@ -15,6 +15,7 @@ const ensureDefaultTaxonomy = async () => {
         {
           $setOnInsert: {
             label: term.label,
+            description: term.description || '',
             sortOrder: term.sortOrder,
             isActive: true,
           },
@@ -32,27 +33,27 @@ const getTaxonomyPayload = async () => {
   const [purposes, families, seasons, genders, directions, collections] = await Promise.all([
     TaxonomyTerm.find({ group: 'purpose', isActive: true })
       .sort({ sortOrder: 1, label: 1 })
-      .select('slug label sortOrder')
+      .select('slug label description sortOrder')
       .lean(),
     TaxonomyTerm.find({ group: 'family', isActive: true })
       .sort({ sortOrder: 1, label: 1 })
-      .select('slug label sortOrder')
+      .select('slug label description sortOrder')
       .lean(),
     TaxonomyTerm.find({ group: 'season', isActive: true })
       .sort({ sortOrder: 1, label: 1 })
-      .select('slug label sortOrder')
+      .select('slug label description sortOrder')
       .lean(),
     TaxonomyTerm.find({ group: 'gender', isActive: true })
       .sort({ sortOrder: 1, label: 1 })
-      .select('slug label sortOrder')
+      .select('slug label description sortOrder')
       .lean(),
     TaxonomyTerm.find({ group: 'direction', isActive: true })
       .sort({ sortOrder: 1, label: 1 })
-      .select('slug label sortOrder')
+      .select('slug label description sortOrder')
       .lean(),
     TaxonomyTerm.find({ group: 'collection', isActive: true })
       .sort({ sortOrder: 1, label: 1 })
-      .select('slug label sortOrder')
+      .select('slug label description sortOrder')
       .lean(),
   ])
 
@@ -60,31 +61,37 @@ const getTaxonomyPayload = async () => {
     purposes: purposes.map((term) => ({
       id: term.slug,
       label: term.label,
+      description: term.description || '',
       sortOrder: term.sortOrder || 0,
     })),
     families: families.map((term) => ({
       id: term.slug,
       label: term.label,
+      description: term.description || '',
       sortOrder: term.sortOrder || 0,
     })),
     seasons: seasons.map((term) => ({
       id: term.slug,
       label: term.label,
+      description: term.description || '',
       sortOrder: term.sortOrder || 0,
     })),
     genders: genders.map((term) => ({
       id: term.slug,
       label: term.label,
+      description: term.description || '',
       sortOrder: term.sortOrder || 0,
     })),
     directions: directions.map((term) => ({
       id: term.slug,
       label: term.label,
+      description: term.description || '',
       sortOrder: term.sortOrder || 0,
     })),
     collections: collections.map((term) => ({
       id: term.slug,
       label: term.label,
+      description: term.description || '',
       sortOrder: term.sortOrder || 0,
     })),
   }

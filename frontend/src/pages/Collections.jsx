@@ -10,8 +10,10 @@ import { api, auth } from '../services/api'
 function Collections() {
   const { purposes, collections, refresh } = useTaxonomy()
   const isAdmin = auth.getUser()?.isAdmin === true
-  const [editing, setEditing] = useState({ group: '', id: '', label: '' })
+  const [editing, setEditing] = useState({ group: '', id: '', label: '', description: '' })
+  const [newPurpose, setNewPurpose] = useState({ label: '', description: '' })
   const [newCollection, setNewCollection] = useState('')
+  const [newCollectionDescription, setNewCollectionDescription] = useState('')
   const [busy, setBusy] = useState({ group: '', id: '', type: '' })
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -19,15 +21,16 @@ function Collections() {
   const startEditing = (group, term) => {
     setError('')
     setMessage('')
-    setEditing({ group, id: term.id, label: term.label })
+    setEditing({ group, id: term.id, label: term.label, description: term.description || '' })
   }
 
-  const cancelEditing = () => setEditing({ group: '', id: '', label: '' })
+  const cancelEditing = () => setEditing({ group: '', id: '', label: '', description: '' })
 
   const saveTerm = async () => {
     const group = editing.group
     const id = editing.id
     const label = String(editing.label || '').trim()
+    const description = String(editing.description || '').trim()
     if (!group || !id || !label) {
       setError('Enter a valid name first.')
       return
@@ -37,7 +40,7 @@ function Collections() {
       setError('')
       setMessage('')
       setBusy({ group, id, type: 'save' })
-      const result = await api.updateTaxonomyTerm(group, id, { label })
+      const result = await api.updateTaxonomyTerm(group, id, { label, description })
       await refresh()
       cancelEditing()
       setMessage(result?.message || 'Updated.')
@@ -76,21 +79,28 @@ function Collections() {
     }
   }
 
-  const addCollection = async () => {
-    const label = String(newCollection || '').trim()
+  const addTerm = async (group) => {
+    const draft = group === 'purpose' ? newPurpose : { label: newCollection, description: newCollectionDescription }
+    const label = String(draft.label || '').trim()
+    const description = String(draft.description || '').trim()
     if (!label) {
-      setError('Enter a collection name first.')
+      setError(group === 'purpose' ? 'Enter a purpose collection name first.' : 'Enter a collection name first.')
       return
     }
 
     try {
       setError('')
       setMessage('')
-      setBusy({ group: 'collection', id: '__new__', type: 'create' })
-      const result = await api.createTaxonomyTerm({ group: 'collection', label })
+      setBusy({ group, id: '__new__', type: 'create' })
+      const result = await api.createTaxonomyTerm({ group, label, description })
       await refresh()
-      setNewCollection('')
-      setMessage(result?.message || 'Collection created.')
+      if (group === 'purpose') {
+        setNewPurpose({ label: '', description: '' })
+      } else {
+        setNewCollection('')
+        setNewCollectionDescription('')
+      }
+      setMessage(result?.message || (group === 'purpose' ? 'Purpose collection created.' : 'Collection created.'))
     } catch (err) {
       setError(err.message || 'Request failed')
     } finally {
@@ -128,6 +138,34 @@ function Collections() {
             </p>
           ) : null}
 
+          {isAdmin ? (
+            <div className="mb-6 rounded-[1.8rem] border border-slate-200/80 bg-white/88 p-4 shadow-[0_18px_50px_rgba(17,27,58,0.08)]">
+              <label className="text-sm font-semibold text-ink">Add purpose collection</label>
+              <div className="mt-3 grid gap-3 lg:grid-cols-[0.8fr_1.2fr_auto]">
+                <input
+                  value={newPurpose.label}
+                  onChange={(e) => setNewPurpose((prev) => ({ ...prev, label: e.target.value }))}
+                  placeholder="Festive Gifting"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/15"
+                />
+                <input
+                  value={newPurpose.description}
+                  onChange={(e) => setNewPurpose((prev) => ({ ...prev, description: e.target.value }))}
+                  placeholder="Short card description"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/15"
+                />
+                <button
+                  type="button"
+                  onClick={() => addTerm('purpose')}
+                  disabled={busy.group === 'purpose' && busy.id === '__new__'}
+                  className="rounded-full bg-ember px-5 py-3 text-sm font-semibold text-white transition hover:bg-emberDark disabled:opacity-60"
+                >
+                  {busy.group === 'purpose' && busy.id === '__new__' ? 'Adding…' : 'Add'}
+                </button>
+              </div>
+            </div>
+          ) : null}
+
           <motion.div
             initial="hidden"
             whileInView="show"
@@ -136,7 +174,7 @@ function Collections() {
             className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4"
           >
             {purposes.map((purpose) => {
-              const meta = getPurposeCollectionMeta(purpose.id, purpose.label)
+              const meta = getPurposeCollectionMeta(purpose.id, purpose.label, purpose.description)
               const isEditing = editing.group === 'purpose' && editing.id === purpose.id
               const isBusy = busy.group === 'purpose' && busy.id === purpose.id
               return (
@@ -163,6 +201,13 @@ function Collections() {
                         <input
                           value={editing.label}
                           onChange={(e) => setEditing((prev) => ({ ...prev, label: e.target.value }))}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/15"
+                        />
+                        <textarea
+                          rows="3"
+                          value={editing.description}
+                          onChange={(e) => setEditing((prev) => ({ ...prev, description: e.target.value }))}
+                          placeholder="Card description"
                           className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/15"
                         />
                         <div className="flex flex-wrap gap-2">
@@ -240,16 +285,22 @@ function Collections() {
               {isAdmin ? (
                 <div className="mt-6 rounded-[1.8rem] border border-slate-200/80 bg-clay/50 p-4">
                   <label className="text-sm font-semibold text-ink">Add collection</label>
-                  <div className="mt-3 flex flex-wrap gap-3">
+                  <div className="mt-3 grid gap-3 lg:grid-cols-[0.8fr_1.2fr_auto]">
                     <input
                       value={newCollection}
                       onChange={(e) => setNewCollection(e.target.value)}
                       placeholder="Self Care"
-                      className="min-w-[14rem] flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/15"
+                      className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/15"
+                    />
+                    <input
+                      value={newCollectionDescription}
+                      onChange={(e) => setNewCollectionDescription(e.target.value)}
+                      placeholder="Short card description"
+                      className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/15"
                     />
                     <button
                       type="button"
-                      onClick={addCollection}
+                      onClick={() => addTerm('collection')}
                       disabled={busy.group === 'collection' && busy.id === '__new__'}
                       className="rounded-full bg-ember px-5 py-3 text-sm font-semibold text-white transition hover:bg-emberDark disabled:opacity-60"
                     >
@@ -297,6 +348,13 @@ function Collections() {
                             onChange={(e) => setEditing((prev) => ({ ...prev, label: e.target.value }))}
                             className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/15"
                           />
+                          <textarea
+                            rows="3"
+                            value={editing.description}
+                            onChange={(e) => setEditing((prev) => ({ ...prev, description: e.target.value }))}
+                            placeholder="Card description"
+                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/15"
+                          />
                           <div className="flex flex-wrap gap-2">
                             <button
                               type="button"
@@ -321,7 +379,7 @@ function Collections() {
                             {collection.label}
                           </h2>
                           <p className="mt-2 flex-1 text-[11px] leading-5 text-muted sm:mt-3 sm:text-sm sm:leading-7">
-                            A handpicked collection designed for easy browsing, discovery, and refined fragrance shopping.
+                            {collection.description || 'A handpicked collection designed for easy browsing, discovery, and refined fragrance shopping.'}
                           </p>
 
                           <div className="mt-4 flex flex-wrap gap-2 sm:mt-5">

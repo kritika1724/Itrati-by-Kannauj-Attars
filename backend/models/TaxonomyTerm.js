@@ -18,6 +18,11 @@ const taxonomyTermSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    description: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     sortOrder: {
       type: Number,
       default: 0,

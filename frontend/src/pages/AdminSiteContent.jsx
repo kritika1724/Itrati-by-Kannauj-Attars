@@ -8,6 +8,7 @@ import {
   getDefaultSiteContentValue,
   mergeContactPageContent,
   mergeContactProfile,
+  mergeHomeCollectionsContent,
   mergeHomeYoutubeContent,
   mergePopupBannerContent,
   mergeLegalPageContent,
@@ -52,6 +53,7 @@ const normalizeContactProfileDraft = (draft) =>
 const createContactPageDraft = (value) => mergeContactPageContent(value)
 const createPopupBannerDraft = (value) => mergePopupBannerContent(value)
 const createHomeYoutubeDraft = (value) => mergeHomeYoutubeContent(value)
+const createHomeCollectionsDraft = (value) => mergeHomeCollectionsContent(value)
 const createLegalPagesDraft = (contents = {}) =>
   LEGAL_EDITORS.reduce((acc, item) => {
     acc[item.key] = mergeLegalPageContent(item.key, contents[item.key])
@@ -71,6 +73,9 @@ function AdminSiteContent() {
   )
   const [homeYoutubeDraft, setHomeYoutubeDraft] = useState(() =>
     createHomeYoutubeDraft(getDefaultSiteContentValue(SITE_CONTENT_KEYS.homeYoutube))
+  )
+  const [homeCollectionsDraft, setHomeCollectionsDraft] = useState(() =>
+    createHomeCollectionsDraft(getDefaultSiteContentValue(SITE_CONTENT_KEYS.homeCollections))
   )
   const [legalPagesDraft, setLegalPagesDraft] = useState(() => createLegalPagesDraft())
   const [message, setMessage] = useState('')
@@ -94,8 +99,38 @@ function AdminSiteContent() {
     setContactPageDraft(createContactPageDraft(contents[SITE_CONTENT_KEYS.contactPage]))
     setPopupBannerDraft(createPopupBannerDraft(contents[SITE_CONTENT_KEYS.popupBanner]))
     setHomeYoutubeDraft(createHomeYoutubeDraft(contents[SITE_CONTENT_KEYS.homeYoutube]))
+    setHomeCollectionsDraft(createHomeCollectionsDraft(contents[SITE_CONTENT_KEYS.homeCollections]))
     setLegalPagesDraft(createLegalPagesDraft(contents))
   }, [contents])
+
+  const addHomeCollectionCard = () => {
+    setHomeCollectionsDraft((prev) => ({
+      cards: [
+        ...(prev.cards || []),
+        {
+          title: '',
+          copy: '',
+          assetKey: 'home.collection.custom',
+          link: '/products',
+          cta: 'View collection',
+        },
+      ],
+    }))
+  }
+
+  const updateHomeCollectionCard = (index, field, value) => {
+    setHomeCollectionsDraft((prev) => ({
+      cards: (prev.cards || []).map((card, cardIndex) =>
+        cardIndex === index ? { ...card, [field]: value } : card
+      ),
+    }))
+  }
+
+  const removeHomeCollectionCard = (index) => {
+    setHomeCollectionsDraft((prev) => ({
+      cards: (prev.cards || []).filter((_, cardIndex) => cardIndex !== index),
+    }))
+  }
 
   const addLegalSection = (key) => {
     setLegalPagesDraft((prev) => ({
@@ -151,6 +186,7 @@ function AdminSiteContent() {
       const contactPagePayload = mergeContactPageContent(contactPageDraft)
       const popupBannerPayload = mergePopupBannerContent(popupBannerDraft)
       const homeYoutubePayload = mergeHomeYoutubeContent(homeYoutubeDraft)
+      const homeCollectionsPayload = mergeHomeCollectionsContent(homeCollectionsDraft)
       const legalPayloads = LEGAL_EDITORS.map((item) => ({
         key: item.key,
         value: mergeLegalPageContent(item.key, legalPagesDraft[item.key]),
@@ -161,6 +197,7 @@ function AdminSiteContent() {
         setContentValue(SITE_CONTENT_KEYS.contactPage, contactPagePayload),
         setContentValue(SITE_CONTENT_KEYS.popupBanner, popupBannerPayload),
         setContentValue(SITE_CONTENT_KEYS.homeYoutube, homeYoutubePayload),
+        setContentValue(SITE_CONTENT_KEYS.homeCollections, homeCollectionsPayload),
         ...legalPayloads.map((item) => setContentValue(item.key, item.value)),
       ])
 
@@ -475,6 +512,109 @@ function AdminSiteContent() {
                   fit="cover"
                 />
               </div>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-lg shadow-black/10">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-muted">Home page collections</p>
+                <h2 className="mt-2 text-xl font-semibold text-ink">Collection cards</h2>
+                <p className="mt-2 max-w-3xl text-sm text-muted">
+                  Add, edit, or remove the collection cards shown near the top of the home page.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  to="/"
+                  className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-emberDark transition hover:border-gold/40"
+                >
+                  Preview home
+                </Link>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => resetKeyToDefault(SITE_CONTENT_KEYS.homeCollections)}
+                  className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-emberDark transition hover:border-gold/40 disabled:opacity-60"
+                >
+                  Reset to default
+                </button>
+                <button
+                  type="button"
+                  onClick={addHomeCollectionCard}
+                  className="rounded-full bg-ember px-4 py-2 text-xs font-semibold text-white transition hover:bg-emberDark"
+                >
+                  + Add collection
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-6 grid gap-4">
+              {(homeCollectionsDraft.cards || []).map((card, index) => (
+                <div key={`home-collection-${index}`} className="rounded-2xl border border-slate-200/80 bg-clay/30 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-ink">Collection {index + 1}</p>
+                    <button
+                      type="button"
+                      onClick={() => removeHomeCollectionCard(index)}
+                      className="rounded-full border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-600 transition hover:border-red-300"
+                    >
+                      Delete
+                    </button>
+                  </div>
+
+                  <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                    <div>
+                      <label className="text-xs font-semibold text-muted">Title</label>
+                      <input
+                        value={card.title}
+                        onChange={(e) => updateHomeCollectionCard(index, 'title', e.target.value)}
+                        placeholder="Premium Attars Collection"
+                        className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-muted">CTA label</label>
+                      <input
+                        value={card.cta}
+                        onChange={(e) => updateHomeCollectionCard(index, 'cta', e.target.value)}
+                        placeholder="Explore attars"
+                        className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-muted">Link</label>
+                      <input
+                        value={card.link}
+                        onChange={(e) => updateHomeCollectionCard(index, 'link', e.target.value)}
+                        placeholder="/collections/signature"
+                        className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-muted">Image asset key</label>
+                      <input
+                        value={card.assetKey}
+                        onChange={(e) => updateHomeCollectionCard(index, 'assetKey', e.target.value)}
+                        placeholder="home.explore.signature"
+                        className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
+                      />
+                      <p className="mt-2 text-xs text-muted">Use the same asset key in Media to control this card image.</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <label className="text-xs font-semibold text-muted">Description</label>
+                    <textarea
+                      rows="3"
+                      value={card.copy}
+                      onChange={(e) => updateHomeCollectionCard(index, 'copy', e.target.value)}
+                      placeholder="Short collection description."
+                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 

@@ -11,7 +11,6 @@ const { PRODUCTS_CACHE_KEY_PREFIX } = require('../utils/cacheKeys')
 
 const router = express.Router()
 const ALLOWED_GROUPS = new Set(['purpose', 'family', 'season', 'gender', 'direction', 'collection'])
-const RESERVED_COLLECTIONS = new Set(['signature', 'heritage'])
 const TAXONOMY_CACHE_PROFILE = getPublicCacheProfile('TAXONOMY', {
   browserMaxAge: 300,
   edgeMaxAge: 1800,
@@ -37,6 +36,7 @@ router.post(
       .trim()
       .toLowerCase()
     const label = String(req.body?.label || '').trim()
+    const description = String(req.body?.description || '').trim()
 
     if (!ALLOWED_GROUPS.has(group)) {
       return res.status(400).json({ message: 'Filter type is invalid' })
@@ -55,7 +55,7 @@ router.post(
     if (existing) {
       return res.status(200).json({
         message: 'Filter already exists',
-        term: { id: existing.slug, label: existing.label, group: existing.group },
+        term: { id: existing.slug, label: existing.label, description: existing.description || '', group: existing.group },
       })
     }
 
@@ -65,6 +65,7 @@ router.post(
       group,
       slug,
       label,
+      description,
       sortOrder: (lastTerm?.sortOrder || 0) + 10,
       isActive: true,
     })
@@ -73,7 +74,7 @@ router.post(
 
     res.status(201).json({
       message: 'Filter created',
-      term: { id: created.slug, label: created.label, group: created.group },
+      term: { id: created.slug, label: created.label, description: created.description || '', group: created.group },
     })
   })
 )
@@ -90,6 +91,7 @@ router.put(
       .trim()
       .toLowerCase()
     const label = String(req.body?.label || '').trim()
+    const description = String(req.body?.description || '').trim()
 
     if (!ALLOWED_GROUPS.has(group)) {
       return res.status(400).json({ message: 'Filter type is invalid' })
@@ -109,12 +111,13 @@ router.put(
     }
 
     term.label = label
+    term.description = description
     await term.save()
     await Promise.all([clearTaxonomyPayloadCache(), clearCacheByPrefix(PRODUCTS_CACHE_KEY_PREFIX)])
 
     res.json({
       message: group === 'collection' ? 'Collection updated' : 'Filter updated',
-      term: { id: term.slug, label: term.label, group: term.group },
+      term: { id: term.slug, label: term.label, description: term.description || '', group: term.group },
     })
   })
 )
@@ -137,10 +140,6 @@ router.delete(
 
     if (!slug) {
       return res.status(400).json({ message: 'Filter id is required' })
-    }
-
-    if (group === 'collection' && RESERVED_COLLECTIONS.has(slug)) {
-      return res.status(400).json({ message: 'This collection is reserved and cannot be deleted' })
     }
 
     const term = await TaxonomyTerm.findOne({ group, slug })

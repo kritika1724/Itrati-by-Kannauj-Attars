@@ -14,36 +14,12 @@ import { useSiteAssets } from '../components/SiteAssetsProvider'
 import { BUSINESS } from '../config/business'
 import { KNOWLEDGE_PAGE_LIST } from '../config/knowledge'
 import { normalizeYoutubeEmbedUrl } from '../config/siteContent'
-import { useHomeYoutubeContent, useSiteContactProfile } from '../hooks/useSiteContentBlocks'
+import { useHomeCollectionsContent, useHomeYoutubeContent, useSiteContactProfile } from '../hooks/useSiteContentBlocks'
 import { useAutoplayVideo } from '../hooks/useAutoplayVideo'
 import { fadeLeft, fadeUp, heroStagger, revealCard, staggerGrid, viewportOnce } from '../lib/motion'
 import { auth } from '../services/api'
 import { applySeo, resetSeo } from '../utils/seo'
 import { toAssetUrl } from '../utils/media'
-
-const collectionCards = [
-  {
-    title: 'Premium Attars Collection',
-    copy: 'Signature attars with elegant projection, polished depth, and a distinctly Kannauj soul.',
-    assetKey: 'home.explore.signature',
-    link: '/collections/signature',
-    cta: 'Explore attars',
-  },
-  {
-    title: 'Essential Oils',
-    copy: 'Steam-distilled oils and floral waters shaped for ritual, wellness, gifting, and formulation.',
-    assetKey: 'home.story.botanicals',
-    link: '/products?purpose=skin_hair',
-    cta: 'View essential oils',
-  },
-  {
-    title: 'Heritage Collection',
-    copy: 'Deeper traditional profiles inspired by Deg-Bhapka craft, slow maturation, and perfume memory.',
-    assetKey: 'home.explore.heritage',
-    link: '/collections/heritage',
-    cta: 'View heritage line',
-  },
-]
 
 const heritagePillars = [
   {
@@ -119,6 +95,8 @@ function Home() {
   const { assets, uploadAndSetAsset } = useSiteAssets()
   const contactProfile = useSiteContactProfile()
   const homeYoutube = useHomeYoutubeContent()
+  const homeCollections = useHomeCollectionsContent()
+  const collectionCards = homeCollections.cards
   const [user, setUser] = useState(auth.getUser())
   const [videoBusy, setVideoBusy] = useState(false)
   const [videoMessage, setVideoMessage] = useState('')
@@ -323,6 +301,7 @@ function Home() {
 
       {deferredReady ? (
       <div className="relative z-10">
+        {collectionCards.length ? (
         <section className="px-4 py-16 sm:px-6 sm:py-20 md:py-24">
           <div className="w-full mx-auto max-w-7xl">
             <motion.div
@@ -348,9 +327,9 @@ function Home() {
               variants={staggerGrid(0.08, 0.05)}
               className="grid grid-cols-2 gap-4 mt-10 sm:mt-14 lg:grid-cols-3 lg:gap-6"
             >
-              {collectionCards.map((card) => (
+              {collectionCards.map((card, index) => (
                 <motion.article
-                  key={card.title}
+                  key={`${card.title}-${index}`}
                   variants={revealCard}
                   className="ka-shine-card rounded-[1.6rem] border border-white/70 bg-white/82 p-3.5 shadow-[0_26px_90px_rgba(28,19,13,0.08)] backdrop-blur-xl sm:rounded-[2.2rem] sm:p-5"
                 >
@@ -379,6 +358,7 @@ function Home() {
 
           </div>
         </section>
+        ) : null}
 
         <section className="px-4 py-16 sm:px-6 sm:py-20 md:py-24">
           <div className="mx-auto grid w-full max-w-7xl gap-10 lg:grid-cols-[1fr_0.92fr]">

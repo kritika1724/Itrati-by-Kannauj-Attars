@@ -5,6 +5,7 @@ import {
   SITE_CONTENT_KEYS,
   mergeContactPageContent,
   mergeContactProfile,
+  mergeHomeCollectionsContent,
   mergeHomeYoutubeContent,
   mergePopupBannerContent,
   mergeLegalPageContent,
@@ -38,6 +39,14 @@ export const useHomeYoutubeContent = () => {
   const { contents } = useSiteContent()
   return useMemo(
     () => mergeHomeYoutubeContent(contents[SITE_CONTENT_KEYS.homeYoutube]),
+    [contents]
+  )
+}
+
+export const useHomeCollectionsContent = () => {
+  const { contents } = useSiteContent()
+  return useMemo(
+    () => mergeHomeCollectionsContent(contents[SITE_CONTENT_KEYS.homeCollections]),
     [contents]
   )
 }

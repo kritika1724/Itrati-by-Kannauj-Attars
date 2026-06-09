@@ -33,8 +33,13 @@ export const PURPOSE_COLLECTION_META = {
   },
 }
 
-export const getPurposeCollectionMeta = (id, fallbackLabel = 'Collection') =>
-  PURPOSE_COLLECTION_META[id] || {
+export const getPurposeCollectionMeta = (id, fallbackLabel = 'Collection', fallbackLead = '') => {
+  const meta = PURPOSE_COLLECTION_META[id] || {
     title: fallbackLabel,
     lead: 'Browse products in this collection.',
   }
+  return {
+    title: fallbackLabel || meta.title,
+    lead: fallbackLead || meta.lead,
+  }
+}

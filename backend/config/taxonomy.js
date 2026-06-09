@@ -51,8 +51,6 @@ const DEFAULT_TAXONOMY_TERMS = [
   { group: 'direction', slug: 'vanilla', label: 'Vanilla', sortOrder: 140 },
   { group: 'direction', slug: 'woody', label: 'Woody', sortOrder: 150 },
 
-  { group: 'collection', slug: 'signature', label: 'Signature Attars', sortOrder: 10 },
-  { group: 'collection', slug: 'heritage', label: 'Heritage Collection', sortOrder: 20 },
 ]
 
 module.exports = { DEFAULT_TAXONOMY_TERMS, slugifyTerm }

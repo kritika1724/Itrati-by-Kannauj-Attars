@@ -5,6 +5,7 @@ export const SITE_CONTENT_KEYS = {
   contactPage: 'contact.page',
   popupBanner: 'banner.popup',
   homeYoutube: 'home.youtube',
+  homeCollections: 'home.collections',
   legalTerms: 'legal.terms',
   legalRefund: 'legal.refund',
   legalPrivacy: 'legal.privacy',
@@ -94,6 +95,39 @@ export const DEFAULT_POPUP_BANNER_CONTENT = {
 export const DEFAULT_HOME_YOUTUBE_CONTENT = {
   enabled: true,
   youtubeUrl: 'https://www.youtube.com/embed/keUbMuQl8zI',
+}
+
+export const DEFAULT_HOME_COLLECTIONS_CONTENT = {
+  cards: [
+    {
+      title: 'Premium Attars Collection',
+      copy: 'Signature attars with elegant projection, polished depth, and a distinctly Kannauj soul.',
+      assetKey: 'home.explore.signature',
+      link: '/collections/signature',
+      cta: 'Explore attars',
+    },
+    {
+      title: 'Essential Oils',
+      copy: 'Steam-distilled oils and floral waters shaped for ritual, wellness, gifting, and formulation.',
+      assetKey: 'home.story.botanicals',
+      link: '/products?purpose=skin_hair',
+      cta: 'View essential oils',
+    },
+    {
+      title: 'Heritage Collection',
+      copy: 'Deeper traditional profiles inspired by Deg-Bhapka craft, slow maturation, and perfume memory.',
+      assetKey: 'home.explore.heritage',
+      link: '/collections/heritage',
+      cta: 'View heritage line',
+    },
+    {
+      title: 'Luxury Gift Sets',
+      copy: 'Curated fragrance sets made for premium gifting, festive moments, and memorable personal gestures.',
+      assetKey: 'explore.purpose.luxury_gifting',
+      link: '/collections/purpose/luxury_gifting',
+      cta: 'View gift sets',
+    },
+  ],
 }
 
 export const DEFAULT_LEGAL_CONTENT = {
@@ -199,6 +233,7 @@ export const DEFAULT_SITE_CONTENT = {
   [SITE_CONTENT_KEYS.contactPage]: DEFAULT_CONTACT_PAGE_CONTENT,
   [SITE_CONTENT_KEYS.popupBanner]: DEFAULT_POPUP_BANNER_CONTENT,
   [SITE_CONTENT_KEYS.homeYoutube]: DEFAULT_HOME_YOUTUBE_CONTENT,
+  [SITE_CONTENT_KEYS.homeCollections]: DEFAULT_HOME_COLLECTIONS_CONTENT,
   ...DEFAULT_LEGAL_CONTENT,
 }
 
@@ -275,6 +310,26 @@ export const mergeHomeYoutubeContent = (value) => {
   return {
     enabled: normalizeBoolean(raw.enabled, fallback.enabled),
     youtubeUrl: normalizeYoutubeEmbedUrl(youtubeUrl) || trimString(youtubeUrl),
+  }
+}
+
+export const mergeHomeCollectionsContent = (value) => {
+  const fallback = getDefaultSiteContentValue(SITE_CONTENT_KEYS.homeCollections)
+  const raw = value && typeof value === 'object' ? value : {}
+  if (!Array.isArray(raw.cards)) return fallback
+
+  const cards = raw.cards
+    .map((card) => ({
+      title: trimString(card?.title),
+      copy: trimString(card?.copy),
+      assetKey: trimString(card?.assetKey),
+      link: trimString(card?.link),
+      cta: trimString(card?.cta),
+    }))
+    .filter((card) => card.title && card.copy && card.assetKey && card.link && card.cta)
+
+  return {
+    cards,
   }
 }
 

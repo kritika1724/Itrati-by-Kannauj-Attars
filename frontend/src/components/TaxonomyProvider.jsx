@@ -21,7 +21,7 @@ const TaxonomyContext = createContext({
   refresh: async () => {},
 })
 
-const TAXONOMY_CACHE_KEY = 'ka:taxonomy:v3'
+const TAXONOMY_CACHE_KEY = 'ka:taxonomy:v4'
 
 const readCachedTaxonomy = () => {
   if (typeof window === 'undefined') return null

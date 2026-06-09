@@ -182,7 +182,7 @@ function Home() {
             <video
               ref={heroVideoRef}
               src={homeVideo}
-              className="ka-hero-video pointer-events-none h-full w-full select-none object-cover object-center"
+              className="object-cover object-center w-full h-full pointer-events-none select-none ka-hero-video"
               autoPlay
               muted
               defaultMuted
@@ -201,8 +201,8 @@ function Home() {
 
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,16,36,0.42)_0%,rgba(9,20,45,0.38)_34%,rgba(10,22,48,0.56)_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_44%,rgba(7,16,36,0.30),transparent_28%),radial-gradient(circle_at_top,rgba(171,222,255,0.18),transparent_34%),linear-gradient(180deg,rgba(255,250,244,0.02)_0%,rgba(255,250,244,0.04)_30%,rgba(255,250,244,0.10)_68%,rgba(255,250,244,0.16)_100%)]" />
-        <div className="ka-mist-layer absolute inset-x-0 bottom-0 h-56 opacity-90" />
-        <div className="ka-mist-layer ka-mist-layer-alt absolute inset-x-0 bottom-10 h-44 opacity-55" />
+        <div className="absolute inset-x-0 bottom-0 h-56 ka-mist-layer opacity-90" />
+        <div className="absolute inset-x-0 ka-mist-layer ka-mist-layer-alt bottom-10 h-44 opacity-55" />
       </div>
 
       {isAdmin ? (
@@ -260,14 +260,14 @@ function Home() {
               attars, perfumes, floral waters, and essential oils shaped by Deg-Bhapka tradition and refined with timeless character.
             </motion.p>
 
-            <motion.div variants={fadeUp} className="mt-10 flex flex-wrap items-center justify-center gap-4">
-              <Link to="/collections" className="ka-btn-primary px-8 py-4 text-sm sm:text-base">
+            <motion.div variants={fadeUp} className="flex flex-wrap items-center justify-center gap-4 mt-10">
+              <Link to="/collections" className="px-8 py-4 text-sm ka-btn-primary sm:text-base">
                 Discover the collection
               </Link>
-              <Link to="/products" className="ka-btn-primary px-8 py-4 text-sm sm:text-base">
+              <Link to="/products" className="px-8 py-4 text-sm ka-btn-primary sm:text-base">
                 Explore products
               </Link>
-              <Link to="/gallery" className="ka-btn-primary gap-2 px-8 py-4 text-sm sm:text-base">
+              <Link to="/gallery" className="gap-2 px-8 py-4 text-sm ka-btn-primary sm:text-base">
                 <FiImage size={17} />
                 Gallery
               </Link>
@@ -284,17 +284,17 @@ function Home() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="relative mt-8 self-center sm:mt-14 lg:mt-20"
+            className="relative self-center mt-8 sm:mt-14 lg:mt-20"
           >
             <div className="rounded-[2rem] border border-white/12 bg-[rgba(255,248,238,0.12)] px-6 py-4 text-center shadow-[0_22px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl">
               <p className="text-[11px] font-semibold uppercase tracking-[0.34em] text-white/65">Craft pillars</p>
-              <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-sm font-medium text-white/88">
+              <div className="flex flex-wrap items-center justify-center gap-3 mt-3 text-sm font-medium text-white/88">
                 <span>Attars</span>
-                <span className="h-1 w-1 rounded-full bg-gold" />
+                <span className="w-1 h-1 rounded-full bg-gold" />
                 <span>Perfumes</span>
-                <span className="h-1 w-1 rounded-full bg-gold" />
+                <span className="w-1 h-1 rounded-full bg-gold" />
                 <span>Floral waters</span>
-                <span className="h-1 w-1 rounded-full bg-gold" />
+                <span className="w-1 h-1 rounded-full bg-gold" />
                 <span>Essential oils</span>
               </div>
             </div>
@@ -324,7 +324,7 @@ function Home() {
       {deferredReady ? (
       <div className="relative z-10">
         <section className="px-4 py-16 sm:px-6 sm:py-20 md:py-24">
-          <div className="mx-auto w-full max-w-7xl">
+          <div className="w-full mx-auto max-w-7xl">
             <motion.div
               initial="hidden"
               whileInView="show"
@@ -346,7 +346,7 @@ function Home() {
               whileInView="show"
               viewport={viewportOnce}
               variants={staggerGrid(0.08, 0.05)}
-              className="mt-10 grid grid-cols-2 gap-4 sm:mt-14 lg:grid-cols-3 lg:gap-6"
+              className="grid grid-cols-2 gap-4 mt-10 sm:mt-14 lg:grid-cols-3 lg:gap-6"
             >
               {collectionCards.map((card) => (
                 <motion.article
@@ -392,7 +392,7 @@ function Home() {
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(200,163,104,0.20),rgba(200,163,104,0)_46%)]" />
               <div className="relative">
                 <p className="ka-kicker !text-white/58">Traditional Deg Bhapka Distillation</p>
-                <h2 className="mt-4 font-display text-3xl leading-tight text-white sm:text-4xl md:text-5xl">
+                <h2 className="mt-4 text-3xl leading-tight text-white font-display sm:text-4xl md:text-5xl">
                   The slow craft behind every drop.
                 </h2>
                 <p className="mt-5 max-w-xl text-[13px] leading-7 text-white/72 sm:text-base sm:leading-8">
@@ -411,9 +411,9 @@ function Home() {
                 </div>
 
                 <div className="mt-6 flex flex-wrap gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/75 sm:mt-8 sm:gap-3 sm:text-[11px] sm:tracking-[0.22em]">
-                  <span className="rounded-full border border-white/14 bg-white/6 px-4 py-2">Copper stills</span>
-                  <span className="rounded-full border border-white/14 bg-white/6 px-4 py-2">Slow condensation</span>
-                  <span className="rounded-full border border-white/14 bg-white/6 px-4 py-2">Balanced maturation</span>
+                  <span className="px-4 py-2 border rounded-full border-white/14 bg-white/6">Copper stills</span>
+                  <span className="px-4 py-2 border rounded-full border-white/14 bg-white/6">Slow condensation</span>
+                  <span className="px-4 py-2 border rounded-full border-white/14 bg-white/6">Balanced maturation</span>
                 </div>
               </div>
             </motion.div>
@@ -456,6 +456,13 @@ function Home() {
 
 
         <section id="our-story" className="px-4 py-16 sm:px-6 sm:py-20 md:py-24">
+          <div className="flex justify-center w-full mx-auto mb-5 max-w-7xl">
+            <Link to="/gallery" className="ka-btn-primary gap-2 px-5 py-2.5 text-xs sm:px-6 sm:py-3 sm:text-sm">
+              <FiImage size={16} />
+               Our Gallery
+            </Link>
+            
+          </div>
           <div className="mx-auto grid w-full max-w-7xl gap-10 lg:grid-cols-[0.85fr_1.15fr]">
             <motion.div
               initial="hidden"
@@ -471,7 +478,7 @@ function Home() {
               <p className="mt-6 max-w-lg text-sm leading-7 text-[#39527F] sm:text-lg sm:leading-8">
                 {BUSINESS.legacyIntro}
               </p>
-              <div className="mt-8 flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-3 mt-8">
                 <span className="rounded-full border border-[#D4DDEE] bg-white/95 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#0F1E46] shadow-sm">
                   Family legacy
                 </span>
@@ -552,11 +559,11 @@ function Home() {
                 President, The Attars & Perfumers Association Kannauj — guiding the brand with craft authority, regional leadership, and active participation in the wider perfume community.
               </p>
 
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Link to="/ceo" className="ka-btn-outline px-6 py-3">
+              <div className="flex flex-wrap gap-3 mt-6">
+                <Link to="/ceo" className="px-6 py-3 ka-btn-outline">
                   Know about CEO
                 </Link>
-                <Link to="/contact" className="ka-btn-primary px-6 py-3">
+                <Link to="/contact" className="px-6 py-3 ka-btn-primary">
                   Request a consultation
                 </Link>
               </div>
@@ -574,7 +581,7 @@ function Home() {
                   <FiAward className="text-ruby" size={22} />
                   <p className="ka-kicker">Association</p>
                 </div>
-                <div className="mt-6 grid gap-3">
+                <div className="grid gap-3 mt-6">
                   {BUSINESS.associations.map((association) => (
                     <div
                       key={`${association.name}-${association.location}`}
@@ -637,7 +644,7 @@ function Home() {
         </section>
 
         <section className="px-4 py-16 sm:px-6 sm:py-20 md:py-24">
-          <div className="mx-auto w-full max-w-7xl">
+          <div className="w-full mx-auto max-w-7xl">
             <motion.div
               initial="hidden"
               whileInView="show"
@@ -657,7 +664,7 @@ function Home() {
               whileInView="show"
               viewport={viewportOnce}
               variants={staggerGrid(0.08, 0.05)}
-              className="mt-10 grid grid-cols-2 gap-4 sm:mt-12 lg:grid-cols-3 lg:gap-6"
+              className="grid grid-cols-2 gap-4 mt-10 sm:mt-12 lg:grid-cols-3 lg:gap-6"
             >
               {clientVoices.map((item) => (
                 <motion.article
@@ -666,7 +673,7 @@ function Home() {
                   className="rounded-[1.7rem] border border-white/75 bg-white/82 p-5 shadow-[0_24px_80px_rgba(28,19,13,0.07)] backdrop-blur-xl sm:rounded-[2rem] sm:p-7"
                 >
                   <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#4E638A] sm:text-[11px] sm:tracking-[0.28em]">{item.title}</p>
-                  <p className="mt-4 font-display text-lg leading-7 text-ink sm:mt-5 sm:text-2xl sm:leading-10">“{item.quote}”</p>
+                  <p className="mt-4 text-lg leading-7 font-display text-ink sm:mt-5 sm:text-2xl sm:leading-10">“{item.quote}”</p>
                 </motion.article>
               ))}
             </motion.div>
@@ -684,19 +691,19 @@ function Home() {
             <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
               <div>
                 <p className="ka-kicker !text-white/58">For personal luxury and trade supply</p>
-                <h2 className="mt-4 font-display text-4xl leading-tight text-white md:text-5xl">
+                <h2 className="mt-4 text-4xl leading-tight text-white font-display md:text-5xl">
                   Ancient Indian fragrance heritage, presented with a modern luxury eye.
                 </h2>
-                <p className="mt-5 max-w-3xl text-sm leading-8 text-white/72 sm:text-base">
+                <p className="max-w-3xl mt-5 text-sm leading-8 text-white/72 sm:text-base">
                   Whether you are discovering a personal attar or perfume, sourcing floral waters, or looking for dependable trade support, {BUSINESS.fullDisplayName} brings the city’s legacy forward with restraint and refinement.
                 </p>
               </div>
 
               <div className="flex flex-wrap gap-3">
-                <Link to="/products" className="ka-btn-primary px-7 py-4">
+                <Link to="/products" className="py-4 ka-btn-primary px-7">
                   Shop products
                 </Link>
-                <Link to="/contact" className="ka-btn-darkOutline px-7 py-4">
+                <Link to="/contact" className="py-4 ka-btn-darkOutline px-7">
                   Contact for bulk
                 </Link>
               </div>
@@ -725,7 +732,7 @@ function Home() {
                     </p>
                   </div>
 
-                  <div className="mt-6 grid gap-4">
+                  <div className="grid gap-4 mt-6">
                     {KNOWLEDGE_PAGE_LIST.map((item) => (
                       <article
                         key={item.slug}
@@ -758,7 +765,7 @@ function Home() {
                     <iframe
                       src={homeYoutubeEmbedUrl}
                       title="ITRATI fragrance heritage video"
-                      className="h-full w-full"
+                      className="w-full h-full"
                       loading="lazy"
                       referrerPolicy="strict-origin-when-cross-origin"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -780,8 +787,8 @@ function Home() {
         <div className="relative z-10 px-6 pb-20">
           <div className="mx-auto w-full max-w-7xl rounded-[2rem] border border-white/16 bg-[rgba(255,255,255,0.12)] px-6 py-6 text-center text-white/88 shadow-[0_18px_60px_rgba(5,10,24,0.14)]">
             <p className="text-xs font-semibold uppercase tracking-[0.32em] text-white/70">Loading the Kannauj story</p>
-            <div className="mx-auto mt-4 h-2 w-28 overflow-hidden rounded-full bg-white/12">
-              <div className="h-full w-1/2 animate-pulse rounded-full bg-white/55" />
+            <div className="h-2 mx-auto mt-4 overflow-hidden rounded-full w-28 bg-white/12">
+              <div className="w-1/2 h-full rounded-full animate-pulse bg-white/55" />
             </div>
           </div>
         </div>

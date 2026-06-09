@@ -22,7 +22,7 @@ function GalleryMediaPreview({ media, alt }) {
     return (
       <video
         src={src}
-        className="h-full w-full bg-white object-contain p-2"
+        className="object-contain w-full h-full p-2 bg-white"
         controls
         playsInline
         preload="metadata"
@@ -35,13 +35,13 @@ function GalleryMediaPreview({ media, alt }) {
       href={src}
       target="_blank"
       rel="noreferrer"
-      className="block h-full w-full"
+      className="block w-full h-full"
       title="Open full image"
     >
       <img
         src={src}
         alt={alt}
-        className="h-full w-full bg-white object-contain p-3"
+        className="object-contain w-full h-full p-3 bg-white"
         loading="lazy"
       />
     </a>
@@ -405,14 +405,11 @@ function Gallery() {
       {isAdmin || standaloneMedia.length > 0 ? (
         <section className="px-6 pb-20">
           <div className="w-full max-w-6xl mx-auto">
-            <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-lg shadow-black/10">
+            <div className="p-6 bg-white border shadow-lg rounded-3xl border-slate-200/80 shadow-black/10">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0">
                   <p className="ka-kicker">Gallery uploads</p>
-                  <h2 className="mt-3 ka-h2">Photos without topic</h2>
-                  <p className="mt-3 text-sm text-muted">
-                    Add gallery images or videos directly here without creating a topic first.
-                  </p>
+                  
                 </div>
 
                 {isAdmin ? (
@@ -421,9 +418,9 @@ function Gallery() {
                       value={standaloneCaption}
                       onChange={(e) => setStandaloneCaption(e.target.value)}
                       placeholder="Heading for next image/video"
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/15"
+                      className="w-full px-4 py-2 text-sm bg-white border rounded-2xl border-slate-200 text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/15"
                     />
-                    <label className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-full bg-ember px-5 py-2 text-xs font-semibold text-white transition hover:bg-emberDark">
+                    <label className="inline-flex items-center gap-2 px-5 py-2 text-xs font-semibold text-white transition rounded-full cursor-pointer w-fit bg-ember hover:bg-emberDark">
                       <FiPlus />
                       Add media
                       <input
@@ -443,29 +440,29 @@ function Gallery() {
               </div>
 
               {standaloneMedia.length > 0 ? (
-                <div className="mt-6 grid gap-6 md:grid-cols-3">
+                <div className="grid gap-6 mt-6 md:grid-cols-3">
                   {standaloneMedia.map((p) => (
-                    <div key={p._id} className="rounded-3xl border border-slate-200/80 bg-clay/40 p-4 shadow-sm">
+                    <div key={p._id} className="p-4 border shadow-sm rounded-3xl border-slate-200/80 bg-clay/40">
                       <div className="ka-frame ka-mediaBg aspect-[4/3] w-full">
                         <GalleryMediaPreview media={p} alt={p.caption || 'Gallery media'} />
                       </div>
 
                       {isAdmin ? (
-                        <div className="mt-4 grid gap-3">
+                        <div className="grid gap-3 mt-4">
                           <input
                             value={captionDrafts[p._id] ?? p.caption ?? ''}
                             onChange={(e) =>
                               setCaptionDrafts((prev) => ({ ...prev, [p._id]: e.target.value }))
                             }
                             placeholder="Image/video heading"
-                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/15"
+                            className="w-full px-4 py-2 text-sm bg-white border rounded-2xl border-slate-200 text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/15"
                           />
                           <div className="flex flex-wrap gap-2">
                             <button
                               type="button"
                               disabled={dynBusy}
                               onClick={() => updatePhotoHeading(p._id)}
-                              className="inline-flex items-center gap-2 rounded-full border border-gold/25 bg-white px-4 py-2 text-xs font-semibold text-emberDark hover:border-gold/45 disabled:opacity-60"
+                              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold bg-white border rounded-full border-gold/25 text-emberDark hover:border-gold/45 disabled:opacity-60"
                             >
                               <FiSave />
                               Save heading
@@ -474,7 +471,7 @@ function Gallery() {
                               type="button"
                               disabled={dynBusy}
                               onClick={() => removePhoto(p._id)}
-                              className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60"
+                              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-red-600 bg-white border border-red-200 rounded-full hover:bg-red-50 disabled:opacity-60"
                             >
                               <FiTrash2 />
                               Remove
@@ -593,10 +590,10 @@ function Gallery() {
                             setUploadCaptions((prev) => ({ ...prev, [section._id]: e.target.value }))
                           }
                           placeholder="Heading for next photo/video"
-                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/15"
+                          className="w-full px-4 py-2 text-sm bg-white border rounded-2xl border-slate-200 text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/15"
                         />
                         <div className="flex flex-wrap items-center gap-3">
-                          <label className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-ember px-5 py-2 text-xs font-semibold text-white transition hover:bg-emberDark">
+                          <label className="inline-flex items-center gap-2 px-5 py-2 text-xs font-semibold text-white transition rounded-full cursor-pointer bg-ember hover:bg-emberDark">
                             <FiPlus />
                             Add media
                             <input
@@ -615,7 +612,7 @@ function Gallery() {
                             type="button"
                             disabled={dynBusy}
                             onClick={() => removeTopic(section._id)}
-                            className="rounded-full border border-red-200 bg-white px-5 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60"
+                            className="px-5 py-2 text-xs font-semibold text-red-600 bg-white border border-red-200 rounded-full hover:bg-red-50 disabled:opacity-60"
                           >
                             Delete topic
                           </button>
@@ -636,21 +633,21 @@ function Gallery() {
                           </div>
 
                           {isAdmin ? (
-                            <div className="mt-4 grid gap-3">
+                            <div className="grid gap-3 mt-4">
                               <input
                                 value={captionDrafts[p._id] ?? p.caption ?? ''}
                                 onChange={(e) =>
                                   setCaptionDrafts((prev) => ({ ...prev, [p._id]: e.target.value }))
                                 }
                                 placeholder="Photo/video heading"
-                                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/15"
+                                className="w-full px-4 py-2 text-sm bg-white border rounded-2xl border-slate-200 text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/15"
                               />
                               <div className="flex flex-wrap gap-2">
                                 <button
                                   type="button"
                                   disabled={dynBusy}
                                   onClick={() => updatePhotoHeading(p._id)}
-                                  className="inline-flex items-center gap-2 rounded-full border border-gold/25 bg-white px-4 py-2 text-xs font-semibold text-emberDark hover:border-gold/45 disabled:opacity-60"
+                                  className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold bg-white border rounded-full border-gold/25 text-emberDark hover:border-gold/45 disabled:opacity-60"
                                 >
                                   <FiSave />
                                   Save heading
@@ -659,7 +656,7 @@ function Gallery() {
                                   type="button"
                                   disabled={dynBusy}
                                   onClick={() => removePhoto(p._id)}
-                                  className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60"
+                                  className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-red-600 bg-white border border-red-200 rounded-full hover:bg-red-50 disabled:opacity-60"
                                 >
                                   <FiTrash2 />
                                   Remove

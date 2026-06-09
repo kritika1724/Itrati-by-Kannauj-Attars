@@ -16,7 +16,7 @@ export const SORT_OPTIONS = [
   { id: 'popularity', label: 'Popularity' },
 ]
 
-export const CATEGORY_DEFAULTS = ['Attar', 'Perfume', 'Rose Water', 'Essential Oil']
+export const CATEGORY_DEFAULTS = ['Perfume', 'Rose Water', 'Essential Oil']
 export const FAMILY_DEFAULTS = [
   { id: 'floral', label: 'Floral' },
   { id: 'woody', label: 'Woody' },

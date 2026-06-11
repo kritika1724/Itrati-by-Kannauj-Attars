@@ -98,6 +98,7 @@ export const DEFAULT_HOME_YOUTUBE_CONTENT = {
 }
 
 export const DEFAULT_HOME_COLLECTIONS_CONTENT = {
+  version: 2,
   cards: [
     {
       title: 'Premium Attars Collection',
@@ -126,6 +127,13 @@ export const DEFAULT_HOME_COLLECTIONS_CONTENT = {
       assetKey: 'explore.purpose.luxury_gifting',
       link: '/collections/purpose/luxury_gifting',
       cta: 'View gift sets',
+    },
+    {
+      title: 'The Modern Edit',
+      copy: 'Contemporary attars and perfume oils curated for clean styling, versatile wear, and a refined modern mood.',
+      assetKey: 'home.collection.modern_edit',
+      link: '/products?collection=modern_edit',
+      cta: 'Explore modern edit',
     },
   ],
 }
@@ -328,8 +336,15 @@ export const mergeHomeCollectionsContent = (value) => {
     }))
     .filter((card) => card.title && card.copy && card.assetKey && card.link && card.cta)
 
+  const hasModernEdit = cards.some((card) => trimString(card.title).toLowerCase() === 'the modern edit')
+  const shouldAppendModernEdit = Number(raw.version || 1) < 2 && !hasModernEdit
+  const nextCards = shouldAppendModernEdit
+    ? [...cards, fallback.cards.find((card) => card.title === 'The Modern Edit')].filter(Boolean)
+    : cards
+
   return {
-    cards,
+    version: 2,
+    cards: nextCards,
   }
 }
 

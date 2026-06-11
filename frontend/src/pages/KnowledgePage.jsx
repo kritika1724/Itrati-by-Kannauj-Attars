@@ -59,7 +59,14 @@ function KnowledgePage() {
                   key={image.src}
                   className="overflow-hidden rounded-[1.6rem] border border-[rgba(25,33,60,0.08)] bg-white shadow-[0_18px_45px_rgba(25,33,60,0.06)]"
                 >
-                  <img src={image.src} alt={image.alt || page.title} loading="lazy" className="h-full w-full object-cover" />
+                  <img
+                    src={image.src}
+                    alt={image.alt || page.title}
+                    loading="lazy"
+                    decoding="async"
+                    sizes="(max-width: 639px) 100vw, 33vw"
+                    className="h-full w-full object-cover"
+                  />
                 </figure>
               ))}
             </div>
@@ -93,6 +100,8 @@ function KnowledgePage() {
                               src={image.src}
                               alt={image.alt || gallery.title || page.title}
                               loading="lazy"
+                              decoding="async"
+                              sizes="(max-width: 639px) 100vw, 33vw"
                               className="h-full w-full object-cover"
                             />
                           </figure>

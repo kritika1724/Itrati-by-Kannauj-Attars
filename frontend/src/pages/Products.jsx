@@ -1,14 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useDispatch } from 'react-redux'
 import { FiFilter, FiSearch, FiX } from 'react-icons/fi'
-import AddToCartModal from '../components/AddToCartModal'
-import RecentlyViewedStrip from '../components/RecentlyViewedStrip'
 import { useTaxonomy } from '../components/TaxonomyProvider'
 import FilterSidebar from '../components/product/FilterSidebar'
 import ProductGrid from '../components/product/ProductGrid'
-import ProductQuickViewModal from '../components/product/ProductQuickViewModal'
 import ProductToast from '../components/product/ProductToast'
 import { addToCart } from '../features/cartSlice'
 import { getPurposeCollectionMeta } from '../config/collections'
@@ -35,6 +32,10 @@ import {
   SORT_OPTIONS,
   toUiSort,
 } from '../utils/productFilters'
+
+const AddToCartModal = lazy(() => import('../components/AddToCartModal'))
+const ProductQuickViewModal = lazy(() => import('../components/product/ProductQuickViewModal'))
+const RecentlyViewedStrip = lazy(() => import('../components/RecentlyViewedStrip'))
 
 const PAGE_SIZE = 12
 const FILTER_PARAM_KEYS = [
@@ -780,27 +781,35 @@ function Products() {
       </section>
 
       <div className="border-t border-[rgba(25,33,60,0.06)] bg-[rgba(255,255,255,0.48)] pt-12">
-        <RecentlyViewedStrip title="Recently viewed" />
+        <Suspense fallback={null}>
+          <RecentlyViewedStrip title="Recently viewed" />
+        </Suspense>
       </div>
 
-      <AddToCartModal
-        open={cartModal.open}
-        product={cartModal.product}
-        onClose={() => setCartModal({ open: false, product: null })}
-        onConfirm={handleCartConfirm}
-      />
+      <Suspense fallback={null}>
+        {cartModal.open ? (
+          <AddToCartModal
+            open={cartModal.open}
+            product={cartModal.product}
+            onClose={() => setCartModal({ open: false, product: null })}
+            onConfirm={handleCartConfirm}
+          />
+        ) : null}
 
-      <ProductQuickViewModal
-        open={!!quickViewProduct}
-        product={quickViewProduct}
-        onClose={() => setQuickViewProduct(null)}
-        familyMap={familyMap}
-        onAddToCart={(product) => {
-          setQuickViewProduct(null)
-          setCartModal({ open: true, product })
-        }}
-        isAdmin={isAdmin}
-      />
+        {quickViewProduct ? (
+          <ProductQuickViewModal
+            open={!!quickViewProduct}
+            product={quickViewProduct}
+            onClose={() => setQuickViewProduct(null)}
+            familyMap={familyMap}
+            onAddToCart={(product) => {
+              setQuickViewProduct(null)
+              setCartModal({ open: true, product })
+            }}
+            isAdmin={isAdmin}
+          />
+        ) : null}
+      </Suspense>
 
       <ProductToast open={toast.open} message={toast.message} />
     </div>

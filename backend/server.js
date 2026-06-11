@@ -81,6 +81,7 @@ app.get('/assets/:file', (req, res) => {
   if (!fs.existsSync(filePath)) {
     return res.status(404).type('text/plain').send('Asset not found')
   }
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
   return res.sendFile(filePath)
 })
 

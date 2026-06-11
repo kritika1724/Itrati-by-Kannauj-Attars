@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { FiX } from 'react-icons/fi'
 import { useSiteAssets } from '../SiteAssetsProvider'
 import { usePopupBannerContent } from '../../hooks/useSiteContentBlocks'
-import { toAssetUrl } from '../../utils/media'
+import { getResponsiveImageProps, toAssetUrl } from '../../utils/media'
 
 const POPUP_DISMISS_PREFIX = 'ka:popup-banner:dismissed:'
 
@@ -52,6 +52,17 @@ function SitePopupBanner() {
   const imageSrc = useMemo(() => {
     const raw = assets?.['banner.popup.image'] || ''
     return raw ? toAssetUrl(raw, import.meta.env.VITE_API_ASSET) : ''
+  }, [assets])
+  const imageProps = useMemo(() => {
+    const raw = assets?.['banner.popup.image'] || ''
+    return raw
+      ? getResponsiveImageProps(raw, {
+          assetBase: import.meta.env.VITE_API_ASSET,
+          widths: [320, 420, 560, 720],
+          sizes: '(max-width: 639px) calc(100vw - 2rem), 24rem',
+          width: 560,
+        })
+      : null
   }, [assets])
 
   const signature = useMemo(
@@ -125,10 +136,11 @@ function SitePopupBanner() {
         {imageSrc ? (
           <div className="h-36 w-full overflow-hidden border-b border-[rgba(200,169,106,0.18)] bg-[radial-gradient(circle_at_top,rgba(201,162,74,0.14),rgba(255,255,255,0.96))]">
             <img
-              src={imageSrc}
+              {...(imageProps || { src: imageSrc })}
               alt={banner.title || 'Popup banner'}
               className="h-full w-full object-cover"
               loading="lazy"
+              decoding="async"
             />
           </div>
         ) : null}

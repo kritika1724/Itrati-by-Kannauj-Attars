@@ -10,13 +10,13 @@ import LogoMark from './components/LogoMark'
 import BrandWordmark from './components/BrandWordmark'
 import CursorGlow from './components/CursorGlow'
 import SiteFooter from './components/SiteFooter'
-import SitePopupBanner from './components/banners/SitePopupBanner'
-import LeadCouponModal from './components/LeadCouponModal'
 import { BUSINESS } from './config/business'
 import { useGlobalAutoplayVideos } from './hooks/useAutoplayVideo'
 import { pageShell } from './lib/motion'
 import { wishlistStorage } from './components/product/wishlist'
 
+const SitePopupBanner = lazy(() => import('./components/banners/SitePopupBanner'))
+const LeadCouponModal = lazy(() => import('./components/LeadCouponModal'))
 const Home = lazy(() => import('./pages/Home'))
 const Collections = lazy(() => import('./pages/Collections'))
 const Contact = lazy(() => import('./pages/Contact'))
@@ -289,8 +289,16 @@ function AppShell() {
         style={{ scaleX: progressScaleX }}
       />
       <CursorGlow />
-      {!inAdminArea && !hideSiteChrome ? <SitePopupBanner /> : null}
-      {!inAdminArea && !hideSiteChrome ? <LeadCouponModal /> : null}
+      {!inAdminArea && !hideSiteChrome ? (
+        <Suspense fallback={null}>
+          <SitePopupBanner />
+        </Suspense>
+      ) : null}
+      {!inAdminArea && !hideSiteChrome ? (
+        <Suspense fallback={null}>
+          <LeadCouponModal />
+        </Suspense>
+      ) : null}
       {inAdminArea ? (
         <header className="sticky top-0 z-20 border-b border-gold/20 bg-[linear-gradient(135deg,#070B18,#111B3A)] shadow-[0_18px_40px_rgba(7,11,24,0.35)]">
           <div className="ka-container flex flex-wrap items-center justify-between gap-4 py-4">

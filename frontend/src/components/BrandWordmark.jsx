@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useSiteAssets } from './SiteAssetsProvider'
-import { toAssetUrl } from '../utils/media'
+import { getResponsiveImageProps } from '../utils/media'
 import { BUSINESS } from '../config/business'
 import fallbackWordmark from '../assets/itrati-wordmark-transparent-v3.png'
 
@@ -31,8 +31,16 @@ function BrandWordmark({ className = '' }) {
   const wordmarkY = url ? clampOffset(assets?.['site.wordmark.y']) : 0
   const objectFitClass = shouldUseStableAutoFit ? 'object-cover' : 'object-contain'
 
-  const src = useMemo(
-    () => (url ? toAssetUrl(url, import.meta.env.VITE_API_ASSET) : fallbackWordmark),
+  const imageProps = useMemo(
+    () =>
+      url
+        ? getResponsiveImageProps(url, {
+            assetBase: import.meta.env.VITE_API_ASSET,
+            widths: [180, 260, 360, 480],
+            sizes: '(max-width: 639px) 11rem, 15rem',
+            width: 360,
+          })
+        : { src: fallbackWordmark },
     [url]
   )
 
@@ -49,9 +57,12 @@ function BrandWordmark({ className = '' }) {
         }}
       >
         <img
-          src={src}
+          {...imageProps}
           alt={BUSINESS.displayName}
           className={`h-full w-full ${objectFitClass} drop-shadow-[0_3px_7px_rgba(145,102,16,0.18)] sm:drop-shadow-[0_4px_10px_rgba(145,102,16,0.22)]`}
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
           style={{
             transform: `scale(${wordmarkZoom})`,
             transformOrigin: 'center',

@@ -2,7 +2,7 @@ import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiX } from 'react-icons/fi'
-import { toAssetUrl } from '../../utils/media'
+import { getResponsiveImageProps } from '../../utils/media'
 import { getProductPath } from '../../utils/productLinks'
 import { getBadgeList, getManualProductShortDescription, getMinPack, getNoteLine, getProductImages } from './productPresentation'
 import WishlistButton from './WishlistButton'
@@ -16,6 +16,14 @@ function ProductQuickViewModal({ product, open, onClose, familyMap = {}, onAddTo
   const price = minPack ? minPack.effectivePrice : product?.price
   const badges = getBadgeList(product)
   const shortDescription = getManualProductShortDescription(product, 220)
+  const heroImage = images[0]
+    ? getResponsiveImageProps(images[0], {
+        assetBase: import.meta.env.VITE_API_ASSET,
+        widths: [420, 640, 820, 1080, 1280],
+        sizes: '(max-width: 1023px) 100vw, 45vw',
+        width: 820,
+      })
+    : null
 
   return createPortal(
     <AnimatePresence>
@@ -52,8 +60,14 @@ function ProductQuickViewModal({ product, open, onClose, familyMap = {}, onAddTo
 
           <div className="grid max-h-[calc(90vh-5.5rem)] gap-6 overflow-y-auto p-5 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,1.12fr)] lg:gap-8 lg:p-7">
             <div className="overflow-hidden rounded-[1.8rem] bg-[linear-gradient(135deg,rgba(200,169,106,0.16),rgba(255,255,255,0.98),rgba(25,33,60,0.08))] min-h-[20rem] lg:min-h-[32rem]">
-              {images[0] ? (
-                <img src={toAssetUrl(images[0], import.meta.env.VITE_API_ASSET)} alt={product.name} className="h-full w-full object-cover" />
+              {heroImage ? (
+                <img
+                  {...heroImage}
+                  alt={product.name}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
               ) : (
                 <div className="aspect-[4/4.2] h-full w-full" />
               )}

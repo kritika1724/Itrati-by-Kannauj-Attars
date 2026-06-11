@@ -1,16 +1,27 @@
 import { useMemo } from 'react'
 import { useSiteAssets } from './SiteAssetsProvider'
-import { toAssetUrl } from '../utils/media'
+import { getResponsiveImageProps } from '../utils/media'
 import { BUSINESS } from '../config/business'
 
 function LogoMark({ className = '' }) {
   const { assets } = useSiteAssets()
 
   const url = assets?.['site.logo'] || ''
-  const src = useMemo(() => (url ? toAssetUrl(url, import.meta.env.VITE_API_ASSET) : ''), [url])
+  const imageProps = useMemo(
+    () =>
+      url
+        ? getResponsiveImageProps(url, {
+            assetBase: import.meta.env.VITE_API_ASSET,
+            widths: [72, 112, 160, 224],
+            sizes: '5rem',
+            width: 160,
+          })
+        : null,
+    [url]
+  )
   const logoZoom = Math.min(Math.max(Number(assets?.['site.logo.zoom']) || 1, 1), 2.5)
 
-  if (src) {
+  if (imageProps?.src) {
     return (
       <div
         className={`relative grid h-14 w-14 place-items-center overflow-hidden rounded-full border border-gold/25 bg-white shadow-sm ${className}`}
@@ -18,9 +29,12 @@ function LogoMark({ className = '' }) {
         title={BUSINESS.displayName}
       >
         <img
-          src={src}
+          {...imageProps}
           alt={BUSINESS.displayName}
           className="h-full w-full object-contain p-0.5 transition-transform duration-300"
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
           style={{ transform: `scale(${logoZoom})` }}
         />
       </div>

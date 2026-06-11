@@ -1,6 +1,7 @@
 const API_BASE = import.meta.env.VITE_API_BASE || '/api'
-const PUBLIC_CACHE_TTL_MS = 45_000
+const PUBLIC_CACHE_TTL_MS = 90_000
 const STATIC_DATA_CACHE_TTL_MS = 5 * 60_000
+const PRIVATE_CACHE_TTL_MS = 30_000
 
 const responseCache = new Map()
 const inflightRequests = new Map()
@@ -228,9 +229,13 @@ export const api = {
       invalidateCache('/products')
       return data
     }),
-  createOrder: (payload) => request('/orders', { method: 'POST', body: JSON.stringify(payload) }),
-  getMyOrders: () => request('/orders/mine'),
-  getOrder: (id) => request(`/orders/${id}`),
+  createOrder: (payload) =>
+    request('/orders', { method: 'POST', body: JSON.stringify(payload) }).then((data) => {
+      invalidateCache('/orders')
+      return data
+    }),
+  getMyOrders: () => request('/orders/mine', { cacheTtlMs: PRIVATE_CACHE_TTL_MS }),
+  getOrder: (id) => request(`/orders/${id}`, { cacheTtlMs: PRIVATE_CACHE_TTL_MS }),
   trackOrder: (publicOrderId, contact) =>
     request(`/orders/track/${encodeURIComponent(publicOrderId)}?whatsapp=${encodeURIComponent(contact || '')}`),
   cancelTrackedOrder: (publicOrderId, contact) =>
@@ -238,12 +243,26 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify({ whatsapp: contact || '' }),
     }),
-  getAllOrders: () => request('/orders'),
+  getAllOrders: () => request('/orders', { cacheTtlMs: PRIVATE_CACHE_TTL_MS }),
   updateOrderStatus: (id, status) =>
-    request(`/orders/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
-  deleteOrder: (id) => request(`/orders/${id}`, { method: 'DELETE' }),
-  cancelOrder: (id) => request(`/orders/${id}/cancel`, { method: 'PUT' }),
-  adminStats: () => request('/admin/stats'),
+    request(`/orders/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }).then((data) => {
+      invalidateCache('/orders')
+      invalidateCache('/admin/stats')
+      return data
+    }),
+  deleteOrder: (id) =>
+    request(`/orders/${id}`, { method: 'DELETE' }).then((data) => {
+      invalidateCache('/orders')
+      invalidateCache('/admin/stats')
+      return data
+    }),
+  cancelOrder: (id) =>
+    request(`/orders/${id}/cancel`, { method: 'PUT' }).then((data) => {
+      invalidateCache('/orders')
+      invalidateCache('/admin/stats')
+      return data
+    }),
+  adminStats: () => request('/admin/stats', { cacheTtlMs: PRIVATE_CACHE_TTL_MS }),
   // Razorpay payments
   createRazorpayOrder: (payloadOrOrderId) =>
     request('/payments/razorpay/order', {
@@ -255,7 +274,11 @@ export const api = {
       ),
     }),
   verifyRazorpayPayment: (payload) =>
-    request('/payments/razorpay/verify', { method: 'POST', body: JSON.stringify(payload) }),
+    request('/payments/razorpay/verify', { method: 'POST', body: JSON.stringify(payload) }).then((data) => {
+      invalidateCache('/orders')
+      invalidateCache('/admin/stats')
+      return data
+    }),
   uploadMedia: async (file) => {
     const token = getToken()
     const formData = new FormData()
@@ -338,24 +361,38 @@ export const api = {
       throw error
     }
   },
-  getFragranceClubMembers: () => request('/fragrance-club/members'),
-  getFragranceClubCampaigns: () => request('/fragrance-club/campaigns'),
+  getFragranceClubMembers: () => request('/fragrance-club/members', { cacheTtlMs: PRIVATE_CACHE_TTL_MS }),
+  getFragranceClubCampaigns: () => request('/fragrance-club/campaigns', { cacheTtlMs: PRIVATE_CACHE_TTL_MS }),
   createFragranceClubCampaign: (payload) =>
-    request('/fragrance-club/campaigns', { method: 'POST', body: JSON.stringify(payload) }),
+    request('/fragrance-club/campaigns', { method: 'POST', body: JSON.stringify(payload) }).then((data) => {
+      invalidateCache('/fragrance-club/campaigns')
+      return data
+    }),
   updateFragranceClubCampaignStatus: (id, status) =>
     request(`/fragrance-club/campaigns/${encodeURIComponent(id)}/status`, {
       method: 'PUT',
       body: JSON.stringify({ status }),
+    }).then((data) => {
+      invalidateCache('/fragrance-club/campaigns')
+      return data
     }),
   // Admin contact inbox
   getContactMessages: (params = {}) => {
     const qs = new URLSearchParams(
       Object.entries(params).filter(([, value]) => value !== undefined && value !== '')
     ).toString()
-    return request(`/contact${qs ? `?${qs}` : ''}`)
+    return request(`/contact${qs ? `?${qs}` : ''}`, { cacheTtlMs: PRIVATE_CACHE_TTL_MS })
   },
-  markContactRead: (id) => request(`/contact/${id}/read`, { method: 'PUT' }),
-  deleteContactMessage: (id) => request(`/contact/${id}`, { method: 'DELETE' }),
+  markContactRead: (id) =>
+    request(`/contact/${id}/read`, { method: 'PUT' }).then((data) => {
+      invalidateCache('/contact')
+      return data
+    }),
+  deleteContactMessage: (id) =>
+    request(`/contact/${id}`, { method: 'DELETE' }).then((data) => {
+      invalidateCache('/contact')
+      return data
+    }),
 
   // Gallery (dynamic sections)
   getGallery: () => request('/gallery', { cacheTtlMs: PUBLIC_CACHE_TTL_MS }),

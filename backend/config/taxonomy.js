@@ -51,6 +51,14 @@ const DEFAULT_TAXONOMY_TERMS = [
   { group: 'direction', slug: 'vanilla', label: 'Vanilla', sortOrder: 140 },
   { group: 'direction', slug: 'woody', label: 'Woody', sortOrder: 150 },
 
+  {
+    group: 'collection',
+    slug: 'modern_edit',
+    label: 'The Modern Edit',
+    description: 'Contemporary attars and perfume oils curated for clean styling, versatile wear, and a refined modern mood.',
+    sortOrder: 30,
+  },
+
 ]
 
 module.exports = { DEFAULT_TAXONOMY_TERMS, slugifyTerm }

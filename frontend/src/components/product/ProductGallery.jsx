@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'
-import { toAssetUrl } from '../../utils/media'
+import { getResponsiveImageProps } from '../../utils/media'
 import { clampImageZoom, getProductImages } from './productPresentation'
 
 function ProductGallery({ product, spotlightLabel = 'Itrati' }) {
@@ -13,6 +13,14 @@ function ProductGallery({ product, spotlightLabel = 'Itrati' }) {
 
   const hasImages = images.length > 0
   const currentImage = hasImages ? images[activeIndex] || images[0] : ''
+  const currentImageProps = currentImage
+    ? getResponsiveImageProps(currentImage, {
+        assetBase: import.meta.env.VITE_API_ASSET,
+        widths: [480, 640, 820, 1080, 1360, 1600],
+        sizes: '(max-width: 1023px) 100vw, 48vw',
+        width: 1080,
+      })
+    : null
 
   const goTo = (index) => {
     if (!images.length) return
@@ -47,17 +55,19 @@ function ProductGallery({ product, spotlightLabel = 'Itrati' }) {
             onTouchEnd={handleTouchEnd}
           >
             <AnimatePresence mode="wait">
-              {currentImage ? (
+              {currentImageProps ? (
                 <motion.img
                   key={currentImage}
-                  src={toAssetUrl(currentImage, import.meta.env.VITE_API_ASSET)}
+                  {...currentImageProps}
                   alt={product?.name}
                   initial={{ opacity: 0, scale: 0.96 }}
                   animate={{ opacity: 1, scale: imageZoom }}
                   exit={{ opacity: 0, scale: 0.94 }}
                   transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
                   className="h-full w-full object-cover object-center transition duration-700 md:hover:brightness-[1.02]"
-                  loading="lazy"
+                  loading={activeIndex === 0 ? 'eager' : 'lazy'}
+                  decoding="async"
+                  fetchPriority={activeIndex === 0 ? 'high' : 'low'}
                 />
               ) : (
                 <motion.div
@@ -112,6 +122,12 @@ function ProductGallery({ product, spotlightLabel = 'Itrati' }) {
         <div className="flex gap-3 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
           {images.map((image, index) => {
             const active = index === activeIndex
+            const thumbnailImage = getResponsiveImageProps(image, {
+              assetBase: import.meta.env.VITE_API_ASSET,
+              widths: [96, 144, 192, 240],
+              sizes: '96px',
+              width: 192,
+            })
             return (
               <button
                 key={`${image}-${index}`}
@@ -125,10 +141,11 @@ function ProductGallery({ product, spotlightLabel = 'Itrati' }) {
               >
                 <div className="aspect-square w-20 sm:w-24">
                   <img
-                    src={toAssetUrl(image, import.meta.env.VITE_API_ASSET)}
+                    {...thumbnailImage}
                     alt={`${product?.name} ${index + 1}`}
                     className="h-full w-full object-cover"
                     loading="lazy"
+                    decoding="async"
                   />
                 </div>
                 {active ? <span className="absolute inset-x-3 bottom-2 h-0.5 rounded-full bg-[#C9A24A]" /> : null}

@@ -7,7 +7,7 @@ import AdminAssetMediaGrid from '../components/AdminAssetMediaGrid'
 import { BUSINESS } from '../config/business'
 import { useSiteContactProfile } from '../hooks/useSiteContentBlocks'
 import { api, auth } from '../services/api'
-import { getMediaAccept, isVideoAssetUrl, toAssetUrl } from '../utils/media'
+import { getMediaAccept, getResponsiveImageProps, isVideoAssetUrl, toAssetUrl } from '../utils/media'
 
 const fade = {
   hidden: { opacity: 0, y: 14 },
@@ -17,6 +17,14 @@ const fade = {
 function GalleryMediaPreview({ media, alt }) {
   const src = toAssetUrl(media.url, import.meta.env.VITE_API_ASSET)
   const isVideo = media.kind === 'video' || isVideoAssetUrl(media.url)
+  const imageProps = !isVideo
+    ? getResponsiveImageProps(media.url, {
+        assetBase: import.meta.env.VITE_API_ASSET,
+        widths: [320, 480, 640, 960, 1280],
+        sizes: '(max-width: 767px) 100vw, 50vw',
+        width: 960,
+      })
+    : null
 
   if (isVideo) {
     return (
@@ -39,10 +47,11 @@ function GalleryMediaPreview({ media, alt }) {
       title="Open full image"
     >
       <img
-        src={src}
+        {...(imageProps || { src })}
         alt={alt}
         className="object-contain w-full h-full p-3 bg-white"
         loading="lazy"
+        decoding="async"
       />
     </a>
   )

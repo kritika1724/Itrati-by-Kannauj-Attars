@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { clearRecent } from '../features/recentlyViewedSlice'
-import { toAssetUrl } from '../utils/media'
+import { getResponsiveImageProps } from '../utils/media'
 import { getProductPath } from '../utils/productLinks'
 
 function RecentlyViewedStrip({ excludeId = '', max = 8, title = 'Recently viewed' }) {
@@ -31,37 +31,49 @@ function RecentlyViewedStrip({ excludeId = '', max = 8, title = 'Recently viewed
         </div>
 
         <div className="flex gap-4 overflow-x-auto pb-2 [-webkit-overflow-scrolling:touch]">
-          {filtered.map((item) => (
-            <Link
-              key={item.product}
-              to={getProductPath(item)}
-              state={{ productId: item?.product }}
-              className="min-w-[220px] flex-1 rounded-[1.7rem] border border-[rgba(25,33,60,0.08)] bg-[rgba(255,255,255,0.92)] p-4 shadow-[0_18px_48px_rgba(25,33,60,0.06)] transition hover:-translate-y-1 hover:border-[rgba(200,169,106,0.34)]"
-            >
-              <div className="aspect-[4/3] w-full overflow-hidden rounded-[1.3rem] bg-[linear-gradient(135deg,rgba(200,169,106,0.18),rgba(255,255,255,0.98),rgba(25,33,60,0.08))]">
-                {item.image ? (
-                  <img
-                    src={toAssetUrl(item.image, import.meta.env.VITE_API_ASSET)}
-                    alt={item.name}
-                    className="h-full w-full bg-white object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="h-full w-full bg-[linear-gradient(135deg,rgba(200,169,106,0.22),rgba(255,255,255,0.92),rgba(25,33,60,0.10))]" />
-                )}
-              </div>
-              <h3 className="mt-4 line-clamp-1 text-sm font-semibold text-[#19213C]">{item.name}</h3>
-              <p className="mt-2 text-xs font-semibold text-[#C9A24A]">
-                {item.packLabel ? (
-                  <>
-                    {item.packLabel} / ₹{item.price}
-                  </>
-                ) : (
-                  <>₹{item.price}</>
-                )}
-              </p>
-            </Link>
-          ))}
+          {filtered.map((item) => {
+            const itemImage = item.image
+              ? getResponsiveImageProps(item.image, {
+                  assetBase: import.meta.env.VITE_API_ASSET,
+                  widths: [240, 320, 480, 640],
+                  sizes: '220px',
+                  width: 480,
+                })
+              : null
+
+            return (
+              <Link
+                key={item.product}
+                to={getProductPath(item)}
+                state={{ productId: item?.product }}
+                className="min-w-[220px] flex-1 rounded-[1.7rem] border border-[rgba(25,33,60,0.08)] bg-[rgba(255,255,255,0.92)] p-4 shadow-[0_18px_48px_rgba(25,33,60,0.06)] transition hover:-translate-y-1 hover:border-[rgba(200,169,106,0.34)]"
+              >
+                <div className="aspect-[4/3] w-full overflow-hidden rounded-[1.3rem] bg-[linear-gradient(135deg,rgba(200,169,106,0.18),rgba(255,255,255,0.98),rgba(25,33,60,0.08))]">
+                  {itemImage ? (
+                    <img
+                      {...itemImage}
+                      alt={item.name}
+                      className="h-full w-full bg-white object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <div className="h-full w-full bg-[linear-gradient(135deg,rgba(200,169,106,0.22),rgba(255,255,255,0.92),rgba(25,33,60,0.10))]" />
+                  )}
+                </div>
+                <h3 className="mt-4 line-clamp-1 text-sm font-semibold text-[#19213C]">{item.name}</h3>
+                <p className="mt-2 text-xs font-semibold text-[#C9A24A]">
+                  {item.packLabel ? (
+                    <>
+                      {item.packLabel} / ₹{item.price}
+                    </>
+                  ) : (
+                    <>₹{item.price}</>
+                  )}
+                </p>
+              </Link>
+            )
+          })}
         </div>
       </div>
     </section>

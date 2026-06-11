@@ -60,6 +60,7 @@ function WordmarkFramePreview({ src, zoom, x, y }) {
             src={src}
             alt="Itrati wordmark preview"
             className="h-full w-full object-contain drop-shadow-[0_4px_10px_rgba(145,102,16,0.22)] transition-transform duration-300"
+            decoding="async"
             style={{
               transform: `scale(${zoom})`,
               transformOrigin: 'center',
@@ -225,6 +226,7 @@ function AdminMedia() {
         className="h-44 w-full object-contain transition-transform duration-300"
         style={{ transform: fallbackPreview ? undefined : `scale(${getRowZoom(row.key)})` }}
         loading="lazy"
+        decoding="async"
       />
     )
   }

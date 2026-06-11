@@ -115,6 +115,8 @@ function AdminSiteContent() {
 
   const addHomeCollectionCard = () => {
     setHomeCollectionsDraft((prev) => ({
+      ...prev,
+      version: 2,
       cards: [
         ...(prev.cards || []),
         {
@@ -152,6 +154,8 @@ function AdminSiteContent() {
 
   const updateHomeCollectionCard = (index, field, value) => {
     setHomeCollectionsDraft((prev) => ({
+      ...prev,
+      version: 2,
       cards: (prev.cards || []).map((card, cardIndex) =>
         cardIndex === index ? { ...card, [field]: value } : card
       ),
@@ -160,6 +164,8 @@ function AdminSiteContent() {
 
   const removeHomeCollectionCard = (index) => {
     setHomeCollectionsDraft((prev) => ({
+      ...prev,
+      version: 2,
       cards: (prev.cards || []).filter((_, cardIndex) => cardIndex !== index),
     }))
   }

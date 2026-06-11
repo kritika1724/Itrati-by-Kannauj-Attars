@@ -23,10 +23,11 @@ const PRODUCTS_CACHE_PROFILE = getPublicCacheProfile('PRODUCTS', {
   staleIfError: 21600,
 })
 const PUBLIC_PRODUCT_LIST_SELECT =
+  'name shortDescription category purposeTags familyTags seasonTags genderTags directionTags featuredCollections isBestSeller isNewArrival sample availableSizesText price packs images imageZoom highlights fragranceNotes rating numReviews createdAt'
+const ADMIN_PRODUCT_LIST_SELECT =
   'name description shortDescription category purposeTags familyTags seasonTags genderTags directionTags featuredCollections isBestSeller isNewArrival sample availableSizesText price packs images imageZoom highlights fragranceNotes rating numReviews createdAt'
-const ADMIN_PRODUCT_LIST_SELECT = PUBLIC_PRODUCT_LIST_SELECT
 const RELATED_PRODUCTS_POPULATE_SELECT =
-  'name description shortDescription category purposeTags familyTags seasonTags genderTags directionTags featuredCollections isBestSeller isNewArrival sample availableSizesText price packs.label packs.price packs.salePrice images imageZoom highlights fragranceNotes rating numReviews createdAt'
+  'name shortDescription category purposeTags familyTags seasonTags genderTags directionTags featuredCollections isBestSeller isNewArrival sample availableSizesText price packs.label packs.price packs.salePrice images imageZoom highlights fragranceNotes rating numReviews createdAt'
 const DEFAULT_PRODUCT_LIMIT = 12
 const MAX_PRODUCT_LIMIT = 100
 const MAX_LIST_FILTER_VALUES = 24
@@ -225,7 +226,7 @@ const getProductByIdOrSlug = async (idOrSlug, { includeAdminFields = false, popu
 
   const slug = value.toLowerCase()
   const candidates = await Product.find({})
-    .select(includeAdminFields ? ADMIN_PRODUCT_LIST_SELECT : PUBLIC_PRODUCT_LIST_SELECT)
+    .select('name')
     .lean()
   const match = candidates.find((product) => buildProductSlug(product) === slug)
   if (!match) return null

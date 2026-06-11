@@ -27,6 +27,7 @@ export const SITE_ASSET_KEYS = [
   { key: 'home.house.photo', label: 'Home: Our House Photo' },
   { key: 'home.explore.signature', label: 'Home: Explore (Signature) Image' },
   { key: 'home.explore.heritage', label: 'Home: Explore (Heritage) Image' },
+  { key: 'home.collection.modern_edit', label: 'Home: Collection (The Modern Edit) Image' },
   { key: 'home.credibility.photo', label: 'Home: Business Details Below Media' },
   { key: 'about.ceo.photo', label: 'About: Founder/CEO Photo' },
 

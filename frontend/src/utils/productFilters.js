@@ -44,6 +44,10 @@ export const COLLECTION_MAP = {
     title: 'Heritage Collection',
     lead: 'Admin-curated traditional profiles inspired by classic Kannauj perfumery.',
   },
+  modern_edit: {
+    title: 'The Modern Edit',
+    lead: 'Contemporary attars and perfume oils curated for clean styling, versatile wear, and a refined modern mood.',
+  },
 }
 
 export const toUiSort = (value) => {

@@ -898,6 +898,7 @@ function AdminProductForm() {
                             alt={item.name}
                             className="h-full w-full object-cover"
                             loading="lazy"
+                            decoding="async"
                           />
                         ) : null}
                       </div>
@@ -940,6 +941,7 @@ function AdminProductForm() {
                               alt={item.name}
                               className="h-full w-full object-cover"
                               loading="lazy"
+                              decoding="async"
                             />
                           ) : null}
                         </div>
@@ -1147,6 +1149,7 @@ function AdminProductForm() {
                         className="h-full w-full object-cover transition-transform duration-300"
                         style={{ transform: `scale(${clampImageZoom(imageZoom)})` }}
                         loading="lazy"
+                        decoding="async"
                       />
                     </div>
                     <div className="mt-2 flex flex-wrap gap-2">

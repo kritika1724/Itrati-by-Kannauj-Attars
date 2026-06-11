@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import { Link } from 'react-router-dom'
 import { FiEye } from 'react-icons/fi'
-import { toAssetUrl } from '../utils/media'
+import { getResponsiveImageProps } from '../utils/media'
 import { getProductPath } from '../utils/productLinks'
 import { BUSINESS } from '../config/business'
 import WishlistButton from './product/WishlistButton'
@@ -14,6 +14,14 @@ function ProductCard({ product, onView, onAdd, onQuickView, isAdmin = false, sho
   const sample = product?.sample || {}
   const sampleEnabled = sample.enabled === true && sample.label && Number(sample.price) > 0
   const productPath = getProductPath(product)
+  const productImage = product?.images?.[0]
+    ? getResponsiveImageProps(product.images[0], {
+        assetBase: import.meta.env.VITE_API_ASSET,
+        widths: [240, 320, 420, 520, 640],
+        sizes: '(max-width: 639px) 46vw, (max-width: 1023px) 45vw, (max-width: 1535px) 30vw, 23vw',
+        width: 520,
+      })
+    : null
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-[14px] border border-[rgba(25,33,60,0.08)] bg-[rgba(255,255,255,0.96)] shadow-[0_12px_28px_rgba(25,33,60,0.06)] transition duration-300 hover:-translate-y-1 hover:border-[rgba(200,169,106,0.42)] hover:shadow-[0_22px_64px_rgba(25,33,60,0.10)] sm:rounded-[28px] sm:shadow-[0_18px_52px_rgba(25,33,60,0.07)] sm:hover:-translate-y-1.5 sm:hover:shadow-[0_28px_80px_rgba(25,33,60,0.12)]">
@@ -26,12 +34,14 @@ function ProductCard({ product, onView, onAdd, onQuickView, isAdmin = false, sho
           <div className="relative aspect-[4/3.75] overflow-hidden rounded-[11px] sm:aspect-[4/4.15] sm:rounded-[22px]">
             <div className="pointer-events-none absolute inset-x-[18%] top-3 z-[1] h-16 rounded-full bg-[radial-gradient(circle,rgba(200,169,106,0.22),transparent_68%)] blur-2xl sm:top-4 sm:h-20" />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-12 bg-[linear-gradient(180deg,transparent,rgba(21,28,52,0.14))] sm:h-16" />
-            {product?.images?.[0] ? (
+            {productImage ? (
               <img
-                src={toAssetUrl(product.images[0], import.meta.env.VITE_API_ASSET)}
+                {...productImage}
                 alt={product.name}
                 className="relative z-[2] h-full w-full object-cover object-center transition duration-700 group-hover:scale-[1.06]"
                 loading="lazy"
+                decoding="async"
+                fetchPriority="low"
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(200,169,106,0.16),rgba(255,255,255,0.99),rgba(25,33,60,0.08))]">

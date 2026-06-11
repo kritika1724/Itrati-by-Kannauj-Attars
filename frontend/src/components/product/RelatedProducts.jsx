@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { toAssetUrl } from '../../utils/media'
+import { getResponsiveImageProps } from '../../utils/media'
 import { getProductPath } from '../../utils/productLinks'
 import { getMinPack, getNoteLine } from './productPresentation'
 
@@ -22,6 +22,14 @@ function RelatedProducts({ products = [], familyMap = {} }) {
         {products.map((item) => {
           const minPack = getMinPack(Array.isArray(item?.packs) ? item.packs : [])
           const price = minPack ? minPack.effectivePrice : item?.price
+          const itemImage = item?.images?.[0]
+            ? getResponsiveImageProps(item.images[0], {
+                assetBase: import.meta.env.VITE_API_ASSET,
+                widths: [280, 420, 560, 720],
+                sizes: '(max-width: 639px) 80vw, 20rem',
+                width: 560,
+              })
+            : null
           return (
             <Link
               key={item._id}
@@ -30,12 +38,13 @@ function RelatedProducts({ products = [], familyMap = {} }) {
               className="snap-start min-w-[18rem] max-w-[20rem] flex-1 overflow-hidden rounded-[1.8rem] border border-[rgba(25,33,60,0.08)] bg-[rgba(252,249,243,0.92)] shadow-[0_18px_48px_rgba(25,33,60,0.06)] transition hover:-translate-y-1 hover:border-[rgba(200,169,106,0.34)]"
             >
               <div className="aspect-[4/3.1] overflow-hidden bg-[linear-gradient(135deg,rgba(200,169,106,0.18),rgba(255,255,255,0.98),rgba(25,33,60,0.08))]">
-                {item?.images?.[0] ? (
+                {itemImage ? (
                   <img
-                    src={toAssetUrl(item.images[0], import.meta.env.VITE_API_ASSET)}
+                    {...itemImage}
                     alt={item.name}
                     className="h-full w-full object-cover transition duration-500 hover:scale-[1.04]"
                     loading="lazy"
+                    decoding="async"
                   />
                 ) : null}
               </div>

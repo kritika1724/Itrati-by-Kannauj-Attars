@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { auth } from '../services/api'
 import { useSiteAssets } from './SiteAssetsProvider'
 import { useAutoplayVideo } from '../hooks/useAutoplayVideo'
-import { getMediaAccept, isVideoAssetUrl, toAssetUrl } from '../utils/media'
+import { getMediaAccept, getResponsiveImageProps, isVideoAssetUrl, toAssetUrl } from '../utils/media'
 
 const parseAspect = (value) => {
   if (!value) return null
@@ -42,6 +42,18 @@ function AdminAssetImage({
   const url = assets?.[assetKey] || ''
   const src = useMemo(() => (url ? toAssetUrl(url, import.meta.env.VITE_API_ASSET) : ''), [url])
   const isVideo = allowVideo && isVideoAssetUrl(url)
+  const imageProps = useMemo(
+    () =>
+      src && !isVideo
+        ? getResponsiveImageProps(url, {
+            assetBase: import.meta.env.VITE_API_ASSET,
+            widths: [320, 480, 640, 960, 1280],
+            sizes: '(max-width: 767px) 100vw, 50vw',
+            width: 960,
+          })
+        : null,
+    [isVideo, src, url]
+  )
   const videoRef = useAutoplayVideo(isVideo ? src : '')
   const imageZoom = Math.min(Math.max(Number(assets?.[`${assetKey}.zoom`]) || 1, 1), 2.5)
 
@@ -82,11 +94,12 @@ function AdminAssetImage({
         ) : (
           <a href={src} target="_blank" rel="noreferrer" className="block h-full w-full">
             <img
-              src={src}
+              {...(imageProps || { src })}
               alt=""
               className={`h-full w-full bg-white ${fit === 'cover' ? 'object-cover' : 'object-contain'} ${imgClassName}`}
               style={{ transform: `scale(${imageZoom})` }}
               loading="lazy"
+              decoding="async"
               onLoad={(e) => {
                 const el = e.currentTarget
                 if (el?.naturalWidth && el?.naturalHeight) {

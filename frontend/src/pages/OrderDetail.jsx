@@ -123,6 +123,7 @@ function OrderDetail() {
                             alt={item.name}
                             className="h-full w-full bg-white object-contain p-1"
                             loading="lazy"
+                            decoding="async"
                           />
                         ) : (
                           <div className="h-full w-full bg-[linear-gradient(135deg,rgba(201,162,74,0.18),rgba(255,255,255,0.85),rgba(17,27,58,0.10))]" />

@@ -111,7 +111,6 @@ function AdminProducts() {
                 <div>
                   <p className="text-sm font-semibold text-ink">{product.name}</p>
                   <p className="text-xs text-muted">₹{product.price}</p>
-                  <p className="mt-1 text-xs font-semibold text-emberDark">Stock: {product.stock ?? 0}</p>
                   {product.isBestSeller ? (
                     <span className="mt-2 inline-flex rounded-full bg-gold px-3 py-1 text-[11px] font-semibold text-midnight">
                       Best seller

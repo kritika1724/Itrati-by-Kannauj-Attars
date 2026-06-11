@@ -13,13 +13,6 @@ const schema = yup.object({
   shortDescription: yup.string().max(280).default(''),
   category: yup.string().required('Category is required.'),
   buyerType: yup.string().oneOf(['personal', 'industrial', 'both']).default('personal'),
-  stock: yup
-    .number()
-    .transform((value, originalValue) => (originalValue === '' || originalValue === null ? 0 : value))
-    .typeError('Stock must be a number.')
-    .min(0, 'Stock cannot be negative.')
-    .integer('Stock must be a whole number.')
-    .default(0),
   isBestSeller: yup.boolean().default(false),
   isNewArrival: yup.boolean().default(false),
   sampleEnabled: yup.boolean().default(false),
@@ -64,7 +57,7 @@ function AdminProductForm() {
   const [imageUrl, setImageUrl] = useState('')
   const [imageZoom, setImageZoom] = useState(1)
   const [uploadingImages, setUploadingImages] = useState(false)
-  const [packs, setPacks] = useState([{ label: '200 gm', price: '', salePrice: '', stock: '' }])
+  const [packs, setPacks] = useState([{ label: '200 gm', price: '', salePrice: '' }])
   const [detailSections, setDetailSections] = useState(createDefaultDetailSections)
   const [purposeTags, setPurposeTags] = useState([])
   const [familyTags, setFamilyTags] = useState([])
@@ -136,7 +129,6 @@ function AdminProductForm() {
     // Defaults for new products
     if (!isEditing) {
       setValue('buyerType', 'personal')
-      setValue('stock', 0)
       setValue('isBestSeller', false)
       setValue('isNewArrival', false)
       setValue('sampleEnabled', false)
@@ -151,7 +143,6 @@ function AdminProductForm() {
       setValue('shortDescription', product.shortDescription || '')
       setValue('category', product.category)
       setValue('buyerType', product.buyerType || 'personal')
-      setValue('stock', product.stock ?? 0)
       setValue('isBestSeller', product.isBestSeller === true)
       setValue('isNewArrival', product.isNewArrival === true)
       setValue('sampleEnabled', product.sample?.enabled === true)
@@ -199,11 +190,10 @@ function AdminProductForm() {
             label: p.label || '',
             price: p.price ?? '',
             salePrice: p.salePrice ?? '',
-            stock: p.stock ?? '',
           }))
         )
       } else if (product.price !== undefined && product.price !== null) {
-        setPacks([{ label: 'Default pack', price: product.price, salePrice: '', stock: product.stock ?? '' }])
+        setPacks([{ label: 'Default pack', price: product.price, salePrice: '' }])
       }
     }
     load()
@@ -297,7 +287,6 @@ function AdminProductForm() {
         label: (p.label || '').trim(),
         price: Number(p.price),
         salePrice: p.salePrice === '' || p.salePrice === undefined ? null : Number(p.salePrice),
-        stock: p.stock === '' || p.stock === undefined ? 0 : Number(p.stock),
       }))
       .filter((p) => p.label && !Number.isNaN(p.price))
 
@@ -330,7 +319,6 @@ function AdminProductForm() {
 
     const payload = {
       ...data,
-      stock: Math.max(0, Number(data.stock || 0)),
       price: Number(basePrice),
       highlights: data.highlights ? data.highlights.split(',').map((item) => item.trim()).filter(Boolean) : [],
       fragranceNotes: {
@@ -1003,7 +991,7 @@ function AdminProductForm() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setPacks((prev) => [...prev, { label: '', price: '', salePrice: '', stock: '' }])}
+                  onClick={() => setPacks((prev) => [...prev, { label: '', price: '', salePrice: '' }])}
                   className="rounded-full bg-ember px-5 py-2 text-sm font-semibold text-white transition hover:bg-emberDark"
                 >
                   + Add pack

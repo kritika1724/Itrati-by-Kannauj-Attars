@@ -89,6 +89,12 @@ function AdminDashboard() {
               Website Images
             </Link>
             <Link
+              to="/admin/content#home-collections"
+              className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-emberDark hover:border-gold/40"
+            >
+              Home Collections
+            </Link>
+            <Link
               to="/admin/filters"
               className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-emberDark hover:border-gold/40"
             >
@@ -123,7 +129,7 @@ function AdminDashboard() {
 
           <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
             {[
-              { label: 'Products', value: stats?.products ?? '—', sticker: stats?.lowStockCount, stickerLabel: 'low stock' },
+              { label: 'Products', value: stats?.products ?? '—' },
               { label: 'Orders', value: stats?.orders ?? '—', sticker: stats?.newOrders },
               { label: 'Contacts', value: stats?.contactMessages ?? '—', sticker: stats?.newContactMessages },
               { label: 'Fragrance Club', value: stats?.fragranceClubMembers ?? '—', to: '/admin/fragrance-club' },
@@ -154,50 +160,23 @@ function AdminDashboard() {
             ))}
           </div>
 
-          {Number(stats?.lowStockCount || 0) > 0 ? (
-            <div className="mt-8 rounded-3xl border border-red-200 bg-red-50 p-6 shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-red-600">Inventory alert</p>
-                  <h2 className="mt-2 text-xl font-semibold text-ink">Products at 5 or fewer in stock</h2>
-                  <p className="mt-2 text-sm text-muted">
-                    Update these products soon so new orders do not run into stock issues.
-                  </p>
-                </div>
-                <Link
-                  to="/admin/products"
-                  className="rounded-full border border-red-200 bg-white px-5 py-2 text-sm font-semibold text-red-600 hover:border-red-300"
-                >
-                  Open products
-                </Link>
+          <div className="mt-8 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-lg shadow-black/10">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-muted">Home page</p>
+                <h2 className="mt-2 text-xl font-semibold text-ink">Manage collection cards</h2>
+                <p className="mt-2 max-w-2xl text-sm text-muted">
+                  Add new home collections, edit the existing cards, remove old cards, and upload each card image.
+                </p>
               </div>
-
-              <div className="mt-5 grid gap-3 md:grid-cols-2">
-                {(stats?.lowStockProducts || []).map((product) => (
-                  <div
-                    key={product._id}
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-red-200 bg-white p-4"
-                  >
-                    <div>
-                      <p className="text-sm font-semibold text-ink">{product.name}</p>
-                      <p className="mt-1 text-xs text-muted">{product.category || 'Product'}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-red-600">
-                        {Number(product.stock || 0) === 0 ? 'Out of stock' : `${product.stock} left`}
-                      </p>
-                      <Link
-                        to={`/admin/products/${product._id}`}
-                        className="mt-2 inline-flex rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-emberDark hover:border-gold/40"
-                      >
-                        Update stock
-                      </Link>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <Link
+                to="/admin/content#home-collections"
+                className="rounded-full bg-ember px-5 py-3 text-sm font-semibold text-white transition hover:bg-emberDark"
+              >
+                Open collection editor
+              </Link>
             </div>
-          ) : null}
+          </div>
 
           <div className="mt-10 grid gap-6 lg:grid-cols-2">
             <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-lg shadow-black/10">

@@ -308,7 +308,7 @@ function Gallery() {
             <p className="ka-kicker">Section</p>
             <h2 className="mt-3 ka-h2">Factory & Craft</h2>
             <p className="mt-3 text-sm text-muted">
-              This is where the authentic Kannauj process comes alive — distillation, blending, and bottling.
+              A look inside the workspace, tools, storage, quality checks, and daily craft environment.
             </p>
           </div>
 
@@ -323,7 +323,7 @@ function Gallery() {
               />
               <h3 className="mt-4 text-lg font-semibold text-ink">Factory / Workshop</h3>
               <p className="mt-2 text-sm text-muted">
-                Add photos or videos of the deg & bhapka setup, botanical ingredients, blending tools, and packing line.
+                Add photos or videos of the workshop, tools, storage, quality checks, and team moments.
               </p>
             </div>
           </div>
@@ -331,70 +331,7 @@ function Gallery() {
           <AdminAssetMediaGrid
             title="Factory / workshop media"
             prefix="gallery.factory.extra."
-            description="Add unlimited factory photos or videos: workshop, tools, blending, resting, quality checks, and dispatch."
-            eyebrow="More media"
-            allowVideo
-            className="mt-10"
-          />
-
-          <div className="grid gap-6 mt-6 md:grid-cols-3">
-            {[
-              {
-                key: 'gallery.factory.distillation',
-                title: 'Distillation',
-                copy: 'Deg & bhapka stills, steam line, condenser, safe handling.',
-                bg: 'bg-[linear-gradient(135deg,rgba(17,27,58,0.14),rgba(255,255,255,0.92),rgba(201,162,74,0.20))]',
-              },
-              {
-                key: 'gallery.factory.botanicals',
-                title: 'Botanicals',
-                copy: 'Rose, kewra, sandalwood notes, seasonal herbs and spices.',
-                bg: 'bg-[linear-gradient(135deg,rgba(201,162,74,0.22),rgba(255,255,255,0.94),rgba(17,27,58,0.10))]',
-              },
-              {
-                key: 'gallery.factory.packaging',
-                title: 'Bottling & Packaging',
-                copy: 'Bottle shots, label close-ups, gift packing, dispatch bundles.',
-                bg: 'bg-[linear-gradient(135deg,rgba(17,27,58,0.10),rgba(255,255,255,0.92),rgba(201,162,74,0.24))]',
-              },
-            ].map((card) => (
-              <article
-                key={card.key}
-                className="p-6 ka-card"
-              >
-                <AdminAssetImage
-                  assetKey={card.key}
-                  className={`ka-frame aspect-[4/3] w-full ${card.bg}`}
-                  imgClassName="p-2"
-                  defaultAspect="4 / 3"
-                  allowVideo
-                />
-                <h3 className="mt-4 text-lg font-semibold text-ink">{card.title}</h3>
-                <p className="mt-2 text-sm text-muted">{card.copy}</p>
-              </article>
-            ))}
-          </div>
-
-          <AdminAssetMediaGrid
-            title="Distillation media"
-            prefix="gallery.factory.distillation.extra."
-            description="Add unlimited photos or videos of deg & bhapka stills, steam line, condenser, and safe handling."
-            eyebrow="More media"
-            allowVideo
-            className="mt-10"
-          />
-          <AdminAssetMediaGrid
-            title="Botanicals media"
-            prefix="gallery.factory.botanicals.extra."
-            description="Add unlimited photos or videos of rose, kewra, botanicals, and seasonal ingredients."
-            eyebrow="More media"
-            allowVideo
-            className="mt-10"
-          />
-          <AdminAssetMediaGrid
-            title="Bottling & packaging media"
-            prefix="gallery.factory.packaging.extra."
-            description="Add unlimited photos or videos of bottles, labels, packing, and dispatch bundles."
+            description="Add unlimited factory photos or videos: workshop, tools, storage, quality checks, and team moments."
             eyebrow="More media"
             allowVideo
             className="mt-10"

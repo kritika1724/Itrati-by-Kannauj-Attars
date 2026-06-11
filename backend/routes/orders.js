@@ -6,7 +6,6 @@ const { protect, optionalProtect, adminOnly } = require('../middleware/auth')
 const asyncHandler = require('../utils/asyncHandler')
 const { orderCreateLimiter, orderTrackLimiter, orderMutationLimiter } = require('../utils/rateLimit')
 const { getWelcomeDiscount } = require('../config/cartOffers')
-const { reserveOrderStock, restoreOrderStock, stockWasReserved } = require('../utils/orderStock')
 
 const router = express.Router()
 const TRACK_ORDER_SELECT =
@@ -131,7 +130,7 @@ router.post(
 
     const productIds = [...new Set(orderItems.map((item) => String(item.product || '')).filter(Boolean))]
     const products = await Product.find({ _id: { $in: productIds } })
-      .select('name price packs images sample stock')
+      .select('name price packs images sample')
       .lean()
 
     const productMap = new Map(products.map((product) => [String(product._id), product]))
@@ -225,8 +224,6 @@ router.post(
     let savedOrder
     try {
       await session.withTransaction(async () => {
-        await reserveOrderStock({ orderItems: normalizedItems }, session)
-
         savedOrder = await Order.create(
           [
             {
@@ -242,7 +239,6 @@ router.post(
               discountAmount,
               totalPrice,
               status: isRazorpayOrder ? 'payment_pending' : 'pending',
-              stockReserved: true,
             },
           ],
           { session }
@@ -322,10 +318,6 @@ router.put(
       return res.status(400).json({ message: 'Order can only be cancelled before confirmation' })
     }
 
-    if (stockWasReserved(order)) {
-      await restoreOrderStock(order)
-      order.stockReserved = false
-    }
     order.status = 'cancelled'
     order.cancelledAt = new Date()
     order.isDelivered = false
@@ -404,9 +396,6 @@ router.put(
 
     order.isPaid = true
     order.paidAt = new Date()
-    if (stockWasReserved(order)) {
-      order.stockReserved = true
-    }
     order.paymentResult = {
       id: req.body?.id || 'manual',
       status: req.body?.status || 'paid',
@@ -444,15 +433,6 @@ router.put(
       return res.status(400).json({ message: 'Razorpay orders can be updated only after successful payment' })
     }
 
-    const previousStatus = order.status
-    if (previousStatus !== 'cancelled' && status === 'cancelled' && stockWasReserved(order)) {
-      await restoreOrderStock(order)
-      order.stockReserved = false
-    } else if (previousStatus === 'cancelled' && status !== 'cancelled') {
-      await reserveOrderStock(order)
-      order.stockReserved = true
-    }
-
     order.status = status
     if (status === 'delivered') {
       order.isDelivered = true
@@ -486,9 +466,6 @@ router.delete(
       return res.status(404).json({ message: 'Order not found' })
     }
 
-    if (order.status !== 'cancelled' && stockWasReserved(order)) {
-      await restoreOrderStock(order)
-    }
     await order.deleteOne()
     res.json({ message: 'Order deleted' })
   })
@@ -517,10 +494,6 @@ router.put(
       return res.status(400).json({ message: 'Order can only be cancelled before confirmation' })
     }
 
-    if (stockWasReserved(order)) {
-      await restoreOrderStock(order)
-      order.stockReserved = false
-    }
     order.status = 'cancelled'
     order.cancelledAt = new Date()
     order.isDelivered = false

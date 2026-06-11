@@ -18,7 +18,6 @@ import { getSearchSuggestions } from '../components/product/productPresentation'
 import { notifyCartItemAdded } from '../utils/cartLeadPrompt'
 import { getProductPath } from '../utils/productLinks'
 import {
-  AVAILABILITY_OPTIONS,
   buildChoiceList,
   buildIdSet,
   buildSizeChoicesFromProducts,
@@ -60,13 +59,10 @@ const FILTER_PARAM_KEYS = [
   'ml',
   'pack',
   'packSize',
-  'availability',
-  'stock',
   'bestSeller',
   'page',
   'limit',
 ]
-const AVAILABILITY_IDS = new Set(AVAILABILITY_OPTIONS.map((item) => item.id))
 
 const normalizePage = (value) => {
   const page = Number(value || 1)
@@ -78,17 +74,6 @@ const normalizePriceDraft = (value) => {
   if (!trimmed) return ''
   const price = Number(trimmed)
   return Number.isFinite(price) && price >= 0 ? String(Math.floor(price)) : ''
-}
-
-const normalizeAvailability = (value) => {
-  const normalized = String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[\s-]+/g, '_')
-  if (AVAILABILITY_IDS.has(normalized)) return normalized
-  if (['1', 'true', 'yes', 'available'].includes(normalized)) return 'in_stock'
-  if (['0', 'false', 'no', 'sold_out', 'unavailable'].includes(normalized)) return 'out_of_stock'
-  return ''
 }
 
 const getFirstParam = (searchParams, keys) => {
@@ -173,7 +158,6 @@ function Products() {
       selectedGenders: readListParam(currentParams, 'gender', genderValues),
       selectedDirections: readFirstListParam(currentParams, ['direction', 'fragranceDirection', 'fragrance_direction'], directionValues),
       selectedSize: getFirstParam(currentParams, ['size', 'ml', 'pack', 'packSize']),
-      availability: normalizeAvailability(getFirstParam(currentParams, ['availability', 'stock'])),
       bestSellerOnly: ['1', 'true', 'yes', 'on'].includes(bestSeller),
       minPrice: normalizePriceDraft(currentParams.get('minPrice')),
       maxPrice: normalizePriceDraft(currentParams.get('maxPrice')),
@@ -191,7 +175,6 @@ function Products() {
     selectedGenders,
     selectedDirections,
     selectedSize,
-    availability,
     bestSellerOnly,
     minPrice,
     maxPrice,
@@ -234,7 +217,6 @@ function Products() {
     selectedDirections,
     selectedOccasions,
     selectedSize,
-    availability,
     bestSellerOnly,
   })
 
@@ -286,9 +268,6 @@ function Products() {
       nextParams.delete('ml')
       nextParams.delete('pack')
       nextParams.delete('packSize')
-    }
-    if (Object.prototype.hasOwnProperty.call(updates, 'availability')) {
-      nextParams.delete('stock')
     }
     if (resetPage && !Object.prototype.hasOwnProperty.call(updates, 'page')) {
       nextParams.delete('page')
@@ -361,12 +340,10 @@ function Products() {
       minPrice,
       maxPrice,
       size: selectedSize,
-      availability,
       collection: activeCollection,
     }),
     [
       activeCollection,
-      availability,
       bestSellerOnly,
       keyword,
       maxPrice,
@@ -536,9 +513,6 @@ function Products() {
     sizeOptions: sizeChoices,
     selectedSize,
     onSelectSize: (value) => updateParams({ size: value }),
-    availability,
-    availabilityOptions: AVAILABILITY_OPTIONS,
-    onSelectAvailability: (value) => updateParams({ availability: value }),
     bestSellerOnly,
     onToggleBestSeller: () => updateParams({ bestSeller: bestSellerOnly ? '' : '1' }),
     onClear: clearFilters,
@@ -691,11 +665,6 @@ function Products() {
                         </FilterChip>
                       ))}
                       {selectedSize ? <FilterChip onRemove={() => updateParams({ size: '' })}>Size: {selectedSize}</FilterChip> : null}
-                      {availability ? (
-                        <FilterChip onRemove={() => updateParams({ availability: '' })}>
-                          {AVAILABILITY_OPTIONS.find((item) => item.id === availability)?.label || availability}
-                        </FilterChip>
-                      ) : null}
                       {minPrice ? (
                         <FilterChip
                           onRemove={() => {
@@ -718,7 +687,7 @@ function Products() {
                       ) : null}
                     </>
                   ) : (
-                    <p className="text-xs text-[#6B6F7A] sm:text-sm">Refine by product type, price, fragrance family, size, availability, season, gender, or occasion.</p>
+                    <p className="text-xs text-[#6B6F7A] sm:text-sm">Refine by product type, price, fragrance family, size, season, gender, or occasion.</p>
                   )}
                 </div>
               </div>

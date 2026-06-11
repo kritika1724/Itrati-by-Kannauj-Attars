@@ -46,7 +46,4 @@ export const SITE_ASSET_KEYS = [
   { key: 'gallery.office.mumbai', label: 'Gallery: Mumbai Office Image' },
 
   { key: 'gallery.factory.main', label: 'Gallery: Factory Main Image' },
-  { key: 'gallery.factory.distillation', label: 'Gallery: Distillation Image' },
-  { key: 'gallery.factory.botanicals', label: 'Gallery: Botanicals Image' },
-  { key: 'gallery.factory.packaging', label: 'Gallery: Bottling & Packaging Image' },
 ]

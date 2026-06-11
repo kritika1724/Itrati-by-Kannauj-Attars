@@ -23,18 +23,12 @@ router.get(
   protect,
   adminOnly,
   asyncHandler(async (req, res) => {
-    const [products, orders, contactMessages, newContactMessages, newOrders, lowStockCount, lowStockProducts, fragranceClubMembers, queuedCampaigns] = await Promise.all([
+    const [products, orders, contactMessages, newContactMessages, newOrders, fragranceClubMembers, queuedCampaigns] = await Promise.all([
       Product.estimatedDocumentCount(),
       Order.countDocuments(placedOrderQuery()),
       ContactMessage.estimatedDocumentCount(),
       ContactMessage.countDocuments({ status: 'new' }),
       Order.countDocuments(placedOrderQuery({ status: 'pending' })),
-      Product.countDocuments({ stock: { $lte: 5 } }),
-      Product.find({ stock: { $lte: 5 } })
-        .select('_id name stock category updatedAt')
-        .sort({ stock: 1, updatedAt: -1 })
-        .limit(8)
-        .lean(),
       FragranceClubMember.countDocuments({ memberStatus: 'member' }),
       FragranceClubCampaign.countDocuments({ status: 'queued' }),
     ])
@@ -64,8 +58,6 @@ router.get(
       contactMessages,
       newContactMessages,
       newOrders,
-      lowStockCount,
-      lowStockProducts,
       fragranceClubMembers,
       queuedCampaigns,
       recentOrders,

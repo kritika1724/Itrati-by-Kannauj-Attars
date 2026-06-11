@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import AdminAssetImage from '../components/AdminAssetImage'
 import { useSiteContent } from '../components/SiteContentProvider'
 import {
@@ -54,6 +54,7 @@ const createContactPageDraft = (value) => mergeContactPageContent(value)
 const createPopupBannerDraft = (value) => mergePopupBannerContent(value)
 const createHomeYoutubeDraft = (value) => mergeHomeYoutubeContent(value)
 const createHomeCollectionsDraft = (value) => mergeHomeCollectionsContent(value)
+const createHomeCollectionAssetKey = () => `home.collection.custom.${Date.now()}`
 const createLegalPagesDraft = (contents = {}) =>
   LEGAL_EDITORS.reduce((acc, item) => {
     acc[item.key] = mergeLegalPageContent(item.key, contents[item.key])
@@ -61,6 +62,7 @@ const createLegalPagesDraft = (contents = {}) =>
   }, {})
 
 function AdminSiteContent() {
+  const location = useLocation()
   const { contents, loading, refresh, setContentValue, deleteContentKey } = useSiteContent()
   const [contactProfileDraft, setContactProfileDraft] = useState(() =>
     createContactProfileDraft(getDefaultSiteContentValue(SITE_CONTENT_KEYS.contactProfile))
@@ -95,6 +97,14 @@ function AdminSiteContent() {
   }, [refresh])
 
   useEffect(() => {
+    if (!location.hash) return undefined
+    const timer = window.setTimeout(() => {
+      document.getElementById(location.hash.slice(1))?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    }, 80)
+    return () => window.clearTimeout(timer)
+  }, [location.hash])
+
+  useEffect(() => {
     setContactProfileDraft(createContactProfileDraft(contents[SITE_CONTENT_KEYS.contactProfile]))
     setContactPageDraft(createContactPageDraft(contents[SITE_CONTENT_KEYS.contactPage]))
     setPopupBannerDraft(createPopupBannerDraft(contents[SITE_CONTENT_KEYS.popupBanner]))
@@ -110,12 +120,34 @@ function AdminSiteContent() {
         {
           title: '',
           copy: '',
-          assetKey: 'home.collection.custom',
+          assetKey: createHomeCollectionAssetKey(),
           link: '/products',
           cta: 'View collection',
         },
       ],
     }))
+  }
+
+  const validateHomeCollectionCards = (cards = []) =>
+    cards.every((card) => card.title && card.copy && card.assetKey && card.link && card.cta)
+
+  const saveHomeCollections = async () => {
+    const cards = homeCollectionsDraft.cards || []
+    if (!validateHomeCollectionCards(cards)) {
+      setMessage('Fill title, description, link, CTA, and image asset key for every collection before saving.')
+      return
+    }
+
+    setSaving(true)
+    setMessage('')
+    try {
+      await setContentValue(SITE_CONTENT_KEYS.homeCollections, mergeHomeCollectionsContent(homeCollectionsDraft))
+      setMessage('Home collection cards updated.')
+    } catch (error) {
+      setMessage(error.message || 'Could not update home collections.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const updateHomeCollectionCard = (index, field, value) => {
@@ -186,6 +218,11 @@ function AdminSiteContent() {
       const contactPagePayload = mergeContactPageContent(contactPageDraft)
       const popupBannerPayload = mergePopupBannerContent(popupBannerDraft)
       const homeYoutubePayload = mergeHomeYoutubeContent(homeYoutubeDraft)
+      if (!validateHomeCollectionCards(homeCollectionsDraft.cards || [])) {
+        setMessage('Fill title, description, link, CTA, and image asset key for every home collection before saving.')
+        setSaving(false)
+        return
+      }
       const homeCollectionsPayload = mergeHomeCollectionsContent(homeCollectionsDraft)
       const legalPayloads = LEGAL_EDITORS.map((item) => ({
         key: item.key,
@@ -515,13 +552,16 @@ function AdminSiteContent() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-lg shadow-black/10">
+          <div
+            id="home-collections"
+            className="scroll-mt-28 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-lg shadow-black/10"
+          >
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.35em] text-muted">Home page collections</p>
                 <h2 className="mt-2 text-xl font-semibold text-ink">Collection cards</h2>
                 <p className="mt-2 max-w-3xl text-sm text-muted">
-                  Add, edit, or remove the collection cards shown near the top of the home page.
+                  Add, edit, or remove the collection cards shown near the top of the home page. Images can be uploaded here for each card.
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
@@ -546,6 +586,14 @@ function AdminSiteContent() {
                 >
                   + Add collection
                 </button>
+                <button
+                  type="button"
+                  disabled={saving || loading}
+                  onClick={saveHomeCollections}
+                  className="rounded-full bg-ink px-4 py-2 text-xs font-semibold text-white transition hover:bg-emberDark disabled:opacity-60"
+                >
+                  Save collections
+                </button>
               </div>
             </div>
 
@@ -563,55 +611,70 @@ function AdminSiteContent() {
                     </button>
                   </div>
 
-                  <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                  <div className="mt-4 grid gap-5 xl:grid-cols-[minmax(0,1fr)_16rem]">
                     <div>
-                      <label className="text-xs font-semibold text-muted">Title</label>
-                      <input
-                        value={card.title}
-                        onChange={(e) => updateHomeCollectionCard(index, 'title', e.target.value)}
-                        placeholder="Premium Attars Collection"
-                        className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-muted">CTA label</label>
-                      <input
-                        value={card.cta}
-                        onChange={(e) => updateHomeCollectionCard(index, 'cta', e.target.value)}
-                        placeholder="Explore attars"
-                        className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-muted">Link</label>
-                      <input
-                        value={card.link}
-                        onChange={(e) => updateHomeCollectionCard(index, 'link', e.target.value)}
-                        placeholder="/collections/signature"
-                        className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-muted">Image asset key</label>
-                      <input
-                        value={card.assetKey}
-                        onChange={(e) => updateHomeCollectionCard(index, 'assetKey', e.target.value)}
-                        placeholder="home.explore.signature"
-                        className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
-                      />
-                      <p className="mt-2 text-xs text-muted">Use the same asset key in Media to control this card image.</p>
-                    </div>
-                  </div>
+                      <div className="grid gap-4 lg:grid-cols-2">
+                        <div>
+                          <label className="text-xs font-semibold text-muted">Title</label>
+                          <input
+                            value={card.title}
+                            onChange={(e) => updateHomeCollectionCard(index, 'title', e.target.value)}
+                            placeholder="Premium Attars Collection"
+                            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold text-muted">CTA label</label>
+                          <input
+                            value={card.cta}
+                            onChange={(e) => updateHomeCollectionCard(index, 'cta', e.target.value)}
+                            placeholder="Explore attars"
+                            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold text-muted">Link</label>
+                          <input
+                            value={card.link}
+                            onChange={(e) => updateHomeCollectionCard(index, 'link', e.target.value)}
+                            placeholder="/collections/signature"
+                            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold text-muted">Image asset key</label>
+                          <input
+                            value={card.assetKey}
+                            onChange={(e) => updateHomeCollectionCard(index, 'assetKey', e.target.value)}
+                            placeholder="home.collection.custom"
+                            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
+                          />
+                          <p className="mt-2 text-xs text-muted">Keep this unique for each collection image.</p>
+                        </div>
+                      </div>
 
-                  <div className="mt-4">
-                    <label className="text-xs font-semibold text-muted">Description</label>
-                    <textarea
-                      rows="3"
-                      value={card.copy}
-                      onChange={(e) => updateHomeCollectionCard(index, 'copy', e.target.value)}
-                      placeholder="Short collection description."
-                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
-                    />
+                      <div className="mt-4">
+                        <label className="text-xs font-semibold text-muted">Description</label>
+                        <textarea
+                          rows="3"
+                          value={card.copy}
+                          onChange={(e) => updateHomeCollectionCard(index, 'copy', e.target.value)}
+                          placeholder="Short collection description."
+                          className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-semibold text-muted">Card image</p>
+                      <AdminAssetImage
+                        assetKey={card.assetKey}
+                        className="mt-2 w-full rounded-2xl border border-slate-200/80 bg-white"
+                        imgClassName="p-2"
+                        defaultAspect="4 / 5"
+                        fit="cover"
+                      />
+                    </div>
                   </div>
                 </div>
               ))}

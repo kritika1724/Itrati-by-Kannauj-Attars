@@ -139,7 +139,7 @@ export const DEFAULT_LEGAL_CONTENT = {
       {
         title: 'Orders and availability',
         body:
-          'All orders are subject to product availability, confirmation, and review. Pack sizes, prices, and stock may change without prior notice until an order is confirmed.',
+          'All orders are subject to product availability, confirmation, and review. Pack sizes and prices may change without prior notice until an order is confirmed.',
       },
       {
         title: 'Product presentation',
@@ -205,7 +205,7 @@ export const DEFAULT_LEGAL_CONTENT = {
       {
         title: 'Dispatch timing',
         body:
-          'Dispatch timing can vary depending on stock, pack size, location, and order verification. Bulk or custom requirements may take additional processing time.',
+          'Dispatch timing can vary depending on pack size, location, and order verification. Bulk or custom requirements may take additional processing time.',
       },
       {
         title: 'Delivery communication',

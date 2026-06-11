@@ -30,9 +30,6 @@ function FilterSidebar({
   sizeOptions = [],
   selectedSize = '',
   onSelectSize,
-  availability = '',
-  availabilityOptions = [],
-  onSelectAvailability,
   bestSellerOnly = false,
   onToggleBestSeller,
   onClear,
@@ -137,24 +134,6 @@ function FilterSidebar({
                 Size choices are read from product pack labels once products load.
               </p>
             ) : null}
-          </section>
-
-          <section>
-            <SectionTitle eyebrow="Availability" title="Stock status" />
-            <div className="mt-3 grid gap-2 min-[480px]:grid-cols-2 md:grid-cols-1 xl:grid-cols-2">
-              <OptionButton active={!availability} onClick={() => onSelectAvailability?.('')}>
-                All stock
-              </OptionButton>
-              {availabilityOptions.map((item) => (
-                <OptionButton
-                  key={item.id}
-                  active={availability === item.id}
-                  onClick={() => onSelectAvailability?.(item.id)}
-                >
-                  {item.label}
-                </OptionButton>
-              ))}
-            </div>
           </section>
 
           <section className={isInline ? '' : 'md:col-span-2 xl:col-span-1'}>

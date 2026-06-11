@@ -24,7 +24,7 @@ const PRODUCTS_CACHE_PROFILE = getPublicCacheProfile('PRODUCTS', {
 })
 const PUBLIC_PRODUCT_LIST_SELECT =
   'name description shortDescription category purposeTags familyTags seasonTags genderTags directionTags featuredCollections isBestSeller isNewArrival sample availableSizesText price packs images imageZoom highlights fragranceNotes rating numReviews createdAt'
-const ADMIN_PRODUCT_LIST_SELECT = `${PUBLIC_PRODUCT_LIST_SELECT} stock`
+const ADMIN_PRODUCT_LIST_SELECT = PUBLIC_PRODUCT_LIST_SELECT
 const RELATED_PRODUCTS_POPULATE_SELECT =
   'name description shortDescription category purposeTags familyTags seasonTags genderTags directionTags featuredCollections isBestSeller isNewArrival sample availableSizesText price packs.label packs.price packs.salePrice images imageZoom highlights fragranceNotes rating numReviews createdAt'
 const DEFAULT_PRODUCT_LIMIT = 12
@@ -66,9 +66,8 @@ const normalizePacks = (value) =>
             salePriceRaw === null || salePriceRaw === undefined || salePriceRaw === ''
               ? null
               : normalizeProductPrice(salePriceRaw)
-          const stock = normalizeProductStock(item?.stock)
 
-          return { label, price, salePrice, stock }
+          return { label, price, salePrice }
         })
         .filter((item) => item.label && item.price !== null)
     : []
@@ -115,12 +114,6 @@ const normalizeSample = (value) => {
     label,
     price: Number.isFinite(price) ? price : 0,
   }
-}
-
-const normalizeProductStock = (value) => {
-  const stock = Number(value)
-  if (!Number.isFinite(stock) || stock < 0) return 0
-  return Math.floor(stock)
 }
 
 const normalizeImageZoom = (value) => {
@@ -222,9 +215,6 @@ const getProductByIdOrSlug = async (idOrSlug, { includeAdminFields = false, popu
         select: RELATED_PRODUCTS_POPULATE_SELECT,
       })
     }
-    if (!includeAdminFields) {
-      query.select('-stock -packs.stock')
-    }
     return query
   }
 
@@ -265,9 +255,6 @@ const getProductsQueryParts = (query) => {
   const keyword = normalizeQueryText(query.keyword, 120)
   const buyer = normalizeQueryText(getQueryValue(query, 'buyer', 'buyerType'), 32).toLowerCase()
   const bestSeller = normalizeQueryText(query.bestSeller, 12).toLowerCase()
-  const availability = normalizeQueryText(getQueryValue(query, 'availability', 'stock'), 32)
-    .toLowerCase()
-    .replace(/[\s-]+/g, '_')
   const sortKey = normalizeQueryText(query.sort || 'latest', 32).toLowerCase()
 
   const categoryValues = normalizeQueryList(getQueryValue(query, 'category', 'productType', 'type'), {
@@ -295,7 +282,6 @@ const getProductsQueryParts = (query) => {
     keyword,
     buyer,
     bestSeller,
-    availability,
     sortObj: SORT_MAP[sortKey] || SORT_MAP.latest,
     categoryValues,
     purposeValues,
@@ -364,30 +350,6 @@ const buildProductsFilter = (parts) => {
         ],
       })
     }
-  }
-
-  if (['in_stock', 'available'].includes(parts.availability)) {
-    clauses.push({
-      $or: [
-        { stock: { $gt: 0 } },
-        { packs: { $elemMatch: { stock: { $gt: 0 } } } },
-      ],
-    })
-  } else if (['out_of_stock', 'sold_out', 'unavailable'].includes(parts.availability)) {
-    clauses.push({
-      $and: [
-        {
-          $or: [{ stock: { $lte: 0 } }, { stock: { $exists: false } }],
-        },
-        {
-          $or: [
-            { packs: { $exists: false } },
-            { packs: { $size: 0 } },
-            { packs: { $not: { $elemMatch: { stock: { $gt: 0 } } } } },
-          ],
-        },
-      ],
-    })
   }
 
   return clauses.length ? { $and: clauses } : {}
@@ -509,7 +471,6 @@ router.post('/', protect, adminOnly, asyncHandler(async (req, res) => {
     packs,
     images,
     imageZoom,
-    stock,
     highlights,
     fragranceNotes,
     detailSections,
@@ -558,7 +519,6 @@ router.post('/', protect, adminOnly, asyncHandler(async (req, res) => {
     packs: normalizedPacks,
     images: normalizedImages,
     imageZoom: normalizeImageZoom(imageZoom),
-    stock: normalizeProductStock(stock),
     highlights: normalizeHighlights(highlights),
     fragranceNotes: normalizeFragranceNotes(fragranceNotes),
     detailSections: normalizeDetailSections(detailSections),
@@ -595,7 +555,6 @@ router.put('/:id', protect, adminOnly, asyncHandler(async (req, res) => {
     'packs',
     'images',
     'imageZoom',
-    'stock',
     'highlights',
     'fragranceNotes',
     'detailSections',
@@ -625,8 +584,6 @@ router.put('/:id', protect, adminOnly, asyncHandler(async (req, res) => {
         product[field] = normalizeProductImages(req.body[field])
       } else if (field === 'packs') {
         product[field] = normalizePacks(req.body[field])
-      } else if (field === 'stock') {
-        product[field] = normalizeProductStock(req.body[field])
       } else if (field === 'imageZoom') {
         product[field] = normalizeImageZoom(req.body[field])
       } else if (field === 'availableSizesText') {

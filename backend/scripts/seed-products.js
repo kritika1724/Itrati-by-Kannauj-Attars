@@ -12,28 +12,28 @@ const escapeRegex = (str) => String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 const packTemplates = {
   value: [
-    { label: '200 gm', price: 199, stock: 0 },
-    { label: '500 gm', price: 449, stock: 0 },
-    { label: '1 kg', price: 849, stock: 0 },
-    { label: '10 kg', price: 7999, stock: 0 },
+    { label: '200 gm', price: 199 },
+    { label: '500 gm', price: 449 },
+    { label: '1 kg', price: 849 },
+    { label: '10 kg', price: 7999 },
   ],
   standard: [
-    { label: '200 gm', price: 249, stock: 0 },
-    { label: '500 gm', price: 549, stock: 0 },
-    { label: '1 kg', price: 999, stock: 0 },
-    { label: '10 kg', price: 9499, stock: 0 },
+    { label: '200 gm', price: 249 },
+    { label: '500 gm', price: 549 },
+    { label: '1 kg', price: 999 },
+    { label: '10 kg', price: 9499 },
   ],
   premium: [
-    { label: '200 gm', price: 349, stock: 0 },
-    { label: '500 gm', price: 799, stock: 0 },
-    { label: '1 kg', price: 1499, stock: 0 },
-    { label: '10 kg', price: 13999, stock: 0 },
+    { label: '200 gm', price: 349 },
+    { label: '500 gm', price: 799 },
+    { label: '1 kg', price: 1499 },
+    { label: '10 kg', price: 13999 },
   ],
   luxury: [
-    { label: '200 gm', price: 499, stock: 0 },
-    { label: '500 gm', price: 1199, stock: 0 },
-    { label: '1 kg', price: 2199, stock: 0 },
-    { label: '10 kg', price: 20999, stock: 0 },
+    { label: '200 gm', price: 499 },
+    { label: '500 gm', price: 1199 },
+    { label: '1 kg', price: 2199 },
+    { label: '10 kg', price: 20999 },
   ],
 }
 
@@ -60,7 +60,6 @@ const makeProduct = ({
     price: minPrice,
     packs,
     images: [],
-    stock: 0,
     highlights,
   }
 }

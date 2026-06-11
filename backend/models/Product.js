@@ -37,14 +37,12 @@ const productSchema = new mongoose.Schema(
           label: { type: String, required: true }, // e.g. "200 gm", "1 kg", "10 kg"
           price: { type: Number, required: true },
           salePrice: { type: Number, default: null },
-          stock: { type: Number, default: 0 },
         },
       ],
       default: [],
     },
     images: { type: [String], default: [] },
     imageZoom: { type: Number, default: 1, min: 1, max: 2.5 },
-    stock: { type: Number, default: 0 },
     highlights: { type: [String], default: [] },
     fragranceNotes: {
       top: { type: [String], default: [] },
@@ -78,7 +76,6 @@ productSchema.index({ isNewArrival: 1, createdAt: -1 })
 productSchema.index({ 'sample.enabled': 1 })
 productSchema.index({ price: 1 })
 productSchema.index({ rating: -1 })
-productSchema.index({ stock: 1, createdAt: -1 })
 productSchema.index({ purposeTags: 1 })
 productSchema.index({ familyTags: 1 })
 productSchema.index({ seasonTags: 1 })

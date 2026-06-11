@@ -34,10 +34,6 @@ export const OCCASION_DEFAULTS = [
 export const SEASON_DEFAULTS = SEASON_TAGS
 export const GENDER_DEFAULTS = GENDER_TAGS
 export const DIRECTION_DEFAULTS = DIRECTION_TAGS
-export const AVAILABILITY_OPTIONS = [
-  { id: 'in_stock', label: 'In stock' },
-  { id: 'out_of_stock', label: 'Out of stock' },
-]
 
 export const COLLECTION_MAP = {
   signature: {
@@ -122,7 +118,6 @@ export const countActiveFilters = ({
   selectedDirections = [],
   selectedOccasions = [],
   selectedSize = '',
-  availability = '',
   bestSellerOnly = false,
 }) =>
   Number(Boolean(String(keyword || '').trim())) +
@@ -135,5 +130,4 @@ export const countActiveFilters = ({
   selectedDirections.length +
   selectedOccasions.length +
   Number(Boolean(selectedSize)) +
-  Number(Boolean(availability)) +
   Number(bestSellerOnly)

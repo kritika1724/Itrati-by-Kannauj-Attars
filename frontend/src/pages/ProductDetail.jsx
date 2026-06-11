@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { yupResolver } from '@hookform/resolvers/yup'
@@ -19,6 +19,7 @@ import ReviewSection from '../components/product/ReviewSection'
 import RelatedProducts from '../components/product/RelatedProducts'
 import MobileStickyCart from '../components/product/MobileStickyCart'
 import { applySeo, resetSeo } from '../utils/seo'
+import { getProductPath, getProductSlug } from '../utils/productLinks'
 import {
   getExperienceCopy,
   getMinPack,
@@ -47,8 +48,28 @@ const isBulkPack = (label) => {
   return grams !== null && Number.isFinite(grams) && grams >= 1000
 }
 
+const findProductBySlug = async (slug) => {
+  const targetSlug = String(slug || '').trim().toLowerCase()
+  if (!targetSlug) return null
+
+  let page = 1
+  let pages = 1
+  do {
+    const data = await api.getProducts({ page, limit: 100 })
+    const products = Array.isArray(data?.products) ? data.products : []
+    const match = products.find((item) => getProductSlug(item) === targetSlug)
+    if (match) return match
+
+    pages = Number(data?.pages || 1)
+    page += 1
+  } while (page <= pages && page <= 20)
+
+  return null
+}
+
 function ProductDetail() {
   const { id } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const { familyMap, purposeMap } = useTaxonomy()
@@ -92,7 +113,16 @@ function ProductDetail() {
     const load = async () => {
       try {
         setError('')
-        const data = await api.getProduct(id)
+        const stateProductId = String(location.state?.productId || location.state?.product?._id || '').trim()
+        let data
+        try {
+          data = await api.getProduct(stateProductId || id)
+        } catch (err) {
+          const match = await findProductBySlug(id)
+          if (!match?._id) throw err
+          data = await api.getProduct(match._id)
+        }
+
         setProduct(data)
         setQty(1)
         setReviewOpen(false)
@@ -102,9 +132,15 @@ function ProductDetail() {
         const firstPack = minPack?.label || (Array.isArray(data?.packs) && data.packs.length ? data.packs[0].label || '' : '')
         setPackLabel(firstPack)
 
+        const canonicalPath = getProductPath(data)
+        if (canonicalPath && canonicalPath !== window.location.pathname) {
+          navigate(canonicalPath, { replace: true })
+        }
+
         dispatch(
           trackView({
             product: data._id,
+            slug: data.slug,
             name: data.name,
             image: data.images?.[0] || '',
             price: minPack ? minPack.effectivePrice : data.price,
@@ -148,7 +184,7 @@ function ProductDetail() {
     }
 
     load()
-  }, [dispatch, id])
+  }, [dispatch, id, location.state, navigate])
 
   const priceMeta = useMemo(() => getPriceMeta(product, packLabel), [product, packLabel])
   const hasReviews = Array.isArray(product?.reviews) && product.reviews.length > 0
@@ -210,13 +246,13 @@ function ProductDetail() {
   const onSubmit = async (formData) => {
     try {
       setReviewMessage('')
-      await api.addReview(id, {
+      await api.addReview(product?._id || id, {
         orderId: String(formData.orderId || '').trim(),
         rating: Number(formData.rating),
         comment: String(formData.comment || '').trim(),
       })
       setReviewMessage('Review submitted.')
-      const updated = await api.getProduct(id)
+      const updated = await api.getProduct(product?._id || id)
       setProduct(updated)
       reset({ orderId: '', rating: 0, comment: '' })
       setReviewOpen(false)
@@ -236,8 +272,8 @@ function ProductDetail() {
     try {
       setReviewBusyId(reviewId)
       setReviewMessage('')
-      await api.deleteReview(id, reviewId)
-      const updated = await api.getProduct(id)
+      await api.deleteReview(product?._id || id, reviewId)
+      const updated = await api.getProduct(product?._id || id)
       setProduct(updated)
       setReviewMessage('Review deleted.')
     } catch (err) {
@@ -283,9 +319,9 @@ function ProductDetail() {
     : []
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#FFFFFF_0%,#F7F2EA_52%,#FFFDF8_100%)] text-[#19213C]">
+    <div className="min-h-screen overflow-x-hidden bg-[linear-gradient(180deg,#FFFFFF_0%,#F7F2EA_52%,#FFFDF8_100%)] text-[#19213C]">
       <section className="px-4 pb-8 pt-8 sm:px-6 lg:px-8 lg:pt-10">
-        <div className="mx-auto w-full max-w-[1480px]">
+        <div className="mx-auto w-full max-w-[1480px] min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <Link to="/products" className="text-xs font-semibold uppercase tracking-[0.3em] text-[#8D7667] transition hover:text-[#C9A24A]">
               ← Back to product wall
@@ -308,7 +344,7 @@ function ProductDetail() {
             ) : null}
           </div>
 
-          <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,0.96fr)_minmax(0,0.92fr)] xl:gap-10">
+          <div className="mt-6 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,0.96fr)_minmax(0,0.92fr)] xl:gap-10">
             <ProductGallery key={product._id} product={product} spotlightLabel={BUSINESS.brandName} />
             <ProductInfo
               product={product}
@@ -343,13 +379,13 @@ function ProductDetail() {
       </section>
 
       <section className="px-4 pb-16 sm:px-6 lg:px-8">
-        <div className="mx-auto grid w-full max-w-[1480px] gap-6 xl:grid-cols-[1.12fr_0.88fr]">
-          <div className="space-y-6">
-            <div className="rounded-[2rem] border border-[rgba(25,33,60,0.08)] bg-white/90 p-5 shadow-[0_22px_60px_rgba(25,33,60,0.07)] sm:p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8D7667]">The Experience</p>
-              <h2 className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-[#19213C]">A fragrance designed to unfold, not rush.</h2>
-              <p className="mt-4 text-sm leading-8 text-[#5F6475] sm:text-base">{getExperienceCopy(product, familyMap)}</p>
-              <div className="mt-6 rounded-[1.6rem] border border-[rgba(25,33,60,0.08)] bg-[rgba(252,249,243,0.92)] p-4">
+        <div className="mx-auto grid w-full max-w-[1480px] min-w-0 gap-6 xl:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)]">
+          <div className="min-w-0 space-y-6">
+            <div className="min-w-0 overflow-hidden rounded-[1.5rem] border border-[rgba(25,33,60,0.08)] bg-white/90 p-5 shadow-[0_22px_60px_rgba(25,33,60,0.07)] sm:rounded-[2rem] sm:p-6">
+              <p className="break-words text-xs font-semibold uppercase tracking-[0.28em] text-[#8D7667] sm:tracking-[0.32em]">The Experience</p>
+              <h2 className="mt-2 max-w-full break-words text-2xl font-semibold leading-tight text-[#19213C] [overflow-wrap:anywhere] sm:text-3xl">A fragrance designed to unfold, not rush.</h2>
+              <p className="mt-4 max-w-full break-words text-sm leading-7 text-[#5F6475] [overflow-wrap:anywhere] sm:text-base sm:leading-8">{getExperienceCopy(product, familyMap)}</p>
+              <div className="mt-6 min-w-0 overflow-hidden rounded-[1.25rem] border border-[rgba(25,33,60,0.08)] bg-[rgba(252,249,243,0.92)] p-4 sm:rounded-[1.6rem]">
                 <RichTextContent value={product.description} className="space-y-4 text-sm leading-7 text-[#5F6475]" />
               </div>
             </div>
@@ -379,7 +415,7 @@ function ProductDetail() {
 
           </div>
 
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             <ReviewSection
               product={product}
               isAdmin={isAdmin}
@@ -396,7 +432,7 @@ function ProductDetail() {
               onDeleteReview={handleDeleteReview}
               reviewBusyId={reviewBusyId}
             />
-            <div className="space-y-6 xl:sticky xl:top-[calc(var(--ka-nav-height,88px)+1.5rem)] xl:self-start">
+            <div className="min-w-0 space-y-6 xl:sticky xl:top-[calc(var(--ka-nav-height,88px)+1.5rem)] xl:self-start">
               {accordionItems.length ? <ProductAccordion items={accordionItems} defaultOpen={0} /> : null}
               <RelatedProducts products={relatedProducts} familyMap={familyMap} />
             </div>

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { toAssetUrl } from '../../utils/media'
+import { getProductPath } from '../../utils/productLinks'
 import { getMinPack, getNoteLine } from './productPresentation'
 
 function RelatedProducts({ products = [], familyMap = {} }) {
@@ -24,7 +25,8 @@ function RelatedProducts({ products = [], familyMap = {} }) {
           return (
             <Link
               key={item._id}
-              to={`/products/${item._id}`}
+              to={getProductPath(item)}
+              state={{ productId: item?._id }}
               className="snap-start min-w-[18rem] max-w-[20rem] flex-1 overflow-hidden rounded-[1.8rem] border border-[rgba(25,33,60,0.08)] bg-[rgba(252,249,243,0.92)] shadow-[0_18px_48px_rgba(25,33,60,0.06)] transition hover:-translate-y-1 hover:border-[rgba(200,169,106,0.34)]"
             >
               <div className="aspect-[4/3.1] overflow-hidden bg-[linear-gradient(135deg,rgba(200,169,106,0.18),rgba(255,255,255,0.98),rgba(25,33,60,0.08))]">

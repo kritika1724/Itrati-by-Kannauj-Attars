@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { Link } from 'react-router-dom'
 import { FiEye } from 'react-icons/fi'
 import { toAssetUrl } from '../utils/media'
+import { getProductPath } from '../utils/productLinks'
 import { BUSINESS } from '../config/business'
 import WishlistButton from './product/WishlistButton'
 import { getBadgeList, getMinPack } from './product/productPresentation'
@@ -12,11 +13,16 @@ function ProductCard({ product, onView, onAdd, onQuickView, isAdmin = false, sho
   const badges = getBadgeList(product)
   const sample = product?.sample || {}
   const sampleEnabled = sample.enabled === true && sample.label && Number(sample.price) > 0
+  const productPath = getProductPath(product)
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-[18px] border border-[rgba(25,33,60,0.08)] bg-[rgba(255,255,255,0.96)] shadow-[0_14px_34px_rgba(25,33,60,0.06)] transition duration-300 hover:-translate-y-1 hover:border-[rgba(200,169,106,0.42)] hover:shadow-[0_22px_64px_rgba(25,33,60,0.10)] sm:rounded-[28px] sm:shadow-[0_18px_52px_rgba(25,33,60,0.07)] sm:hover:-translate-y-1.5 sm:hover:shadow-[0_28px_80px_rgba(25,33,60,0.12)]">
       <div className="relative p-2 sm:p-4">
-        <Link to={`/products/${product._id}`} className="block overflow-hidden rounded-[16px] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(249,243,233,0.98))] sm:rounded-[22px]">
+        <Link
+          to={productPath}
+          state={{ productId: product?._id }}
+          className="block overflow-hidden rounded-[16px] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(249,243,233,0.98))] sm:rounded-[22px]"
+        >
           <div className="relative aspect-[4/3.45] overflow-hidden rounded-[14px] sm:aspect-[4/4.15] sm:rounded-[22px]">
             <div className="pointer-events-none absolute inset-x-[18%] top-3 z-[1] h-16 rounded-full bg-[radial-gradient(circle,rgba(200,169,106,0.22),transparent_68%)] blur-2xl sm:top-4 sm:h-20" />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-12 bg-[linear-gradient(180deg,transparent,rgba(21,28,52,0.14))] sm:h-16" />
@@ -72,7 +78,7 @@ function ProductCard({ product, onView, onAdd, onQuickView, isAdmin = false, sho
         <div className="flex items-start justify-between gap-2.5">
           <div>
             <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-[#8D7667] sm:text-xs sm:tracking-[0.24em]">{product?.category || 'Attar'}</p>
-            <Link to={`/products/${product._id}`} className="mt-1.5 block sm:mt-2">
+            <Link to={productPath} state={{ productId: product?._id }} className="mt-1.5 block sm:mt-2">
               <h3 className="line-clamp-2 text-[0.95rem] font-semibold leading-[1.15] tracking-[-0.03em] text-[#19213C] sm:text-2xl sm:leading-tight">
                 {product.name}
               </h3>

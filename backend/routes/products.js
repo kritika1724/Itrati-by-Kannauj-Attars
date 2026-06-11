@@ -5,6 +5,7 @@ const Order = require('../models/Order')
 const { protect, optionalProtect, adminOnly } = require('../middleware/auth')
 const asyncHandler = require('../utils/asyncHandler')
 const escapeRegex = require('../utils/escapeRegex')
+const { buildProductSlug, withProductSlug } = require('../utils/productSlug')
 const { getCache, setCache, clearCacheByPrefix } = require('../utils/appCache')
 const { getPublicCacheProfile, setPublicCache } = require('../utils/cacheControl')
 const {
@@ -209,6 +210,39 @@ const parsePriceFilter = (value) => {
 
 const makeExactTextRegex = (value) => new RegExp(`^${escapeRegex(value)}$`, 'i')
 
+const getProductByIdOrSlug = async (idOrSlug, { includeAdminFields = false, populateRelated = false } = {}) => {
+  const value = String(idOrSlug || '').trim()
+  if (!value) return null
+
+  const buildQuery = (filter) => {
+    const query = Product.findOne(filter)
+    if (populateRelated) {
+      query.populate({
+        path: 'relatedProducts',
+        select: RELATED_PRODUCTS_POPULATE_SELECT,
+      })
+    }
+    if (!includeAdminFields) {
+      query.select('-stock -packs.stock')
+    }
+    return query
+  }
+
+  if (mongoose.isValidObjectId(value)) {
+    const product = await buildQuery({ _id: value }).lean()
+    if (product) return product
+  }
+
+  const slug = value.toLowerCase()
+  const candidates = await Product.find({})
+    .select(includeAdminFields ? ADMIN_PRODUCT_LIST_SELECT : PUBLIC_PRODUCT_LIST_SELECT)
+    .lean()
+  const match = candidates.find((product) => buildProductSlug(product) === slug)
+  if (!match) return null
+
+  return buildQuery({ _id: match._id }).lean()
+}
+
 const makeLooseSizeRegex = (value) => {
   const normalized = normalizeQueryText(value, 48)
     .replace(/[^a-zA-Z0-9.]+/g, ' ')
@@ -407,7 +441,7 @@ router.get(
     ])
 
     const payload = {
-      products,
+      products: products.map(withProductSlug),
       page,
       pages: Math.max(1, Math.ceil(total / limit)),
       total,
@@ -436,24 +470,21 @@ router.get(
       }
     }
 
-    const query = Product.findById(req.params.id).populate({
-      path: 'relatedProducts',
-      select: RELATED_PRODUCTS_POPULATE_SELECT,
+    const product = await getProductByIdOrSlug(req.params.id, {
+      includeAdminFields: req.user?.isAdmin === true,
+      populateRelated: true,
     })
-    if (req.user?.isAdmin !== true) {
-      query.select('-stock -packs.stock')
-    }
-    const product = await query.lean()
     if (!product) {
       return res.status(404).json({ message: 'Product not found' })
     }
 
+    const payload = withProductSlug(product)
     if (cacheKey) {
-      await setCache(cacheKey, product, PRODUCTS_CACHE_TTL_MS)
+      await setCache(cacheKey, payload, PRODUCTS_CACHE_TTL_MS)
       setPublicCache(res, PRODUCTS_CACHE_PROFILE)
     }
 
-    res.json(product)
+    res.json(payload)
   })
 )
 

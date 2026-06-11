@@ -13,6 +13,7 @@ import { wishlistStorage } from '../components/product/wishlist'
 import { useTaxonomy } from '../components/TaxonomyProvider'
 import { fadeUp, revealCard, staggerGrid } from '../lib/motion'
 import { notifyCartItemAdded } from '../utils/cartLeadPrompt'
+import { getProductPath } from '../utils/productLinks'
 
 function Wishlist() {
   const dispatch = useDispatch()
@@ -221,7 +222,7 @@ function Wishlist() {
                   <ProductCard
                     product={product}
                     onAdd={() => setCartModal({ open: true, product })}
-                    onView={(item) => navigate(`/products/${item._id}`)}
+                    onView={(item) => navigate(getProductPath(item), { state: { productId: item?._id } })}
                     onQuickView={(item) => setQuickViewProduct(item)}
                   />
                 </motion.div>

@@ -7,7 +7,7 @@ function ProductAccordion({ items = [], defaultOpen = 0 }) {
   const [openIndex, setOpenIndex] = useState(defaultOpen)
 
   return (
-    <div className="overflow-hidden rounded-[2rem] border border-[rgba(25,33,60,0.08)] bg-white/88 shadow-[0_18px_50px_rgba(25,33,60,0.06)] backdrop-blur-sm">
+    <div className="min-w-0 overflow-hidden rounded-[1.5rem] border border-[rgba(25,33,60,0.08)] bg-white/88 shadow-[0_18px_50px_rgba(25,33,60,0.06)] backdrop-blur-sm sm:rounded-[2rem]">
       {items.map((item, index) => {
         const isOpen = openIndex === index
         return (
@@ -17,9 +17,9 @@ function ProductAccordion({ items = [], defaultOpen = 0 }) {
               onClick={() => setOpenIndex(isOpen ? -1 : index)}
               className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left sm:px-6"
             >
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#7C6C62]">Details</p>
-                <h3 className="mt-2 text-lg font-semibold text-[#19213C]">{item.title}</h3>
+                <h3 className="mt-2 break-words text-lg font-semibold text-[#19213C] [overflow-wrap:anywhere]">{item.title}</h3>
               </div>
               <motion.span animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.24 }}>
                 <FiChevronDown className="text-[#19213C]" size={18} />
@@ -35,7 +35,7 @@ function ProductAccordion({ items = [], defaultOpen = 0 }) {
                   transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
                   className="overflow-hidden"
                 >
-                  <div className="px-5 pb-5 text-sm leading-7 text-[#5F6475] sm:px-6 sm:pb-6">
+                  <div className="min-w-0 px-5 pb-5 text-sm leading-7 text-[#5F6475] sm:px-6 sm:pb-6">
                     {Array.isArray(item.content) ? (
                       <ul className="space-y-2">
                         {item.content.map((line) => (

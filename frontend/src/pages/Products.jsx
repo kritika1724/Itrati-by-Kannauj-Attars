@@ -16,6 +16,7 @@ import { fadeUp } from '../lib/motion'
 import { api, auth } from '../services/api'
 import { getSearchSuggestions } from '../components/product/productPresentation'
 import { notifyCartItemAdded } from '../utils/cartLeadPrompt'
+import { getProductPath } from '../utils/productLinks'
 import {
   AVAILABILITY_OPTIONS,
   buildChoiceList,
@@ -604,7 +605,7 @@ function Products() {
                         type="button"
                         onClick={() => {
                           setSearchFocused(false)
-                          navigate(`/products/${item._id}`)
+                          navigate(getProductPath(item), { state: { productId: item?._id } })
                         }}
                         className="flex w-full items-center justify-between gap-4 border-b border-[rgba(25,33,60,0.06)] px-4 py-3 text-left last:border-b-0 hover:bg-[rgba(252,249,243,0.92)]"
                       >
@@ -760,7 +761,7 @@ function Products() {
               products={products}
               loading={loading}
               isAdmin={isAdmin}
-              onView={(product) => navigate(`/products/${product._id}`)}
+              onView={(product) => navigate(getProductPath(product), { state: { productId: product?._id } })}
               onAdd={handleAddFromCard}
               onQuickView={(product) => setQuickViewProduct(product)}
             />

@@ -34,8 +34,8 @@ function ProductInfo({
   const packs = Array.isArray(product?.packs) ? product.packs : []
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-[2rem] border border-[rgba(25,33,60,0.08)] bg-[rgba(255,255,255,0.88)] p-5 shadow-[0_26px_80px_rgba(25,33,60,0.08)] backdrop-blur-xl sm:p-7">
+    <div className="min-w-0 space-y-6 overflow-hidden">
+      <div className="min-w-0 overflow-hidden rounded-[1.5rem] border border-[rgba(25,33,60,0.08)] bg-[rgba(255,255,255,0.88)] p-5 shadow-[0_26px_80px_rgba(25,33,60,0.08)] backdrop-blur-xl sm:rounded-[2rem] sm:p-7">
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full border border-[rgba(200,169,106,0.34)] bg-[rgba(200,169,106,0.10)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#C9A24A]">
             {getDisplayCategory(product?.category)}
@@ -52,7 +52,7 @@ function ProductInfo({
 
         <div className="mt-5 flex items-start justify-between gap-4">
           <div>
-            <h1 className="font-display text-3xl leading-tight tracking-[-0.04em] text-[#19213C] sm:text-4xl xl:text-[3.3rem]">
+            <h1 className="max-w-full break-words font-display text-3xl leading-tight text-[#19213C] [overflow-wrap:anywhere] sm:text-4xl xl:text-[3.3rem]">
               {product?.name}
             </h1>
           </div>
@@ -73,7 +73,7 @@ function ProductInfo({
         </div>
 
         {shortDescription ? (
-          <p className="mt-6 max-w-2xl text-sm leading-7 text-[#5F6475] sm:text-base sm:leading-8">{shortDescription}</p>
+          <p className="mt-6 max-w-2xl break-words text-sm leading-7 text-[#5F6475] [overflow-wrap:anywhere] sm:text-base sm:leading-8">{shortDescription}</p>
         ) : null}
 
         {packs.length > 0 ? (

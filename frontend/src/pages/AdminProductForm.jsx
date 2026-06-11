@@ -585,26 +585,6 @@ function AdminProductForm() {
             </div>
 
             <div className="rounded-3xl border border-slate-200/80 bg-clay/50 p-6">
-              <p className="text-xs uppercase tracking-[0.35em] text-muted">Inventory</p>
-              <h3 className="mt-2 text-lg font-semibold text-ink">Available stock</h3>
-              <p className="mt-2 text-sm text-muted">
-                Enter the total number of units available for this product. Stock will reduce automatically when an order is placed.
-              </p>
-
-              <div className="mt-5 max-w-sm">
-                <label className="text-sm font-semibold text-ink">Stock count</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  {...register('stock')}
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-ember focus:outline-none focus:ring-2 focus:ring-ember/20"
-                />
-                {errors.stock ? <p className="mt-2 text-xs text-red-600">{errors.stock.message}</p> : null}
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-slate-200/80 bg-clay/50 p-6">
               <p className="text-xs uppercase tracking-[0.35em] text-muted">Merchandising</p>
               <h3 className="mt-2 text-lg font-semibold text-ink">Explore placement</h3>
               <p className="mt-2 text-sm text-muted">

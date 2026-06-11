@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { clearRecent } from '../features/recentlyViewedSlice'
 import { toAssetUrl } from '../utils/media'
+import { getProductPath } from '../utils/productLinks'
 
 function RecentlyViewedStrip({ excludeId = '', max = 8, title = 'Recently viewed' }) {
   const dispatch = useDispatch()
@@ -33,7 +34,8 @@ function RecentlyViewedStrip({ excludeId = '', max = 8, title = 'Recently viewed
           {filtered.map((item) => (
             <Link
               key={item.product}
-              to={`/products/${item.product}`}
+              to={getProductPath(item)}
+              state={{ productId: item?.product }}
               className="min-w-[220px] flex-1 rounded-[1.7rem] border border-[rgba(25,33,60,0.08)] bg-[rgba(255,255,255,0.92)] p-4 shadow-[0_18px_48px_rgba(25,33,60,0.06)] transition hover:-translate-y-1 hover:border-[rgba(200,169,106,0.34)]"
             >
               <div className="aspect-[4/3] w-full overflow-hidden rounded-[1.3rem] bg-[linear-gradient(135deg,rgba(200,169,106,0.18),rgba(255,255,255,0.98),rgba(25,33,60,0.08))]">

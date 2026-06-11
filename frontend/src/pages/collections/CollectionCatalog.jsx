@@ -7,6 +7,7 @@ import ProductCard from '../../components/ProductCard'
 import { addToCart } from '../../features/cartSlice'
 import { api, auth } from '../../services/api'
 import { notifyCartItemAdded } from '../../utils/cartLeadPrompt'
+import { getProductPath } from '../../utils/productLinks'
 
 function CollectionCatalog({
   collectionKey,
@@ -121,7 +122,7 @@ function CollectionCatalog({
                 <ProductCard
                   key={product._id}
                   product={product}
-                  onView={() => navigate(`/products/${product._id}`)}
+                  onView={() => navigate(getProductPath(product), { state: { productId: product?._id } })}
                   onAdd={
                     !isAdmin
                       ? ({ mode } = {}) => {

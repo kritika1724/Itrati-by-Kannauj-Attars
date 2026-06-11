@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiX } from 'react-icons/fi'
 import { toAssetUrl } from '../../utils/media'
+import { getProductPath } from '../../utils/productLinks'
 import { getBadgeList, getManualProductShortDescription, getMinPack, getNoteLine, getProductImages } from './productPresentation'
 import WishlistButton from './WishlistButton'
 
@@ -85,7 +86,8 @@ function ProductQuickViewModal({ product, open, onClose, familyMap = {}, onAddTo
                   </button>
                 ) : null}
                 <Link
-                  to={`/products/${product._id}`}
+                  to={getProductPath(product)}
+                  state={{ productId: product?._id }}
                   onClick={onClose}
                   className="rounded-full bg-[#19213C] px-6 py-3 text-sm font-semibold text-white"
                 >

@@ -21,12 +21,12 @@ function ReviewSection({
   const showListHeader = hasReviews || isAdmin
 
   return (
-    <section className="rounded-[2rem] border border-[rgba(25,33,60,0.08)] bg-white/90 p-5 shadow-[0_22px_60px_rgba(25,33,60,0.07)] sm:p-6">
+    <section className="min-w-0 overflow-hidden rounded-[1.5rem] border border-[rgba(25,33,60,0.08)] bg-white/90 p-5 shadow-[0_22px_60px_rgba(25,33,60,0.07)] sm:rounded-[2rem] sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[#8D7667]">Customer reviews</p>
-          <h2 className="mt-2 text-2xl font-semibold text-[#19213C]">Verified voices only</h2>
-          <p className="mt-3 text-sm leading-7 text-[#5F6475]">
+        <div className="min-w-0 max-w-2xl">
+          <p className="break-words text-xs font-semibold uppercase tracking-[0.28em] text-[#8D7667] sm:tracking-[0.32em]">Customer reviews</p>
+          <h2 className="mt-2 break-words text-2xl font-semibold text-[#19213C] [overflow-wrap:anywhere]">Verified voices only</h2>
+          <p className="mt-3 break-words text-sm leading-7 text-[#5F6475] [overflow-wrap:anywhere]">
             To review {product?.name}, enter the Order ID for a delivered purchase that included this product.
           </p>
         </div>

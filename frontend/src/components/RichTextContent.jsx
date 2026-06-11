@@ -62,11 +62,11 @@ function RichTextContent({ value, className = '' }) {
   if (!blocks.length) return null
 
   return (
-    <div className={className}>
+    <div className={`min-w-0 max-w-full overflow-hidden break-words [overflow-wrap:anywhere] ${className}`}>
       {blocks.map((block, index) => {
         if (block.type === 'paragraph') {
           return (
-            <p key={`p-${index}`} className="text-sm leading-7 text-muted">
+            <p key={`p-${index}`} className="min-w-0 max-w-full break-words text-sm leading-7 text-muted [overflow-wrap:anywhere]">
               {block.text}
             </p>
           )
@@ -79,7 +79,7 @@ function RichTextContent({ value, className = '' }) {
             className={`space-y-2 pl-5 text-sm leading-7 text-muted ${block.type === 'ol' ? 'list-decimal' : 'list-disc'}`}
           >
             {block.items.map((item, itemIndex) => (
-              <li key={`${block.type}-${index}-${itemIndex}`}>{item}</li>
+              <li key={`${block.type}-${index}-${itemIndex}`} className="break-words [overflow-wrap:anywhere]">{item}</li>
             ))}
           </ListTag>
         )

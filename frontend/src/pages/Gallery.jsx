@@ -331,9 +331,7 @@ function Gallery() {
                 allowVideo
               />
               <h3 className="mt-4 text-lg font-semibold text-ink">Factory / Workshop</h3>
-              <p className="mt-2 text-sm text-muted">
-                Add photos or videos of the workshop, tools, storage, quality checks, and team moments.
-              </p>
+            
             </div>
           </div>
 

@@ -18,11 +18,11 @@ export const BUSINESS = {
   about:
     "Itrati is presented by Kannauj Attars, a private enterprise founded in Kannauj in 1998 - home to one of the country's oldest perfume traditions. Rooted in heritage distillation and crafted with modern consistency, we serve both personal buyers and bulk/trade requirements with the same focus on quality, clarity, and lasting character.",
   legacyIntro:
-    'Rooted in the timeless legacy of Kannauj, our journey in perfumery spans generations. From the era of Sundar Lal Suraj Narayan to Laxmi Narayan Trivedi in 1930, the tradition of crafting natural fragrances has been carefully preserved and passed down.',
+    'Rooted in the timeless legacy of Kannauj, our journey in perfumery spans generations. From the era of Sundal Lal Laxmi Narayan Perfumes to Laxmi Narayan Trivedi in 1930, the tradition of crafting natural fragrances has been carefully preserved and passed down.',
   legacyTimeline: [
     {
       year: 'Family legacy',
-      title: 'Sundar Lal Suraj Narayan',
+      title: 'Sundal Lal Laxmi Narayan Perfumes',
       copy:
         'The family fragrance journey traces back to an earlier generation deeply connected to Kannauj perfumery and natural aromatic trade.',
     },

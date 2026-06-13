@@ -24,7 +24,7 @@ import { toAssetUrl } from '../utils/media'
 const heritagePillars = [
   {
     title: 'Generational perfumery',
-    copy: 'From Sundar Lal Suraj Narayan to Laxmi Narayan Trivedi and onward, the craft has moved through the family with care.',
+    copy: 'From Sundal Lal Laxmi Narayan Perfumes to Laxmi Narayan Trivedi and onward, the craft has moved through the family with care.',
   },
   {
     title: 'Kannauj, the perfume city',
